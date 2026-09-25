@@ -37,7 +37,7 @@ function app({saved = false, tasks = oldTasks, failStorage = false, peerFailures
     setTimeout(fn, ms){const id=nextTimer++;timers.set(id,{fn,ms});return id;}, clearTimeout:id=>timers.delete(id), setInterval(){},
     localStorage: {getItem:key=>storage.get(key)||null,setItem(key,value){if(writesFail)throw new Error('Local storage write failed');storage.set(key,String(value));},removeItem:key=>storage.delete(key)},
     document:{querySelector:selector=>nodes.get(selector.slice(1))||null,querySelectorAll:()=>[],activeElement:null},
-    window:{location:{href:'file:///flightdesk.html'},addEventListener(){},cockpitDesktop:{getFsuipcStatus:async()=>({running:false}),getSimPosition:async()=>({connected:false}),getAppInfo:async()=>({name:'Shared Cockpit Flight Desk',version:'0.3.1-alpha.6',displayVersion:'Alpha 0.3.1'})}}
+    window:{location:{href:'file:///flightdesk.html'},addEventListener(){},cockpitDesktop:{getFsuipcStatus:async()=>({running:false}),getSimPosition:async()=>({connected:false}),getAppInfo:async()=>({name:'Shared Cockpit Flight Desk',version:'0.3.1-alpha.7',displayVersion:'Alpha 0.3.1'})}}
   });
   vm.runInContext(source,context,{filename:'flightdesk.html'});
   writesFail=failStorage;
@@ -154,5 +154,14 @@ async function run() {
   assert.ok(tasksField.value.every(phase=>Array.isArray(phase.sections)));
   assert.equal(aircraftField.value,'A320');
   console.log('PASS: A fresh host snapshot contains versioned PF/PM tasks and aircraft.');
+
+  const crewTools=app();
+  crewTools.eval("prepareSession('host','Alex','ABC2345','PF');addFlightEvent('Runway change briefed');addMilestone('Takeoff');setPilotRole('PM')");
+  assert.equal(crewTools.eval('data.ops.activity[0].text'),'Runway change briefed');
+  assert.equal(crewTools.eval('data.ops.markers[0].text'),'Takeoff');
+  assert.match(crewTools.eval('data.ops.crewLog.map(item=>item.text).join(" ")'),/changed role from PF to PM/);
+  assert.ok(JSON.parse(crewTools.eval('JSON.stringify(snapshotFields())')).some(field=>field.key==='ops'),'Crew activity must be included in the shared session snapshot.');
+  assert.ok(crewTools.eval("flightCallouts.takeoff.length >= 2"),'Phase callouts must be available for the operational phases.');
+  console.log('PASS: Crew events, timeline markers, role handovers and callouts are recorded and synchronized.');
 }
 run().catch(error=>{console.error(error.stack);process.exitCode=1;});

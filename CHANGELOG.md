@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1-alpha.7 — Alpha 0.3.1
+
+- Add a synchronized crew handover and flight-event log with a flight timeline and route-progress milestones.
+- Add phase-based crew callout prompts, briefing templates and local crew preferences.
+- Add a VATSIM ATC snapshot grouped by departure, enroute and arrival route segments.
+- Add connection diagnostics and flight report export as text or print-to-PDF.
+
 ## 0.3.1-alpha.6 — Alpha 0.3.1
 
 - Replace the A320 flat checklist with an 18-phase operational scan-flow.

@@ -131,6 +131,68 @@ async function getAirportInfo(icao, options = {}) {
   };
 }
 
+async function getRouteAtc(originCode, destinationCode) {
+  const codes = [originCode, destinationCode].map(value => String(value || '').trim().toUpperCase());
+  if (codes.some(code => !/^[A-Z0-9]{4}$/.test(code))) throw new Error('Import a flight plan with valid origin and destination ICAO codes.');
+  async function airport(code) {
+    let value = airportCache.get(code);
+    if (!value) {
+      const response = await fetch(`https://aviationweather.gov/api/data/airport?ids=${code}&format=json`, { headers: { 'user-agent': USER_AGENT } });
+      if (!response.ok) throw new Error(`Could not load airport coordinates (${response.status}).`);
+      value = (await response.json())[0];
+      if (value) airportCache.set(code, value);
+    }
+    if (!Number.isFinite(Number(value?.lat)) || !Number.isFinite(Number(value?.lon))) throw new Error(`Coordinates unavailable for ${code}.`);
+    return { latitude: Number(value.lat), longitude: Number(value.lon) };
+  }
+  const [start, end] = await Promise.all(codes.map(airport));
+  if (Date.now() >= vatsimCache.expiresAt || !vatsimCache.feed || !vatsimCache.transceivers) {
+    const [feedResponse, transceiverResponse] = await Promise.all([
+      fetch('https://data.vatsim.net/v3/vatsim-data.json', { headers: { 'user-agent': USER_AGENT } }),
+      fetch('https://data.vatsim.net/v3/transceivers-data.json', { headers: { 'user-agent': USER_AGENT } })
+    ]);
+    if (!feedResponse.ok || !transceiverResponse.ok) throw new Error('VATSIM route data is unavailable.');
+    const [feed, transceivers] = await Promise.all([feedResponse.json(), transceiverResponse.json()]);
+    vatsimCache = { expiresAt: Date.now() + 5 * 60_000, feed, transceivers };
+  }
+  const radians = value => value * Math.PI / 180;
+  const distanceNm = (a, b) => {
+    const dLat = radians(b.latitude - a.latitude), dLon = radians(b.longitude - a.longitude);
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(radians(a.latitude)) * Math.cos(radians(b.latitude)) * Math.sin(dLon / 2) ** 2;
+    return 3440.065 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+  };
+  const a = { latitude: radians(start.latitude), longitude: radians(start.longitude) };
+  const b = { latitude: radians(end.latitude), longitude: radians(end.longitude) };
+  const omega = Math.acos(Math.max(-1, Math.min(1, Math.sin(a.latitude) * Math.sin(b.latitude) + Math.cos(a.latitude) * Math.cos(b.latitude) * Math.cos(b.longitude - a.longitude))));
+  const route = Array.from({ length: 101 }, (_, index) => {
+    const fraction = index / 100;
+    if (omega < 1e-8) return { latitude: start.latitude, longitude: start.longitude, fraction };
+    const scaleA = Math.sin((1 - fraction) * omega) / Math.sin(omega), scaleB = Math.sin(fraction * omega) / Math.sin(omega);
+    const x = scaleA * Math.cos(a.latitude) * Math.cos(a.longitude) + scaleB * Math.cos(b.latitude) * Math.cos(b.longitude);
+    const y = scaleA * Math.cos(a.latitude) * Math.sin(a.longitude) + scaleB * Math.cos(b.latitude) * Math.sin(b.longitude);
+    const z = scaleA * Math.sin(a.latitude) + scaleB * Math.sin(b.latitude);
+    return { latitude: Math.atan2(z, Math.hypot(x, y)) * 180 / Math.PI, longitude: Math.atan2(y, x) * 180 / Math.PI, fraction };
+  });
+  const clients = new Map([...(vatsimCache.feed.controllers || []), ...(vatsimCache.feed.atis || [])].map(client => [client.callsign, client]));
+  const stations = new Map();
+  for (const station of vatsimCache.transceivers || []) {
+    const client = clients.get(station.callsign);
+    if (!client) continue;
+    for (const tx of station.transceivers || []) {
+      if (!Number.isFinite(tx.latDeg) || !Number.isFinite(tx.lonDeg)) continue;
+      const point = { latitude: tx.latDeg, longitude: tx.lonDeg };
+      let nearest = { distance: Infinity, fraction: 0 };
+      for (const sample of route) { const distance = distanceNm(point, sample); if (distance < nearest.distance) nearest = { distance, fraction: sample.fraction }; }
+      if (nearest.distance > 100 || (Number(tx.frequency) / 1_000_000).toFixed(3) !== Number(client.frequency).toFixed(3)) continue;
+      const section = nearest.fraction < .15 ? 'Departure' : nearest.fraction > .85 ? 'Arrival' : 'Enroute';
+      const item = { callsign: station.callsign, frequency: Number(client.frequency).toFixed(3), distanceNm: Math.round(nearest.distance), routePercent: Math.round(nearest.fraction * 100), section };
+      const key = `${item.callsign}|${item.frequency}`;
+      if (!stations.has(key) || item.distanceNm < stations.get(key).distanceNm) stations.set(key, item);
+    }
+  }
+  return { origin: codes[0], destination: codes[1], stations: [...stations.values()].sort((left, right) => left.routePercent - right.routePercent || left.distanceNm - right.distanceNm) };
+}
+
 function startPositionBridge() {
   const executable = app.isPackaged
     ? path.join(process.resourcesPath, 'simtracker', 'FlightPositionBridge.exe')
@@ -272,6 +334,10 @@ ipcMain.handle('fetch-simbrief-pdf', async (_event, plan) => {
 ipcMain.handle('get-airport-info', async (_event, icao, options) => {
   try { return { ok: true, data: await getAirportInfo(icao, options) }; }
   catch (error) { return { ok: false, error: error.message || 'Could not load airport information.' }; }
+});
+ipcMain.handle('get-route-atc', async (_event, origin, destination) => {
+  try { return { ok: true, data: await getRouteAtc(origin, destination) }; }
+  catch (error) { return { ok: false, error: error.message || 'Could not load ATC along the route.' }; }
 });
 ipcMain.handle('get-fsuipc-status', async () => getFsuipcStatus());
 ipcMain.handle('clipboard-write', (_event, value) => { clipboard.writeText(String(value || '')); return true; });
