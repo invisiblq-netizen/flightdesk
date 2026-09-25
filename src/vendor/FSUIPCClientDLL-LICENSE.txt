@@ -1,0 +1,32 @@
+﻿Licence
+=========
+
+You are granted a non-exclusive right to distribute this DLL at no cost
+and royalty-free as part of a freeware or commercial application.
+
+The DLL, example applications, and documentation are owned by Paul Henty.
+
+You may not sell this DLL or the example applications or the documentation,
+individually, together, or as part of a toolkit for developing applications.
+
+A credit acknowledging the author of this DLL and its use in your application
+must appear in the documentation and at least one place in the application's
+user interface (e.g. on the ‘about’ screen, version information screen,
+splash screen etc).
+
+The suggested wording is “Uses the FSUIPC Client DLL for .NET by Paul Henty”.
+This applies to both Freeware and Commercial Applications.
+
+
+Warranty
+--------
+The software and documentation are provided ‘AS IS’ without warranty of any kind.
+
+
+Third-Party Libraries
+----------------------
+This library uses the protobuf-net library by Marc Gravell
+https://github.com/protobuf-net/protobuf-net
+
+protobuf-net is licensed under the Apache V2.0 Licence:
+https://www.apache.org/licenses/LICENSE-2.0

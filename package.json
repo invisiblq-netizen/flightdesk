@@ -1,0 +1,65 @@
+{
+  "name": "shared-cockpit-flight-desk",
+  "version": "0.3.1-alpha.1",
+  "private": true,
+  "description": "Windows companion for shared cockpit flying with SimBrief, shared crew notes, PF/PM flows, VATSIM information and P2P synchronization.",
+  "packageManager": "pnpm@11.19.0",
+  "main": "src/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node tests/lobby-regression.cjs",
+    "build:helper": "dotnet publish simtracker/FlightPositionBridge.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o simtracker/publish",
+    "predist": "node scripts/check-helper.cjs",
+    "dist": "electron-builder --win nsis --publish never"
+  },
+  "devDependencies": {
+    "electron": "44.4.5",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.28.2"
+  },
+  "build": {
+    "appId": "no.sharedcockpit.flightdesk",
+    "productName": "Shared Cockpit Flight Desk",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "simtracker/publish",
+        "to": "simtracker",
+        "filter": [
+          "*.exe",
+          "*.dll"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "Shared-Cockpit-Flight-Desk-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "deleteAppDataOnUninstall": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Shared Cockpit Flight Desk"
+    }
+  },
+  "dependencies": {
+    "pdfjs-dist": "6.3.289",
+    "peerjs": "1.5.5"
+  },
+  "engines": {
+    "node": ">=24 <25"
+  }
+}

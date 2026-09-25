@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shared Cockpit — Flight Desk</title>
+<style>
+:root{--bg:#0a111a;--panel:#111d29;--panel2:#162433;--line:#253749;--ink:#edf4f7;--muted:#93a6b4;--mint:#63e2c0;--blue:#68b9ff;--amber:#ffc66d;--red:#ff8181}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% -20%,#1c3850 0,transparent 42%),var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}button,input,textarea,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:10px;padding:10px 14px}button:hover{border-color:var(--mint)}.wrap{max-width:1160px;margin:auto;padding:26px 22px 48px}.hidden{display:none!important}.top{display:flex;justify-content:space-between;align-items:center;gap:18px;border-bottom:1px solid var(--line);padding-bottom:20px}.brand{display:flex;gap:13px;align-items:center}.logo{width:43px;height:43px;border-radius:14px;background:linear-gradient(145deg,#64e6c2,#3998c4);display:grid;place-items:center;color:#06131b;font-weight:900}.eyebrow{font-size:11px;letter-spacing:.15em;color:var(--mint);font-weight:750}.top h1{font-size:22px;margin:2px 0}.top p{color:var(--muted);margin:0;font-size:13px}.card{background:linear-gradient(145deg,rgba(22,36,51,.98),rgba(15,26,38,.98));border:1px solid var(--line);border-radius:17px;padding:21px}.gate{max-width:600px;margin:55px auto}.gate h2{margin:0 0 5px;font-size:21px}.gate>p{color:var(--muted);margin:0 0 22px}.gate label{display:block;color:var(--muted);font-size:12px}.field{width:100%;background:#0b1621;border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--ink);margin:6px 0 15px}.gate-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}.gate-actions .card{padding:16px}.gate-actions h3{font-size:14px;margin:0 0 10px}.primary{background:var(--mint);color:#09201c;border-color:var(--mint);font-weight:750}.muted{color:var(--muted)}.small{font-size:12px}.sessionbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.avatars{display:flex;padding-left:8px}.avatar{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#224657;color:var(--mint);font-size:10px;font-weight:800;border:2px solid var(--bg);margin-left:-8px}.badge,.pill{display:inline-flex;align-items:center;gap:6px;border-radius:99px;background:#17342f;color:var(--mint);padding:5px 10px;font-size:12px}.dot{width:7px;height:7px;background:var(--mint);border-radius:50%}.hero{display:grid;grid-template-columns:1.2fr .8fr;gap:17px;margin:24px 0 17px}.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.card-head h2{font-size:16px;margin:0}.route{display:flex;align-items:center;gap:18px;margin:15px 0 20px}.airport{font-size:34px;line-height:1;font-weight:770;letter-spacing:.04em}.city{color:var(--muted);font-size:12px;margin-top:5px}.route-line{height:1px;flex:1;background:linear-gradient(90deg,var(--mint),var(--blue));position:relative}.route-line:after{content:'✈';position:absolute;left:48%;top:-13px;color:var(--mint);font-size:17px}.stats{display:flex;gap:24px;flex-wrap:wrap}.stat small{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.stat b{font-size:14px}.simform{display:flex;gap:8px}.simform input{min-width:0;flex:1;background:#0c1722;border:1px solid var(--line);border-radius:10px;padding:11px;color:var(--ink)}.simform button{white-space:nowrap}.status{min-height:20px;margin:8px 0;color:var(--muted)}.status.error{color:var(--red)}.select{background:#0c1722;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:8px;max-width:170px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:17px}.tabs{display:flex;gap:6px}.tab{font-size:12px;padding:6px 10px;border-radius:8px}.tab.active{color:var(--mint);border-color:#367969;background:#17342f}.notes{width:100%;min-height:184px;resize:vertical;background:#0b1621;border:1px solid var(--line);border-radius:11px;padding:13px;color:var(--ink);line-height:1.6}.note-foot{display:flex;justify-content:space-between;align-items:center;margin-top:9px;gap:12px}.tasks{display:grid;gap:8px}.task{display:flex;align-items:center;gap:10px;padding:9px 10px;background:#0c1722;border:1px solid #1d2d3b;border-radius:10px}.task input{accent-color:var(--mint);width:16px;height:16px}.task span{flex:1}.task.done span{text-decoration:line-through;color:#728490}.task button{padding:3px 8px;color:var(--muted);border:0;background:transparent}.ofp{white-space:pre-wrap;max-height:280px;overflow:auto;color:#c1ced6;background:#0b1621;border-radius:10px;padding:14px;font:12px/1.55 ui-monospace,Consolas,monospace}.footer{color:var(--muted);font-size:11px;margin:20px 2px}.copy{padding:6px 10px;font-size:12px}.notice{padding:10px 12px;border-radius:10px;background:#30271a;color:var(--amber);font-size:12px;margin-top:15px}.signal-box{display:block;width:100%;min-height:105px;margin:8px 0 12px;padding:11px;background:#0b1621;border:1px solid var(--line);border-radius:10px;color:var(--ink);font:11px/1.45 ui-monospace,Consolas,monospace;resize:vertical;overflow-wrap:anywhere}.pair-step{margin-top:20px}.pair-step h3{margin:20px 0 6px}.gate-actions p{margin-top:0}@media(max-width:760px){.hero,.grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.sessionbar{align-self:flex-end}.airport{font-size:29px}.card{padding:17px}.gate-actions{grid-template-columns:1fr}}
+
+.role-control{display:flex;align-items:center;gap:7px;color:var(--muted)}.role-control .select{max-width:185px;padding:6px}.sessionbar{justify-content:flex-end}.lobby-badge{background:#17342f}.lobby-badge strong{font:800 14px/1 ui-monospace,Consolas,monospace;letter-spacing:.1em}.status-badge{background:#14212d;color:var(--ink)}.dot.offline{background:var(--red)}.dot.online{background:var(--mint);box-shadow:0 0 9px #63e2c088}.room-code{text-transform:uppercase;letter-spacing:.16em;font:800 18px/1.2 ui-monospace,Consolas,monospace}.gate-actions form{margin:0}.gate-actions form .field{margin-bottom:11px}.airport-block{min-width:0;flex:1}.airport-name{font-size:12px;color:var(--ink);margin-top:8px;min-height:18px}.metar{font:11px/1.45 ui-monospace,Consolas,monospace;color:var(--muted);margin-top:5px;overflow-wrap:anywhere}.atc-list{list-style:none;padding:0;margin:5px 0 0;color:var(--mint);font-size:11px}.atc-list li{margin:2px 0}.route-line{min-width:28px}.tasks{gap:8px}.task{display:block;padding:0;overflow:hidden}.task-row{display:flex;align-items:center;gap:7px;min-height:43px;padding:5px 9px}.task-check{display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer}.task-check span{flex:1}.task-remove,.detail-toggle{padding:3px 8px;color:var(--muted);border:0;background:transparent}.task-arrow{display:inline-block;font-size:22px;line-height:1;transition:transform .15s}.task.expanded .task-arrow{transform:rotate(90deg)}.task-details{display:none;padding:0 14px 11px 38px;color:#bfccd4;font-size:12px}.task.expanded .task-details{display:block}.task-details ul{margin:0;padding-left:17px}.task-details li{padding:2px 0}.pdf-card{margin-top:17px}.pdf-controls{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}.pdf-viewport{max-height:70vh;overflow:auto;background:#0b1621;border-radius:10px;padding:14px;text-align:center}.pdf-viewport canvas{display:block;margin:0 auto;max-width:100%;height:auto!important;background:white}.pdf-viewport canvas.hidden{display:none}.pdf-card .card-head{align-items:flex-start}.pdf-card .card-head>div:first-child{min-width:180px}.pdf-card #pdfStatus:empty{display:none}@media(max-width:900px){.sessionbar{justify-content:flex-start}.role-control{order:1}.route{gap:9px}.atc-list{font-size:10px}}@media(max-width:760px){.route{align-items:flex-start}.route-line{margin-top:16px}.airport-name{max-width:155px}.metar{max-width:155px}.pdf-controls{justify-content:flex-start}.pdf-card .card-head{flex-direction:column}}
+
+.logo { padding: 0; overflow: hidden; background: transparent; }
+.logo img { display:block; width:100%; height:100%; object-fit:cover; border-radius:13px; }
+.route { display:grid; grid-template-columns:minmax(0,1fr) minmax(132px,.82fr) minmax(0,1fr); align-items:start; gap:18px; }
+.airport-block { min-width:0; flex:initial; }
+.airport-name { min-height:35px; }
+.route-center { min-width:0; position:relative; padding-top:17px; }
+.route-progress { position:absolute; z-index:2; top:-25px; left:50%; transform:translateX(-50%); width:max-content; max-width:190px; min-height:0; padding:2px 6px; border-radius:6px; background:#111d29d9; color:var(--muted); font-size:10px; text-align:center; line-height:1.25; }
+.route-track { position:relative; height:2px; margin-top:0; background:linear-gradient(90deg,var(--mint),var(--blue)); border-radius:2px; }
+.route-track::after { content:''; position:absolute; top:-3px; right:0; width:8px; height:8px; border-radius:50%; background:var(--blue); box-shadow:0 0 8px #68b9ff88; }
+.route-plane { position:absolute; z-index:1; left:var(--flight-progress,0%); top:-9px; transform:translateX(-50%); color:var(--mint); font-size:19px; line-height:1; transition:left 1.2s ease; text-shadow:0 0 10px #63e2c088; }
+#ofpmeta { display:block; min-height:0; margin:4px 0 8px; }
+@media(max-width:760px) { .route { grid-template-columns:minmax(0,1fr) minmax(62px,.55fr) minmax(0,1fr); gap:9px; } .route-progress { font-size:10px; } .airport-name { min-height:40px; } }
+
+#desk.desk-layout{display:grid;grid-template-columns:190px minmax(0,1fr);gap:18px;align-items:start;margin-top:20px}.side-nav{position:sticky;top:14px;display:grid;gap:6px;padding:13px;background:linear-gradient(145deg,rgba(22,36,51,.98),rgba(15,26,38,.98));border:1px solid var(--line);border-radius:15px}.side-nav-title{padding:6px 9px 10px;color:var(--mint);font-size:10px;letter-spacing:.16em;font-weight:800}.nav-item{width:100%;text-align:left;border:1px solid transparent;background:transparent;color:var(--muted);padding:9px 11px}.nav-item:hover,.nav-item.active{background:#17342f;color:var(--mint);border-color:#285c50}.page-shell{min-width:0}.app-page{display:none}.app-page.active{display:block}.single-article{display:grid;grid-template-columns:minmax(0,1fr);margin:0 0 17px}.single-article>.card{min-width:0}.phase-toggle{width:100%;display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px}.phase-toggle strong{flex:1}.phase-count{color:var(--muted);font:12px ui-monospace,Consolas,monospace}.task-details{padding:0 12px 14px}.role-flows{display:grid;grid-template-columns:1fr 1fr;gap:12px}.role-flow{min-width:0;padding:12px;border:1px solid var(--line);border-radius:11px;background:#0b1621}.role-flow[data-current=true]{border-color:#367969;background:#10251f}.role-flow h3{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px;font-size:12px}.role-flow h3 span{color:var(--mint);font-size:9px;letter-spacing:.08em}.flow-item{display:grid;grid-template-columns:17px minmax(0,1fr);gap:8px;padding:8px 0;border-top:1px solid #1d2d3b;cursor:pointer}.flow-item input{accent-color:var(--mint);margin:3px 0 0}.flow-item b{display:block;font-size:12px;font-weight:650}.flow-item small{display:block;margin-top:3px;color:var(--muted);font-size:11px;line-height:1.4}.readiness-card{margin:0 0 17px}.readiness-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.readiness-head h2{margin:0;font-size:16px}.readiness-head p{margin:2px 0 0}.readiness-head>strong{font:12px ui-monospace,Consolas,monospace;color:var(--mint)}.readiness-progress{height:5px;background:#0b1621;border-radius:9px;margin:12px 0}.readiness-progress span{display:block;height:100%;background:var(--mint);border-radius:9px;transition:width .2s}.readiness-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.readiness-item{display:flex;align-items:center;gap:7px;padding:9px 8px;text-align:left;font-size:11px}.readiness-item .dot{flex:none}.readiness-item span{flex:1}.readiness-item b{font-size:10px;color:var(--muted)}@media(max-width:860px){.readiness-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:760px){#desk.desk-layout{grid-template-columns:1fr}.side-nav{position:static;display:flex;overflow-x:auto;gap:3px;padding:7px}.side-nav-title{display:none}.nav-item{width:auto;white-space:nowrap;padding:8px}.role-flows{grid-template-columns:1fr}.readiness-head{align-items:flex-start;flex-direction:column}}.version-badge{margin-left:8px;vertical-align:middle;font-size:11px;background:#30271a;color:var(--amber)}
+</style></head><body><main class="wrap">
+<header class="top"><div class="brand"><div class="logo"><img src="vendor/app-icon.png" alt=""></div><div><div class="eyebrow">SHARED COCKPIT</div><h1>Flight Desk <span class="pill version-badge" id="appVersion">Alpha</span></h1><p>Plan together. Fly together.</p></div></div><div class="sessionbar hidden" id="sessionbar">
+  <div class="avatars" id="avatars"></div><span id="who" class="muted small"></span>
+  <span class="badge lobby-badge"><span>Lobby</span><strong id="lobbyCode">—</strong><button class="copy" id="copyLobbyCode">Copy code</button></span>
+  <label class="role-control small">Your role <select id="sessionRole" class="select"><option value="PF">Pilot Flying (PF)</option><option value="PM">Pilot Monitoring (PM)</option></select></label>
+  <span class="badge status-badge"><span class="dot offline" id="p2pDot"></span><span id="connection">P2P disconnected</span></span>
+  <span class="badge status-badge" id="fsuipcBadge" title=""><span class="dot offline" id="fsuipcDot"></span><span id="fsuipcLabel">Checking FSUIPC7…</span></span>
+  <button id="pairAgain" class="small">New lobby</button><button id="leave" class="small">Disconnect</button>
+</div></header>
+<section id="gate" class="gate card">
+  <h2>Start or join a shared cockpit</h2>
+  <p>Enter your name and choose a role. The host opens a lobby; other pilots join with the seven-character code on the host’s screen.</p>
+  <label for="name">Your name</label><input id="name" class="field" maxlength="30" placeholder="For example: Alex" autocomplete="name">
+  <label for="gateRole">Your role</label><select id="gateRole" class="field"><option value="PF">Pilot Flying (PF)</option><option value="PM">Pilot Monitoring (PM)</option></select>
+  <div id="connectChoices" class="gate-actions">
+    <div class="card"><h3>Host a lobby</h3><p class="muted small">Create a room and share its short code with your friend.</p><button class="primary" id="create">Create lobby</button></div>
+    <div class="card"><h3>Join a lobby</h3><form id="joinForm"><label for="lobbyCodeInput">Seven-character lobby code</label><input id="lobbyCodeInput" class="field room-code" maxlength="7" minlength="7" pattern="[A-HJ-NP-Z2-9]{7}" placeholder="UTOWQAS" autocomplete="off" spellcheck="false" required><button class="primary" id="join">Join lobby</button></form></div>
+  </div>
+  <button id="resumeLocal" class="hidden">Reopen saved lobby</button><div id="gateerror" class="status" role="status" aria-live="polite"></div>
+  <div class="notice">The app automatically uses PeerJS Cloud to introduce the lobby participants; you do not need to run or sign up for a server. Notes, checklists and flight-plan data are sent directly between the PCs over WebRTC. A connection still depends on the signalling service and both networks allowing direct P2P traffic.</div>
+</section><section id="desk" class="hidden desk-layout"><aside class="side-nav" aria-label="Flight desk pages"><div class="side-nav-title">FLIGHT DESK</div><button class="nav-item active" data-page="overview">Flight board</button><button class="nav-item" data-page="flight-plan">Flight plan</button><button class="nav-item" data-page="checklist">Checklist</button><button class="nav-item" data-page="notes" data-note-tab="brief">Briefing</button><button class="nav-item" data-page="notes" data-note-tab="enroute">En route</button><button class="nav-item" data-page="notes" data-note-tab="debrief">Debrief</button></aside><div class="page-shell"><section class="app-page active" id="page-overview"><div class="single-article"><article class="card"><div class="card-head"><span class="eyebrow">FLIGHT BOARD</span><span class="pill" id="aircraftBadge">A320</span></div><div class="route"><div class="airport-block"><div class="airport" id="orig">—</div><div class="city">Departure</div><div class="airport-name" id="origName">Airport name will appear here</div><div class="metar" id="origMetar">Import a flight plan for weather</div><ul class="atc-list" id="origAtc"></ul></div><div class="route-center"><div class="route-progress" id="routeProgress">Flight progress · waiting for simulator</div><div class="route-track" id="routeTrack"><span class="route-plane" id="routePlane">✈</span></div></div><div class="airport-block"><div class="airport" id="dest">—</div><div class="city">Arrival</div><div class="airport-name" id="destName">Airport name will appear here</div><div class="metar" id="destMetar">Import a flight plan for weather</div><ul class="atc-list" id="destAtc"></ul></div></div><div class="stats"><div class="stat"><small>Flight number</small><b id="flightno">—</b></div><div class="stat"><small>Block time</small><b id="time">—</b></div><div class="stat"><small>Distance</small><b id="distance">—</b></div><div class="stat"><small>Aircraft</small><b id="aircraftShort">A320</b></div></div></article></div><article class="card readiness-card" id="readiness"></article></section><section class="app-page" id="page-flight-plan"><div class="single-article"><article class="card"><div class="card-head"><h2>SimBrief flight plan</h2><span class="muted small" id="importLabel">Pilot ID / username</span></div><form class="simform" id="simform"><input id="simid" placeholder="Pilot ID or username" required><button class="primary">Fetch plan</button></form><div class="status" id="simstatus">Fetches the latest generated plan when clicked.</div><span class="muted small" id="ofpmeta"></span><button class="small" id="showofp" disabled>View flight plan PDF</button></article></div><article class="card hidden pdf-card" id="ofpCard"><div class="card-head"><div><h2>SimBrief flight plan PDF</h2><span class="muted small" id="pdfStatus" role="status"></span></div><div class="pdf-controls"><button class="small" id="pdfZoomOut" aria-label="Zoom out">−</button><button class="small" id="pdfZoomIn" aria-label="Zoom in">+</button><button class="small" id="pdfPrev">Previous</button><span class="muted small" id="pdfPage"></span><button class="small" id="pdfNext">Next</button><button class="small" id="closeOfp">Close</button></div></div><div class="pdf-viewport"><canvas id="pdfCanvas" class="hidden"></canvas></div></article></section><section class="app-page" id="page-checklist"><div class="single-article"><article class="card"><div class="card-head"><div><h2>Tasks / checklist</h2><span class="muted small" id="taskhint">Automatically selected by aircraft type</span></div><select id="aircraftSelect" class="select" aria-label="Select aircraft type"><option value="A320">Airbus A320</option><option value="B738">Boeing 737</option><option value="B789">Boeing 787</option><option value="B77W">Boeing 777</option><option value="A359">Airbus A350</option><option value="DH8D">Dash 8 Q400</option><option value="C172">Cessna 172</option><option value="GENERIC">Other aircraft</option></select></div><div class="tasks" id="tasks"></div><div style="display:flex;gap:7px;margin-top:12px"><button class="small" id="addtask">+ Add task</button><button class="small" id="resetTasks">Reset checklist</button></div></article></div><div class="notice">These are simulator crew-coordination flows and memory aids. Follow the exact aircraft add-on checklist, POH/QRH, limits and SOP; this app is not an operational checklist.</div></section><section class="app-page" id="page-notes"><div class="single-article"><article class="card"><div class="card-head"><h2>Cockpit notes</h2><div class="tabs"><button class="tab active" data-tab="brief">Briefing</button><button class="tab" data-tab="enroute">En route</button><button class="tab" data-tab="debrief">Debrief</button></div></div><textarea class="notes" id="notes" placeholder="Runway, taxi, callouts, who does what …"></textarea><div class="note-foot"><span class="muted small" id="saved">Saved on this PC</span><span class="muted small" id="myrole"></span></div></article></div></section></div></section>
+<p class="footer">PeerJS Cloud is used automatically to set up short-code lobbies. Shared cockpit data travels directly between connected PCs over WebRTC and session data is saved on this PC.</p></main>
+<script src="vendor/pdfjs-worker.bundle.js"></script>
+<script src="vendor/pdfjs.bundle.js"></script>
+<script src="vendor/peerjs.min.js"></script>
+<script>
+const profiles={
+  A320:{fms:'MCDU',guidance:'FCU and flight mode annunciator',engine:'ECAM engine indications',specific:'Use the Airbus add-on flows; cross-check the MCDU, FCU, PFD/ND and ECAM indications.'},
+  B738:{fms:'FMC/CDU',guidance:'MCP and flight mode annunciator',engine:'engine display indications',specific:'Use the 737 add-on flows; cross-check FMC/CDU entries, MCP modes, trim and takeoff configuration.'},
+  B789:{fms:'FMC/CDU',guidance:'MCP and flight mode annunciator',engine:'EICAS indications',specific:'Use the 787 add-on flows; cross-check FMC/CDU entries, MCP modes and EICAS indications.'},
+  B77W:{fms:'FMC/CDU',guidance:'MCP and flight mode annunciator',engine:'EICAS indications',specific:'Use the 777 add-on flows; cross-check FMC/CDU entries, MCP modes and EICAS indications.'},
+  A359:{fms:'MCDU',guidance:'FCU and flight mode annunciator',engine:'ECAM engine indications',specific:'Use the A350 add-on flows; cross-check the MCDU, FCU, PFD/ND and ECAM indications.'},
+  DH8D:{fms:'FMS',guidance:'flight guidance modes and annunciations',engine:'engine and propeller indications',specific:'Use the Q400 add-on flows; verify power-lever, condition-lever and propeller indications against its manual.'},
+  C172:{fms:'installed GPS or avionics',guidance:'installed flight guidance and instrument indications',engine:'engine indications',specific:'Use the exact aircraft variant and its POH/add-on checklist; equipment and procedures vary by C172 model.'},
+  GENERIC:{fms:'installed flight management system',guidance:'flight guidance modes and annunciations',engine:'engine indications',specific:'Use the exact aircraft add-on checklist and identify the installed flight management and engine instruments.'}
+};
+const checklistPhases=[
+  {id:'brief',text:'Preflight and crew briefing',PF:[
+    {text:'Agree PF/PM roles, control-transfer words and callouts.',help:'Both pilots should know who is flying, who is monitoring and exactly how control is handed over.'},
+    {text:'Review route, departure, arrival, alternate and expected runway.',help:'The PF leads the route briefing and identifies the important changes or constraints.'},
+    {text:'Brief takeoff, initial climb, approach and go-around plan.',help:'Use the selected aircraft add-on SOP for the actual manoeuvre and decision criteria.'}
+  ],PM:[
+    {text:'Cross-check the SimBrief OFP against the aircraft and route.',help:'Compare fuel, payload, times and route details; flag mismatches before setup.'},
+    {text:'Review METAR/ATIS, charts, notices and expected runway.',help:'Prepare the outside information the PF will need and call out any change.'},
+    {text:'Prepare the checklist and readback support.',help:'Keep the relevant checklist and clearance details ready so the PF can focus on the flight path.'}
+  ]},
+  {id:'setup',text:'Flight-deck setup',PF:[
+    {text:'Complete the aircraft-specific PF preflight flow.',help:'Use the add-on checklist for exact controls, switch positions and required indications.'},
+    {text:'Enter or verify the route in the {{fms}}.',help:'Check departure, arrival, alternate and route discontinuities against the OFP and charts.'},
+    {text:'Set initial cleared targets on the {{guidance}}.',help:'Set only the values cleared or required by your SOP, then verify the active and armed modes.'}
+  ],PM:[
+    {text:'Independently cross-check the route and navigation setup.',help:'Compare the route in the flight-management system with the OFP and current charts.'},
+    {text:'Cross-check fuel, payload and performance entries.',help:'Verify units and entries against the add-on data; use its approved procedure for calculations.'},
+    {text:'Check weather, pressure setting and departure constraints.',help:'Call out changes or inconsistencies and confirm the source of each setting.'}
+  ]},
+  {id:'start',text:'Before start and engine start',PF:[
+    {text:'Confirm the start and pushback sequence with the PM.',help:'Agree who requests or controls pushback and who monitors the start indications.'},
+    {text:'Carry out the add-on before-start flow and initiate start.',help:'Follow the aircraft-specific sequence; this app does not provide switch positions or limits.'},
+    {text:'Confirm stable indications before continuing.',help:'Use the aircraft checklist to decide whether indications are normal and the next step is permitted.'}
+  ],PM:[
+    {text:'Check clearance and read back relevant instructions.',help:'On VATSIM, use the current controller clearance; do not treat this app as an ATC clearance.'},
+    {text:'Monitor {{engine}} during the start and make required callouts.',help:'Use the aircraft checklist for expected indications and limits; stop and consult its abnormal procedure if needed.'},
+    {text:'Complete the challenge-and-response items.',help:'Read each item from the aircraft add-on checklist and verify the response rather than relying on memory.'}
+  ]},
+  {id:'taxi',text:'After start, taxi and before takeoff',PF:[
+    {text:'Complete the aircraft-specific after-start flow.',help:'Confirm the required indications and flight-control checks using the add-on checklist.'},
+    {text:'Taxi the cleared route and stop at hold-short points.',help:'The PF controls the aircraft; stop whenever the route or clearance is uncertain.'},
+    {text:'Confirm runway, takeoff configuration and guidance modes.',help:'Use the aircraft-specific takeoff checklist and verify the displayed modes.'},
+    {text:'Brief the takeoff and rejected-takeoff plan.',help:'Use your aircraft add-on SOP for actions, callouts and decision criteria.'}
+  ],PM:[
+    {text:'Read the taxi route and identify hotspots and hold-short points.',help:'Monitor the chart and aircraft position; challenge a turn or crossing if it does not match the clearance.'},
+    {text:'Verify flight controls and trim with the PF.',help:'Use the add-on checklist and confirm the indicated response for the installed aircraft variant.'},
+    {text:'Cross-check runway, SID, clearance and takeoff data.',help:'Independently compare the clearance with the chart, FMS and PF selections.'},
+    {text:'Complete the before-takeoff challenge-and-response.',help:'Read the exact checklist items and confirm required indications before runway entry or takeoff.'}
+  ]},
+  {id:'climb',text:'Takeoff and initial climb',PF:[
+    {text:'Fly the cleared runway and initial flight path.',help:'The PF remains responsible for aircraft control and communicates any transfer clearly.'},
+    {text:'Verify active and armed {{guidance}} modes.',help:'Cross-check the flight-mode annunciations against the intended path; call out an unexpected mode.'},
+    {text:'Complete configuration changes at add-on checklist points.',help:'Use aircraft-specific indications and procedures; this flow does not define speeds or limits.'}
+  ],PM:[
+    {text:'Monitor the flight path and make agreed takeoff callouts.',help:'Use the aircraft add-on callouts; immediately speak up about an unsafe or unexpected trend.'},
+    {text:'Cross-check modes, clearance and departure tracking.',help:'Compare the aircraft response with the clearance and chart; call out discrepancies.'},
+    {text:'Run the after-takeoff checklist when appropriate.',help:'Read the aircraft-specific checklist only when workload and SOP permit.'}
+  ]},
+  {id:'cruise',text:'Cruise and en route',PF:[
+    {text:'Monitor flight path, automation and {{guidance}} annunciations.',help:'Confirm the aircraft is following the cleared route and expected vertical path.'},
+    {text:'Review route changes with the PM before changing the setup.',help:'Agree the clearance, FMS change and expected aircraft response before execution.'},
+    {text:'Coordinate descent timing and the next phase of flight.',help:'Keep the next clearance and approach preparation in the shared plan.'}
+  ],PM:[
+    {text:'Cross-check position, route progress and fuel against the OFP.',help:'Compare actual progress with the plan at agreed checkpoints and tell the PF about meaningful differences.'},
+    {text:'Monitor ATC, frequency changes and readbacks.',help:'Keep the PF informed while preserving capacity to monitor the aircraft.'},
+    {text:'Review updated weather and alternate options.',help:'Share relevant changes and agree whether the plan needs to change.'}
+  ]},
+  {id:'descent',text:'Descent and approach preparation',PF:[
+    {text:'Brief the approach, missed approach and landing runway.',help:'Use the current chart and aircraft-specific SOP; confirm the plan with the PM.'},
+    {text:'Set cleared altitude and approach guidance.',help:'Use only the clearance and add-on procedure, then cross-check targets and annunciations.'},
+    {text:'Agree stabilized-approach criteria and go-around wording.',help:'Use the aircraft/operator SOP for gates and actions; both pilots should share the same plan.'}
+  ],PM:[
+    {text:'Review the current chart, minima and missed-approach route.',help:'Verify the chart is for the cleared runway and approach and call out constraints.'},
+    {text:'Check destination METAR/ATIS and current VATSIM frequency.',help:'Confirm the actual clearance with ATC; weather and online-controller data are advisory.'},
+    {text:'Cross-check approach setup and landing-performance data.',help:'Verify route, navigation source and aircraft-specific calculations with the PF.'},
+    {text:'Prepare checklist and monitor configuration changes.',help:'Read required items at the correct SOP point and call out omissions or mismatches.'}
+  ]},
+  {id:'landing',text:'Approach, landing and go-around',PF:[
+    {text:'Fly the cleared approach and monitor aircraft energy.',help:'Use the aircraft-specific SOP for targets and stabilized criteria.'},
+    {text:'Respond to a go-around decision using the add-on procedure.',help:'The checklist is only a reminder; use the exact aircraft procedure and agreed transfer wording.'},
+    {text:'Control landing and rollout, then transfer control explicitly if needed.',help:'Keep the PM informed and do not assume the other pilot has taken control.'}
+  ],PM:[
+    {text:'Monitor path, configuration and {{guidance}} indications.',help:'Make the aircraft-specific callouts and clearly state any deviation or unstable condition.'},
+    {text:'Confirm runway and clearance; support the go-around decision.',help:'Speak up promptly when the agreed criteria are not met; follow the add-on SOP.'},
+    {text:'Monitor rollout and complete the after-landing checklist.',help:'Use the aircraft checklist after the runway is vacated and workload permits.'}
+  ]},
+  {id:'shutdown',text:'After landing, shutdown and debrief',PF:[
+    {text:'Taxi the cleared route to the stand and park the aircraft.',help:'Follow ATC instructions, stop at hold-short points and use the add-on parking procedure.'},
+    {text:'Complete the aircraft-specific shutdown flow.',help:'Use the add-on checklist for the exact sequence and indications.'}
+  ],PM:[
+    {text:'Read the taxi route and monitor position and hold-short points.',help:'Continue monitoring the chart and challenge unclear routing.'},
+    {text:'Complete shutdown and secure-aircraft checklist items.',help:'Read and verify the aircraft-specific checklist; do not infer switch positions from this app.'},
+    {text:'Debrief route, fuel, timing and shared-cockpit issues.',help:'Record what worked, what differed from the plan and what to adjust next flight.'}
+  ]}
+];
+
+const $=selector=>document.querySelector(selector);
+const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const SESSION_KEY='sharedCockpitP2PSession';
+const STATE_PREFIX='sharedCockpitP2PState:';
+const DEVICE_KEY='sharedCockpitP2PDevice';
+const ROOM_RE=/^[A-HJ-NP-Z2-9]{7}$/;
+const MAX_CHUNK_BYTES=1024;
+const MAX_TRANSFER_BYTES=12*1024*1024;
+const PF='PF', PM='PM';
+function activatePage(page,noteTab=null){const allowed=['overview','flight-plan','checklist','notes'];activePage=allowed.includes(page)?page:'overview';document.querySelectorAll('.app-page').forEach(item=>item.classList.toggle('active',item.id===`page-${activePage}`));document.querySelectorAll('.nav-item').forEach(item=>item.classList.toggle('active',item.dataset.page===activePage&&(activePage!=='notes'||!noteTab||item.dataset.noteTab===noteTab)));if(activePage==='notes'&&noteTab)activateNoteTab(noteTab)}
+function activateNoteTab(next){if(!['brief','enroute','debrief'].includes(next))return;tab=next;document.querySelectorAll('.tab').forEach(item=>item.classList.toggle('active',item.dataset.tab===tab));$('#notes').value=data.notes[tab]||'';document.querySelectorAll('.nav-item[data-note-tab]').forEach(item=>item.classList.toggle('active',item.dataset.noteTab===tab))}
+const defaultData=()=>({notes:{brief:'',enroute:'',debrief:''},tasks:[],aircraft:'A320',plan:null});
+let session=null,data=defaultData(),tab='brief',activePage='overview',pendingNote=null,localEditAt=0;
+let lobbyBusy=false,resumeTimer=null;
+let peer=null,connections=new Map(),peerConnected=false,remoteParticipants=new Map();
+let stateVersions={},localClock=0,remoteName='',remoteRole='PM';
+let currentPdf=null,currentPdfPage=1,currentPdfScale=1.15,currentPdfKey='',pdfRenderToken=0;
+const incomingTransfers=new Map(),airportRequests=new Map(),airportInfoCache=new Map();
+let currentSimPosition=null,remoteFlightPosition=null,routePosition=null,lastFlightPositionSent=0;
+function makeDeviceId(){if(crypto.randomUUID)return crypto.randomUUID();return [...crypto.getRandomValues(new Uint8Array(16))].map(byte=>byte.toString(16).padStart(2,'0')).join('')}
+let deviceId=localStorage.getItem(DEVICE_KEY)||makeDeviceId();localStorage.setItem(DEVICE_KEY,deviceId);
+function randomLobbyCode(){const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return [...crypto.getRandomValues(new Uint8Array(7))].map(byte=>alphabet[byte%alphabet.length]).join('')}
+function expandChecklistText(value,profile){return value.replace(/\{\{(fms|guidance|engine|specific)\}\}/g,(_,key)=>profile[key]||'aircraft add-on')}
+function tasksFor(type){const profile=profiles[type]||profiles.GENERIC;return checklistPhases.map((phase,index)=>({id:phase.id,text:phase.text,expanded:index===0,custom:false,flows:{PF:phase.PF.map(step=>({text:expandChecklistText(step.text,profile),help:expandChecklistText(step.help,profile),done:false})),PM:phase.PM.map(step=>({text:expandChecklistText(step.text,profile),help:expandChecklistText(step.help,profile),done:false}))}}))}
+function normalizeChecklistTasks(source,type){
+  if(!Array.isArray(source)||!source.length)return tasksFor(type);
+  const phases=[],legacy=[];
+  const cleanSteps=steps=>(Array.isArray(steps)?steps:[]).filter(step=>step&&typeof step.text==='string').slice(0,60).map(step=>({text:step.text.slice(0,240),help:String(step.help||'').slice(0,360),done:!!step.done}));
+  for(const task of source.slice(0,200)){
+    if(!task||typeof task.text!=='string')continue;
+    if(task.flows&&typeof task.flows==='object'){
+      phases.push({id:String(task.id||'custom').slice(0,80),text:task.text.slice(0,120),expanded:!!task.expanded,custom:!!task.custom,flows:{PF:cleanSteps(task.flows.PF),PM:cleanSteps(task.flows.PM)}});
+    }else{
+      legacy.push({text:task.text.slice(0,240),help:(Array.isArray(task.details)?task.details.filter(line=>typeof line==='string').join(' · '):'Saved from an earlier checklist.').slice(0,360),done:!!task.done});
+    }
+  }
+  const result=phases.length?phases:tasksFor(type);
+  // Preserve old checked states as old items, without marking newly added steps complete.
+  for(let index=0;index<legacy.length;index+=60)result.push({id:'legacy-'+index,text:'Saved checklist items',custom:true,expanded:false,flows:{PF:[],PM:legacy.slice(index,index+60)}});
+  return result;
+}
+function loadSessionState(code){
+  let saved=null;
+  try{saved=JSON.parse(localStorage.getItem(STATE_PREFIX+code)||'null')}catch{}
+  const previous=saved?.data;
+  const valid=previous&&typeof previous==='object'&&!Array.isArray(previous);
+  data=valid?previous:defaultData();
+  data.aircraft=Object.prototype.hasOwnProperty.call(profiles,data.aircraft)?data.aircraft:'A320';
+  data.notes=Object.fromEntries(['brief','enroute','debrief'].map(key=>[key,typeof data.notes?.[key]==='string'?data.notes[key]:'']));
+  if(data.plan)data.plan=compactSimBriefPlan(data.plan);
+  const oldTasks=JSON.stringify(data.tasks);
+  data.tasks=normalizeChecklistTasks(data.tasks,data.aircraft);
+  stateVersions=saved?.versions&&typeof saved.versions==='object'&&!Array.isArray(saved.versions)?saved.versions:{};
+  localClock=Math.max(0,Number(saved?.clock)||0,...Object.values(stateVersions).map(version=>Number(version?.clock)||0));
+  if(valid&&(oldTasks!==JSON.stringify(data.tasks)||!stateVersions.tasks))stateVersions.tasks={clock:++localClock,actor:deviceId};
+}
+function saveSessionState(){if(session)localStorage.setItem(STATE_PREFIX+session.code,JSON.stringify({data,versions:stateVersions,clock:localClock}))}
+function prepareSession(role,name,code,pilotRole){
+  session={code,name,role,pilotRole};loadSessionState(code);
+  if(!stateVersions.tasks)postPatch({aircraft:data.aircraft,tasks:data.tasks});
+  saveSessionState();
+  localStorage.setItem(SESSION_KEY,JSON.stringify(session));localStorage.setItem('sharedCockpitName',name);localStorage.setItem('sharedCockpitPilotRole',pilotRole);
+  return session;
+}
+function versionIsNewer(next,previous){if(!previous)return true;if(next.clock!==previous.clock)return next.clock>previous.clock;return String(next.actor)>String(previous.actor)}
+function fieldValue(key){return key.startsWith('notes.')?data.notes[key.slice(6)]:data[key]}
+function setFieldValue(key,value){if(key.startsWith('notes.'))data.notes[key.slice(6)]=value;else data[key]=value}
+function snapshotFields(){return Object.keys(stateVersions).map(key=>({key,value:structuredClone(fieldValue(key)),version:stateVersions[key]}))}
+function patchFields(patch){const fields=[];if(patch.notes)for(const [key,value] of Object.entries(patch.notes))if(['brief','enroute','debrief'].includes(key))fields.push(['notes.'+key,value]);for(const key of ['tasks','aircraft','plan'])if(Object.prototype.hasOwnProperty.call(patch,key))fields.push([key,patch[key]]);return fields}
+function postPatch(patch){if(!session)return;const fields=patchFields(patch).map(([key,value])=>{localClock++;const version={clock:localClock,actor:deviceId};stateVersions[key]=version;return{key,value:structuredClone(value),version}});saveSessionState();sendChannel({type:'patch',fields});$('#saved').textContent=peerConnected?'Synced with your pilots':'Saved locally · waiting for a peer'}
+function applyRemoteFields(fields){const applied=[];for(const item of fields||[]){if(!item||!item.version||!Number.isFinite(item.version.clock)||typeof item.version.actor!=='string')continue;const allowed=['notes.brief','notes.enroute','notes.debrief','tasks','aircraft','plan'];if(!allowed.includes(item.key))continue;if(item.key.startsWith('notes.')&&typeof item.value!=='string')continue;if(item.key==='tasks'&&!Array.isArray(item.value))continue;if(item.key==='aircraft'&&typeof item.value!=='string')continue;if(item.key==='plan'&&item.value!==null&&typeof item.value!=='object')continue;localClock=Math.max(localClock,item.version.clock);if(versionIsNewer(item.version,stateVersions[item.key])){let value=item.value;if(item.key==='tasks')value=normalizeChecklistTasks(value,data.aircraft||'A320');setFieldValue(item.key,value);stateVersions[item.key]=item.version;applied.push({key:item.key,value:structuredClone(value),version:item.version})}}if(applied.length){saveSessionState();applyState(data);$('#saved').textContent='Synced directly with your pilots'}return applied}
+function splitUtf8(text,maxBytes){const encoder=new TextEncoder(),chunks=[];let chunk='',size=0;for(const character of text){const bytes=encoder.encode(character).length;if(size+bytes>maxBytes){chunks.push(chunk);chunk='';size=0}chunk+=character;size+=bytes}if(chunk)chunks.push(chunk);return chunks}
+function waitForBufferSpace(channel){if(!channel||channel.bufferedAmount<512*1024)return Promise.resolve();channel.bufferedAmountLowThreshold=256*1024;return new Promise((resolve,reject)=>{let finished=false;const timeout=setTimeout(()=>finish(new Error('Timed out while sending updates.')),30000);function finish(error){if(finished)return;finished=true;clearTimeout(timeout);channel.removeEventListener('bufferedamountlow',check);channel.removeEventListener('close',closed);error?reject(error):resolve()}function check(){if(channel.readyState!=='open')finish(new Error('The P2P connection closed while sending.'));else if(channel.bufferedAmount<=channel.bufferedAmountLowThreshold)finish()}function closed(){finish(new Error('The P2P connection closed while sending.'))}channel.addEventListener('bufferedamountlow',check);channel.addEventListener('close',closed);check()})}
+async function sendToConnection(connection,message){if(!connection?.open)return;const channel=connection.dataChannel,text=JSON.stringify(message);try{if(new TextEncoder().encode(text).length<=MAX_CHUNK_BYTES){await waitForBufferSpace(channel);if(connection.open)connection.send(text);return}const parts=splitUtf8(text,MAX_CHUNK_BYTES),id=makeDeviceId();for(let index=0;index<parts.length;index++){await waitForBufferSpace(channel);if(!connection.open)throw new Error('The P2P connection closed while sending.');connection.send(JSON.stringify({type:'_scfd_chunk',id,index,total:parts.length,data:parts[index]}))}}catch(error){$('#saved').textContent='Could not send update: '+error.message}}
+function sendChannel(message,except=null){if(!session)return;const targets=session.role==='host'?[...connections.values()].filter(connection=>connection!==except):[...connections.values()].slice(0,1);return Promise.all(targets.filter(connection=>connection.open).map(connection=>sendToConnection(connection,message)))}
+function handleChannelText(raw,connection){let message;try{message=typeof raw==='string'?JSON.parse(raw):raw}catch{return}if(message?.type==='_scfd_chunk'){if(typeof message.id!=='string'||!Number.isInteger(message.index)||!Number.isInteger(message.total)||message.total<1||message.total>2000||message.index<0||message.index>=message.total||typeof message.data!=='string'||new TextEncoder().encode(message.data).length>MAX_CHUNK_BYTES)return;let transfer=incomingTransfers.get(message.id);if(!transfer){if(incomingTransfers.size>=4)return;transfer={total:message.total,parts:new Array(message.total),received:0,bytes:0};incomingTransfers.set(message.id,transfer)}if(transfer.total!==message.total){incomingTransfers.delete(message.id);return}if(transfer.parts[message.index]===undefined){transfer.parts[message.index]=message.data;transfer.received++;transfer.bytes+=new TextEncoder().encode(message.data).length}if(transfer.bytes>MAX_TRANSFER_BYTES){incomingTransfers.delete(message.id);$('#saved').textContent='Received update exceeded the size limit';return}if(transfer.received===transfer.total){incomingTransfers.delete(message.id);handleChannelText(transfer.parts.join(''),connection)}return}if(message?.type==='hello'){const id=connection?.peer||'host';remoteParticipants.set(id,{id,name:String(message.name||'Pilot').slice(0,30),role:message.role===PF?PF:PM});remoteName=String(message.name||'Pilot');remoteRole=message.role===PF?PF:PM;renderMembers();if(session?.role==='host')broadcastRoster()}else if(message?.type==='roster'&&session?.role==='join'){remoteParticipants.clear();for(const person of Array.isArray(message.participants)?message.participants:[])if(person&&person.id!==peer?.id)remoteParticipants.set(String(person.id),{id:String(person.id),name:String(person.name||'Pilot').slice(0,30),role:person.role===PF?PF:PM});renderMembers()}else if(message?.type==='position'&&message.position&&Number.isFinite(message.position.latitude)&&Number.isFinite(message.position.longitude)&&Math.abs(message.position.latitude)<=90&&Math.abs(message.position.longitude)<=180){remoteFlightPosition={latitude:message.position.latitude,longitude:message.position.longitude,at:message.position.at||Date.now()};if(session?.role==='host')sendChannel({type:'position',position:remoteFlightPosition},connection);if(!currentSimPosition?.connected){routePosition=remoteFlightPosition;renderFlightProgress()}}else if(message?.type==='rejected'){setStatus($('#gateerror'),String(message.message||'The lobby is full.'),true);connection?.close()}else if((message?.type==='snapshot'||message?.type==='patch')&&Array.isArray(message.fields)){const applied=applyRemoteFields(message.fields);if(session?.role==='host'&&applied.length)sendChannel({type:'patch',fields:applied},connection)}}
+function broadcastRoster(){if(session?.role!=='host')return;const participants=[{id:'host',name:session.name,role:session.pilotRole},...[...remoteParticipants.values()].map(person=>({id:person.id,name:person.name,role:person.role}))];sendChannel({type:'roster',participants})}
+function roleText(role){return role===PF?'Pilot Flying (PF)':'Pilot Monitoring (PM)'}
+function setConnection(message,connected=peerConnected){$('#connection').textContent=message;$('#p2pDot').classList.toggle('online',!!connected);$('#p2pDot').classList.toggle('offline',!connected)}
+
+function registerConnection(connection){if(session?.role==='host'&&connections.size>=4){connection.on('open',()=>{connection.send({type:'rejected',message:'This lobby already has four guests.'});connection.close()});return}const existing=connections.get(connection.peer);if(existing&&existing!==connection)existing.close();connections.set(connection.peer,connection);let opened=false;const onOpen=()=>{if(opened)return;opened=true;peerConnected=true;renderMembers();sendToConnection(connection,{type:'hello',name:session.name,role:session.pilotRole,isHost:session.role==='host'});sendToConnection(connection,{type:'snapshot',fields:snapshotFields()});if(session.role==='host'){remoteParticipants.set(connection.peer,{id:connection.peer,name:String(connection.metadata?.name||'Pilot'),role:connection.metadata?.role===PF?PF:PM});broadcastRoster()}$('#saved').textContent='P2P connected · syncing session'};connection.on('open',onOpen);connection.on('data',message=>handleChannelText(message,connection));connection.on('close',()=>{connections.delete(connection.peer);remoteParticipants.delete(connection.peer);peerConnected=[...connections.values()].some(item=>item.open);renderMembers();if(session?.role==='host')broadcastRoster();$('#saved').textContent=peerConnected?'A pilot disconnected · remaining pilots are connected':'Disconnected · changes are saved locally'});connection.on('error',error=>{$('#saved').textContent='P2P connection error: '+error.message});if(connection.open)queueMicrotask(onOpen)}
+function attachPeer(role,id){const options={host:'0.peerjs.com',port:443,path:'/',secure:true,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]}};peer=id?new Peer(id,options):new Peer(options);const instance=peer;instance.on('connection',connection=>registerConnection(connection));instance.on('disconnected',()=>{$('#saved').textContent='Signalling connection interrupted · existing P2P links may remain active'});instance.on('error',error=>{const message=error.type==='peer-unavailable'?'Lobby not found. Check the code and make sure the host is online.':error.type==='network'?'Could not reach the lobby service. Check the internet connection.':error.type==='unavailable-id'?'This lobby code is already in use. Create a new lobby.':error.message||'The lobby connection failed.';setStatus($('#gateerror'),message,true);$('#saved').textContent=message});return instance}
+function waitForPeerOpen(instance){
+  if(instance.open&&instance.id)return Promise.resolve(instance.id);
+  return new Promise((resolve,reject)=>{
+    let settled=false;
+    const cleanup=()=>{clearTimeout(timeout);instance.off('open',opened);instance.off('error',failed);instance.off('close',closed)};
+    const finish=(error,id)=>{if(settled)return;settled=true;cleanup();error?reject(error):resolve(id)};
+    const opened=id=>finish(null,id),failed=error=>finish(error),closed=()=>finish(new Error('Lobby connection closed. Please try again.'));
+    const timeout=setTimeout(()=>finish(new Error('Timed out connecting to the lobby service. Please try again.')),20000);
+    instance.once('open',opened);instance.once('error',failed);instance.once('close',closed);
+  });
+}
+function stopPeer(){
+  const previous=peer;peer=null;
+  for(const connection of connections.values())try{connection.close()}catch{}
+  connections.clear();try{previous?.destroy()}catch{}
+  peerConnected=false;remoteParticipants.clear();incomingTransfers.clear();
+}
+function setStatus(element,message,error=false){if(!element)return;element.textContent=message;element.classList.toggle('error',!!error)}
+function showDesk(){if(!session)return;$('#gate').classList.add('hidden');$('#desk').classList.remove('hidden');$('#sessionbar').classList.remove('hidden');$('#pairAgain').classList.remove('hidden');$('#who').textContent='You: '+session.name;$('#lobbyCode').textContent=session.code;$('#sessionRole').value=session.pilotRole;applyState(data);renderMembers();activatePage(activePage);refreshRouteInfo(true)}
+function showPairing(){clearTimeout(resumeTimer);stopPeer();renderMembers();$('#desk').classList.add('hidden');$('#sessionbar').classList.add('hidden');$('#gate').classList.remove('hidden');$('#gateerror').textContent='Create a lobby or join your pilots with the seven-character code.';$('#name').value=session?.name||localStorage.getItem('sharedCockpitName')||'';$('#gateRole').value=session?.pilotRole||localStorage.getItem('sharedCockpitPilotRole')||PM}
+function validName(){const name=$('#name').value.trim();if(!name){setStatus($('#gateerror'),'Enter your name.',true);$('#name').focus();return''}if(name.length>30){setStatus($('#gateerror'),'Use a name with 30 characters or fewer.',true);return''}localStorage.setItem('sharedCockpitName',name);return name}
+function selectedRole(){const role=$('#gateRole').value;localStorage.setItem('sharedCockpitPilotRole',role);return role===PF?PF:PM}
+function setLobbyBusy(busy){
+  lobbyBusy=busy;
+  for(const id of ['create','join','resumeLocal'])$('#'+id).disabled=busy;
+  $('#create').textContent=busy?'Connecting…':'Create lobby';
+}
+function lobbyFailed(error,fallback){
+  stopPeer();
+  $('#desk').classList.add('hidden');$('#sessionbar').classList.add('hidden');$('#gate').classList.remove('hidden');
+  setStatus($('#gateerror'),error?.message||fallback,true);
+}
+async function createLobby(){
+  if(lobbyBusy)return;clearTimeout(resumeTimer);setLobbyBusy(true);
+  try{
+    const name=validName();if(!name)return;const role=selectedRole();
+    stopPeer();setStatus($('#gateerror'),'Opening a private lobby…');
+    let opened=false;
+    for(let attempt=0;attempt<5&&!opened;attempt++){
+      const code=randomLobbyCode();prepareSession('host',name,code,role);
+      const instance=attachPeer('host',code);
+      try{await waitForPeerOpen(instance);opened=true}catch(error){try{instance.destroy()}catch{}if(peer===instance)peer=null;if(error.type!=='unavailable-id')throw error}
+    }
+    if(!opened)throw new Error('Could not reserve a lobby code. Please try again.');
+    showDesk();setStatus($('#saved'),'Lobby open. Your pilots can join with the code shown above.');setStatus($('#gateerror'),'');
+  }catch(error){lobbyFailed(error,'Could not create the lobby. Please try again.')}finally{setLobbyBusy(false)}
+}
+async function joinLobby(){
+  if(lobbyBusy)return;clearTimeout(resumeTimer);setLobbyBusy(true);
+  try{
+    const name=validName();if(!name)return;const code=$('#lobbyCodeInput').value.trim().toUpperCase();
+    if(!ROOM_RE.test(code)){setStatus($('#gateerror'),'Enter the seven-character lobby code.',true);$('#lobbyCodeInput').focus();return}
+    const role=selectedRole();stopPeer();prepareSession('join',name,code,role);setStatus($('#gateerror'),'Connecting to lobby…');
+    const instance=attachPeer('join');await waitForPeerOpen(instance);
+    const connection=instance.connect(code,{label:'shared-cockpit',reliable:true,serialization:'json'});registerConnection(connection);
+    showDesk();setConnection('Connecting to host',false);setStatus($('#saved'),'Connecting directly to the lobby host…');
+  }catch(error){lobbyFailed(error,'Could not join the lobby. Please try again.')}finally{setLobbyBusy(false)}
+}
+async function resumeSavedSession(){
+  if(lobbyBusy||!session||!ROOM_RE.test(session.code)||!['host','join'].includes(session.role))return;
+  clearTimeout(resumeTimer);setLobbyBusy(true);
+  try{
+    stopPeer();loadSessionState(session.code);saveSessionState();setStatus($('#gateerror'),'Reopening saved lobby…');
+    const instance=attachPeer(session.role,session.role==='host'?session.code:undefined);await waitForPeerOpen(instance);
+    if(session.role==='join'){const connection=instance.connect(session.code,{label:'shared-cockpit',reliable:true,serialization:'json'});registerConnection(connection)}
+    showDesk();setStatus($('#saved'),session.role==='host'?'Lobby reopened. Your pilots can join with the saved code.':'Rejoining your saved lobby…');
+  }catch(error){lobbyFailed(error,'Could not reopen the saved lobby.');$('#resumeLocal').classList.remove('hidden')}finally{setLobbyBusy(false)}
+}
+function setPilotRole(role){if(!session)return;session.pilotRole=role===PF?PF:PM;localStorage.setItem(SESSION_KEY,JSON.stringify(session));localStorage.setItem('sharedCockpitPilotRole',session.pilotRole);renderMembers();renderTasks();sendChannel({type:'hello',name:session.name,role:session.pilotRole,isHost:session.role==='host'});if(session.role==='host')broadcastRoster()}
+async function copyText(text,button){try{await window.cockpitDesktop.copyText(text);const previous=button.textContent;button.textContent='Copied';setTimeout(()=>button.textContent=previous,1300)}catch{setStatus($('#saved'),'Copy failed. Select the code and press Ctrl+C.',true)}}
+function first(object,paths){for(const path of paths){const value=path.split('.').reduce((current,key)=>current?.[key],object);if(value!==undefined&&value!==null&&value!==''&&typeof value!=='object')return String(value)}return''}
+function getPlanAirport(plan,type){return first(plan,[`${type}.icao_code`,`${type}.icao`,`${type}.icao_code.value`]).toUpperCase()}
+function displayAirportInfo(code,prefix,info){
+  if(!info)return;
+  const name=$('#'+prefix+'Name'),metar=$('#'+prefix+'Metar'),atc=$('#'+prefix+'Atc');
+  name.textContent=info.name||'Airport name unavailable';
+  const report=String(info.metar||'').trim(),kind=/^SPECI\b/i.test(report)?'SPECI':'METAR';
+  metar.textContent=report?`${kind} ${report.replace(/^(?:METAR|SPECI)\s+/i,'')}`:'No current METAR available';
+  atc.innerHTML=Array.isArray(info.controllers)?(info.controllers.length?info.controllers.slice(0,8).map(controller=>`<li>${esc(controller.callsign)} · ${esc(controller.frequency)} MHz · ${controller.distance} NM</li>`).join(''):'<li>No active VATSIM ATC within 100 NM</li>'):'<li>Loading VATSIM ATC…</li>';
+}
+async function loadAirportInfo(code,prefix,fields={metar:true,atc:true},force=false){
+  if(!code)return;
+  const now=Date.now(),cached=airportInfoCache.get(code)||{data:{},nameAt:0,metarAt:0,atcAt:0};
+  const needName=!cached.data.name||!cached.data.latitude||!cached.data.longitude;
+  const needMetar=!!fields.metar&&(force||!cached.metarAt||now-cached.metarAt>=15*60_000);
+  const needAtc=!!fields.atc&&(force||!cached.atcAt||now-cached.atcAt>=5*60_000);
+  if(!needName&&!needMetar&&!needAtc){displayAirportInfo(code,prefix,cached.data);renderFlightProgress();return}
+  const requestKey=`${code}:${needMetar?1:0}:${needAtc?1:0}:${needName?1:0}`;
+  if(airportRequests.has(requestKey)){displayAirportInfo(code,prefix,cached.data);try{displayAirportInfo(code,prefix,await airportRequests.get(requestKey))}catch{}return}
+  const request=(async()=>{
+    const result=await window.cockpitDesktop.getAirportInfo(code,{metar:needMetar,atc:needAtc});
+    if(!result.ok)throw new Error(result.error||'Airport details unavailable.');
+    const next={...cached.data,...result.data};
+    if(!needMetar&&cached.data.metar!==undefined)next.metar=cached.data.metar;
+    if(!needAtc&&cached.data.controllers!==undefined)next.controllers=cached.data.controllers;
+    cached.data=next;if(needName)cached.nameAt=Date.now();if(needMetar)cached.metarAt=Date.now();if(needAtc)cached.atcAt=Date.now();
+    airportInfoCache.set(code,cached);return next;
+  })();
+  airportRequests.set(requestKey,request);displayAirportInfo(code,prefix,cached.data);
+  try{const info=await request;displayAirportInfo(code,prefix,info);renderFlightProgress()}
+  catch(error){displayAirportInfo(code,prefix,{...cached.data,metar:needMetar?error.message:cached.data.metar});}
+  finally{airportRequests.delete(requestKey)}
+}
+function refreshRouteInfo(force=false,only=null){
+  if(!data.plan)return;
+  const origin=getPlanAirport(data.plan,'origin'),destination=getPlanAirport(data.plan,'destination');
+  const fields=only==='metar'?{metar:true,atc:false}:only==='atc'?{metar:false,atc:true}:{metar:true,atc:true};
+  loadAirportInfo(origin,'orig',fields,force);if(destination!==origin)loadAirportInfo(destination,'dest',fields,force);
+}
+function flightDistanceNm(a,b){const r=3440.065,rad=value=>value*Math.PI/180,dLat=rad(b.latitude-a.latitude),dLon=rad(b.longitude-a.longitude),lat1=rad(a.latitude),lat2=rad(b.latitude),h=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;return r*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h))}
+function renderFlightProgress(){
+  const label=$('#routeProgress'),track=$('#routeTrack');if(!label||!track)return;
+  const origin=airportInfoCache.get(getPlanAirport(data.plan||{},'origin'))?.data,destination=airportInfoCache.get(getPlanAirport(data.plan||{},'destination'))?.data,position=routePosition;
+  if(!data.plan){label.textContent='Flight progress · waiting for flight plan';track.style.setProperty('--flight-progress','0%');return}
+  if(!origin||!destination||!Number.isFinite(origin.latitude)||!Number.isFinite(destination.latitude)){label.textContent='Flight progress · loading airport coordinates';return}
+  if(!position||!Number.isFinite(position.latitude)||!Number.isFinite(position.longitude)){label.textContent='Flight progress · waiting for live simulator position';track.style.setProperty('--flight-progress','0%');return}
+  const rad=value=>value*Math.PI/180,clamp=(value,min,max)=>Math.max(min,Math.min(max,value)),distance=flightDistanceNm(origin,destination),fromStart=flightDistanceNm(origin,position);
+  const bearing=(a,b)=>{const p1=rad(a.latitude),p2=rad(b.latitude),dl=rad(b.longitude-a.longitude);return Math.atan2(Math.sin(dl)*Math.cos(p2),Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl))};
+  const delta=bearing(origin,position)-bearing(origin,destination),along=Math.atan2(Math.sin(fromStart/3440.065)*Math.cos(delta),Math.cos(fromStart/3440.065))*3440.065;
+  const fraction=distance>0?clamp(along/distance,0,1):0,totalText=first(data.plan,['general.route_distance','general.distance']),total=Number.parseFloat(totalText.replace(/[^0-9.].*$/,''))||distance,flown=Math.round(total*fraction),percent=Math.round(fraction*100);
+  track.style.setProperty('--flight-progress',`${percent}%`);label.textContent=percent>=100?'Arriving · 100% complete':`Progress ${percent}% · ${flown} NM flown`;
+}
+async function pollSimPosition(){
+  try{currentSimPosition=await window.cockpitDesktop.getSimPosition();}catch{currentSimPosition={connected:false}}
+  routePosition=currentSimPosition?.connected?currentSimPosition:remoteFlightPosition;
+  if(currentSimPosition?.connected&&Number.isFinite(currentSimPosition.latitude)&&Number.isFinite(currentSimPosition.longitude)&&Date.now()-lastFlightPositionSent>=3000){lastFlightPositionSent=Date.now();sendChannel({type:'position',position:{latitude:currentSimPosition.latitude,longitude:currentSimPosition.longitude,at:Date.now()}})}
+  renderFlightProgress();
+}
+async function fetchFsuipcStatus(){try{const [status,position]=await Promise.all([window.cockpitDesktop.getFsuipcStatus(),window.cockpitDesktop.getSimPosition()]);const connected=!!position.connected,dot=$('#fsuipcDot'),label=$('#fsuipcLabel'),badge=$('#fsuipcBadge');dot.classList.toggle('online',connected);dot.classList.toggle('offline',!connected);label.textContent=connected?'FSUIPC7 / SimConnect connected':status.running?'FSUIPC7 running · waiting for simulator data':'FSUIPC7 / SimConnect disconnected';badge.title=connected?'Live aircraft position received from FSUIPC7.':status.detail||'';currentSimPosition=position;renderReadiness()}catch{}}
+function renderMembers(){const others=[...remoteParticipants.values()];const people=[{name:session?.name||'',role:session?.pilotRole||PM},...others];$('#avatars').innerHTML=people.filter(person=>person.name).map(person=>`<span class="avatar" title="${esc(person.name)} · ${roleText(person.role)}">${esc(person.name.slice(0,2).toUpperCase())}</span>`).join('');peerConnected=[...connections.values()].some(connection=>connection.open);if(peerConnected)setConnection(`${others.length} pilot${others.length===1?'':'s'} connected`,true);else if(session?.role==='host')setConnection('Lobby open · waiting for pilots',false);else if(session)setConnection('Connecting to lobby',false);$('#myrole').textContent=session?`You: ${session.name} · ${roleText(session.pilotRole)}`:'';if($('#sessionRole')&&session)$('#sessionRole').value=session.pilotRole;renderReadiness()}
+function applyState(next){data=next||data;if(!data.notes)data.notes={brief:'',enroute:'',debrief:''};if(!data.aircraft||!profiles[data.aircraft])data.aircraft='GENERIC';data.tasks=normalizeChecklistTasks(data.tasks,data.aircraft);$('#aircraftSelect').value=data.aircraft;$('#aircraftBadge').textContent=labels[data.aircraft]||data.aircraft;$('#aircraftShort').textContent=data.aircraft;$('#notes').value=(Date.now()-localEditAt<1800&&document.activeElement===$('#notes'))?$('#notes').value:(data.notes[tab]||'');renderTasks();renderPlan();renderReadiness()}
+function renderTasks(){const localRole=session?.pilotRole||PM;$('#tasks').innerHTML=(data.tasks||[]).map((phase,index)=>{const total=phase.flows.PF.length+phase.flows.PM.length,done=[...phase.flows.PF,...phase.flows.PM].filter(step=>step.done).length;return `<section class="task ${phase.expanded?'expanded':''}"><div class="task-row"><button class="detail-toggle phase-toggle" type="button" data-expand="${index}" aria-expanded="${!!phase.expanded}"><span class="task-arrow">›</span><strong>${esc(phase.text)}</strong><span class="phase-count">${done}/${total}</span></button>${phase.custom?`<button type="button" class="task-remove" data-remove="${index}" aria-label="Remove custom tasks">×</button>`:''}</div><div class="task-details"><div class="role-flows">${['PF','PM'].map(role=>`<section class="role-flow" data-current="${role===localRole}"><h3>${role==='PF'?'Pilot Flying (PF)':'Pilot Monitoring (PM)'}${role===localRole?'<span>YOUR FLOW</span>':''}</h3>${phase.flows[role].map((step,stepIndex)=>`<label class="flow-item"><input type="checkbox" data-phase="${index}" data-flow="${role}" data-step="${stepIndex}" ${step.done?'checked':''}><span><b>${esc(step.text)}</b><small>${esc(step.help)}</small></span></label>`).join('')}</section>`).join('')}</div></div></section>`}).join('')||'<span class="muted small">No checklist items yet.</span>';document.querySelectorAll('#tasks input[data-phase]').forEach(input=>input.onchange=()=>{data.tasks[Number(input.dataset.phase)].flows[input.dataset.flow][Number(input.dataset.step)].done=input.checked;renderTasks();postPatch({tasks:data.tasks})});document.querySelectorAll('[data-expand]').forEach(button=>button.onclick=()=>{const phase=data.tasks[Number(button.dataset.expand)];phase.expanded=!phase.expanded;renderTasks();postPatch({tasks:data.tasks})});document.querySelectorAll('[data-remove]').forEach(button=>button.onclick=()=>{data.tasks.splice(Number(button.dataset.remove),1);renderTasks();postPatch({tasks:data.tasks})});renderReadiness()}
+function renderReadiness(){const box=$('#readiness');if(!box)return;const steps=(data.tasks||[]).flatMap(phase=>[...(phase?.flows?.PF||[]),...(phase?.flows?.PM||[])]),done=steps.filter(step=>step.done).length,people=[{name:session?.name,role:session?.pilotRole},...remoteParticipants.values()],pf=people.some(person=>person.role==='PF'),pm=people.some(person=>person.role==='PM');const items=[['Flight plan',!!data.plan,'flight-plan'],['PF assigned',pf,'overview'],['PM assigned',pm,'overview'],['P2P connection',peerConnected,'overview'],['Simulator position',!!currentSimPosition?.connected,'overview']];box.innerHTML=`<div class="readiness-head"><div><h2>Flight readiness</h2><p class="muted small">A quick check before departure</p></div><strong>${done}/${steps.length} checklist items</strong></div><div class="readiness-progress"><span style="width:${steps.length?Math.round(done/steps.length*100):0}%"></span></div><div class="readiness-grid">${items.map(([name,ok,page])=>`<button class="readiness-item" data-ready-page="${page}"><i class="dot ${ok?'online':'offline'}"></i><span>${esc(name)}</span><b>${ok?'Ready':'Waiting'}</b></button>`).join('')}</div>`;box.querySelectorAll('[data-ready-page]').forEach(button=>button.onclick=()=>activatePage(button.dataset.readyPage))}
+function compactSimBriefPlan(source){
+  const slim={};
+  const paths=['general.callsign','general.flight_number','general.icao_airline','general.airline','general.route_distance','general.distance','origin.icao_code','origin.icao','origin.name','destination.icao_code','destination.icao','destination.name','times.sched_block','times.est_time_enroute','times.enroute_time','aircraft.icaocode','aircraft.icao_code','aircraft.icaotype','aircraft.name','files.directory','files.pdf.link'];
+  for(const path of paths){let value=source;for(const key of path.split('.'))value=value?.[key];if(value===undefined||value===null)continue;let target=slim;const keys=path.split('.');for(const key of keys.slice(0,-1))target=target[key]||(target[key]={});target[keys.at(-1)]=value}
+  return slim;
+}
+function callsignFor(plan){const direct=first(plan,['general.callsign','general.atc_callsign']);if(/[a-z]/i.test(direct))return direct.toUpperCase();const number=first(plan,['general.flight_number']);if(/[a-z]/i.test(number))return number.toUpperCase();const airline=first(plan,['general.icao_airline','general.airline']);return (airline&&number?airline+number:number||direct).toUpperCase()}
+function renderPlan(){const plan=data.plan;if(!plan){renderReadiness();return}const origin=getPlanAirport(plan,'origin')||'—',destination=getPlanAirport(plan,'destination')||'—';$('#orig').textContent=origin;$('#dest').textContent=destination;$('#flightno').textContent=callsignFor(plan)||'—';$('#time').textContent=first(plan,['times.sched_block','times.est_time_enroute','times.enroute_time'])||'—';const distance=first(plan,['general.route_distance','general.distance']);$('#distance').textContent=distance?distance+' NM':'—';$('#ofpmeta').textContent=`${origin} → ${destination} · ${labels[data.aircraft]||data.aircraft}`;$('#showofp').disabled=!plan.files?.pdf?.link;refreshRouteInfo();renderReadiness()}
+async function showFlightPlan(){if(!data.plan)return;activatePage('flight-plan');$('#ofpCard').classList.remove('hidden');$('#ofpCard').scrollIntoView({behavior:'smooth',block:'start'});const key=String(data.plan.files?.pdf?.link||'');if(!key){$('#pdfStatus').textContent='This flight plan has no PDF link. Import a SimBrief OFP that includes a PDF.';return}if(currentPdf&&currentPdfKey===key){await renderPdfPage();return}$('#pdfStatus').textContent='Downloading the SimBrief PDF…';$('#pdfCanvas').classList.add('hidden');try{const result=await window.cockpitDesktop.fetchSimbriefPdf(data.plan);if(!result.ok)throw new Error(result.error||'Could not download the flight plan PDF.');const binary=atob(result.pdf);const bytes=new Uint8Array(binary.length);for(let index=0;index<binary.length;index++)bytes[index]=binary.charCodeAt(index);currentPdf=await window.pdfjsLib.getDocument({data:bytes,isEvalSupported:false}).promise;currentPdfKey=key;currentPdfPage=1;currentPdfScale=1.15;$('#pdfCanvas').classList.remove('hidden');await renderPdfPage()}catch(error){$('#pdfStatus').textContent=error.message||'Could not display the flight plan PDF.'}}
+async function renderPdfPage(){if(!currentPdf)return;const token=++pdfRenderToken;try{const page=await currentPdf.getPage(currentPdfPage);if(token!==pdfRenderToken)return;const viewport=page.getViewport({scale:currentPdfScale}),canvas=$('#pdfCanvas'),context=canvas.getContext('2d'),ratio=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.floor(viewport.width*ratio);canvas.height=Math.floor(viewport.height*ratio);canvas.style.width=`${viewport.width}px`;canvas.style.height=`${viewport.height}px`;context.setTransform(ratio,0,0,ratio,0,0);$('#pdfPage').textContent=`Page ${currentPdfPage} of ${currentPdf.numPages}`;$('#pdfStatus').textContent='';$('#pdfPrev').disabled=currentPdfPage<=1;$('#pdfNext').disabled=currentPdfPage>=currentPdf.numPages;await page.render({canvasContext:context,viewport}).promise}catch(error){$('#pdfStatus').textContent=error.message||'Could not render this PDF page.'}}
+function updatePilotRole(role){if(session)setPilotRole(role);else{$('#gateRole').value=role;localStorage.setItem('sharedCockpitPilotRole',role)}}
+function connectInviteHandlers(){
+  $('#create').onclick=createLobby;
+  $('#joinForm').onsubmit=event=>{event.preventDefault();joinLobby()};
+  $('#pairAgain').onclick=showPairing;
+  $('#leave').onclick=showPairing;
+  $('#resumeLocal').onclick=resumeSavedSession;
+  document.querySelectorAll('.nav-item').forEach(button=>button.onclick=()=>activatePage(button.dataset.page,button.dataset.noteTab||null));
+  $('#copyLobbyCode').onclick=()=>copyText(session?.code||'',$('#copyLobbyCode'));
+  $('#gateRole').onchange=()=>localStorage.setItem('sharedCockpitPilotRole',$('#gateRole').value);
+  $('#sessionRole').onchange=()=>updatePilotRole($('#sessionRole').value);
+  $('#name').value=localStorage.getItem('sharedCockpitName')||'';
+  $('#gateRole').value=localStorage.getItem('sharedCockpitPilotRole')||PM;
+  $('#notes').addEventListener('input',()=>{data.notes[tab]=$('#notes').value;localEditAt=Date.now();$('#saved').textContent='Saving locally…';clearTimeout(pendingNote);pendingNote=setTimeout(()=>postPatch({notes:{[tab]:data.notes[tab]}}),260)});
+  document.querySelectorAll('.tab').forEach(button=>button.onclick=()=>activateNoteTab(button.dataset.tab));
+  $('#aircraftSelect').onchange=()=>{data.aircraft=$('#aircraftSelect').value;data.tasks=tasksFor(data.aircraft);applyState(data);postPatch({aircraft:data.aircraft,tasks:data.tasks})};
+  $('#resetTasks').onclick=()=>{data.tasks=tasksFor(data.aircraft);renderTasks();postPatch({tasks:data.tasks})};
+  $('#addtask').onclick=()=>{const text=prompt('Enter a crew task:');if(text&&text.trim()){let phase=data.tasks.find(item=>item.custom);if(!phase){phase={id:'custom',text:'Crew-added tasks',custom:true,expanded:true,flows:{PF:[],PM:[]}};data.tasks.push(phase)}phase.expanded=true;phase.flows[session?.pilotRole||PM].push({text:text.trim().slice(0,240),help:'Crew-added reminder. Agree the correct aircraft-specific action together.',done:false});renderTasks();postPatch({tasks:data.tasks})}};
+  $('#simform').onsubmit=async event=>{event.preventDefault();const id=$('#simid').value.trim();setStatus($('#simstatus'),'Fetching the flight plan from SimBrief…');$('#importLabel').textContent='Loading…';try{const result=await window.cockpitDesktop.fetchSimbrief(id);if(!result.ok)throw new Error(result.error||'Could not fetch the flight plan.');const rawPlan=result.data,plan=compactSimBriefPlan(rawPlan),origin=getPlanAirport(plan,'origin'),destination=getPlanAirport(plan,'destination'),type=aircraftType(plan);data.plan=plan;data.aircraft=type;data.tasks=tasksFor(type);applyState(data);postPatch({plan,aircraft:type,tasks:data.tasks});$('#ofpmeta').textContent=`${origin||'—'} → ${destination||'—'} · ${labels[type]||type}`;$('#importLabel').textContent='Imported';setStatus($('#simstatus'),peerConnected?'Plan imported and synced directly.':'Plan imported and saved locally.')}catch(error){setStatus($('#simstatus'),error.message,true);$('#importLabel').textContent='Import failed'}};
+  $('#showofp').onclick=showFlightPlan;
+  $('#closeOfp').onclick=()=>$('#ofpCard').classList.add('hidden');
+  $('#pdfPrev').onclick=()=>{if(currentPdf&&currentPdfPage>1){currentPdfPage--;renderPdfPage()}};
+  $('#pdfNext').onclick=()=>{if(currentPdf&&currentPdfPage<currentPdf.numPages){currentPdfPage++;renderPdfPage()}};
+  $('#pdfZoomOut').onclick=()=>{currentPdfScale=Math.max(.65,currentPdfScale-.15);renderPdfPage()};
+  $('#pdfZoomIn').onclick=()=>{currentPdfScale=Math.min(2.2,currentPdfScale+.15);renderPdfPage()};
+}
+function aircraftType(plan){const raw=first(plan,['aircraft.icaocode','aircraft.icao_code','aircraft.icaotype','aircraft.name','general.aircraft']).toUpperCase().replace(/[^A-Z0-9]/g,'');if(raw.includes('A320')||raw.includes('A20N')||raw.includes('A319')||raw.includes('A321'))return'A320';if(raw.includes('B738')||raw.includes('B737')||raw.includes('B739')||raw.includes('B38M'))return'B738';if(raw.includes('B789')||raw.includes('B788')||raw.includes('B78X'))return'B789';if(raw.includes('B77'))return'B77W';if(raw.includes('A359')||raw.includes('A35'))return'A359';if(raw.includes('DH8')||raw.includes('Q400')||raw.includes('AT76'))return'DH8D';if(raw.includes('C172'))return'C172';return'GENERIC'}
+const labels={A320:'Airbus A320',B738:'Boeing 737',B789:'Boeing 787',B77W:'Boeing 777',A359:'Airbus A350',DH8D:'Dash 8 Q400',C172:'Cessna 172',GENERIC:'Other aircraft'};
+function initializeSavedSession(){try{const saved=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');if(saved?.code&&saved?.name){session=saved;$('#name').value=saved.name;$('#gateRole').value=saved.pilotRole||localStorage.getItem('sharedCockpitPilotRole')||PM;loadSessionState(saved.code);if(ROOM_RE.test(saved.code)&&['host','join'].includes(saved.role)){$('#resumeLocal').classList.remove('hidden');$('#resumeLocal').textContent='Reopen saved lobby';resumeTimer=setTimeout(()=>resumeSavedSession(),700)}else setStatus($('#gateerror'),'This is an older local session. Create a new lobby to connect with a short code.')}}catch{}}
+if(window.pdfjsLib?.GlobalWorkerOptions)window.pdfjsLib.GlobalWorkerOptions.workerSrc=new URL('vendor/pdfjs-worker.bundle.js',window.location.href).toString();
+connectInviteHandlers();
+window.cockpitDesktop.getAppInfo?.().then(info=>{if(info?.displayVersion){$('#appVersion').textContent=info.displayVersion;$('#appVersion').title='Build '+info.version}}).catch(()=>{});
+initializeSavedSession();
+setConnection('P2P disconnected',false);
+fetchFsuipcStatus();
+setInterval(fetchFsuipcStatus,5000);
+pollSimPosition();
+setInterval(pollSimPosition,1500);
+setInterval(()=>refreshRouteInfo(false,'metar'),15*60_000);
+setInterval(()=>refreshRouteInfo(false,'atc'),5*60_000);
+
+</script></body></html>

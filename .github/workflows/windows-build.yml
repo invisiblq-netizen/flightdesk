@@ -1,0 +1,44 @@
+name: Windows alpha build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check lobby regression cases
+        run: pnpm test
+      - name: Build simulator helper
+        run: pnpm build:helper
+      - name: Build Windows installer
+        run: pnpm dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-cockpit-windows-alpha
+          path: dist/*.exe
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,30 @@
+name: Alpha bug report
+description: Report a problem with Shared Cockpit Flight Desk.
+body:
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Find the full build number in Help → About.
+      placeholder: 0.3.1-alpha.1
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include which PC hosted or joined, and whether you reopened a saved lobby.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected and actual result
+      description: Include the exact error text if there is one.
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: Setup
+      description: Windows version, simulator, aircraft add-on and FSUIPC7 version if relevant.
