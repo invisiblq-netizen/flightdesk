@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1-alpha.2 — Alpha 0.3.1
+
+- Avoid installing a separate uninstaller icon file that could fail with “Error opening file for writing: uninstallericon.ico” in restricted install folders. The app and setup icons remain unchanged.
+
 ## 0.3.1-alpha.1 — Alpha 0.3.1
 
 - Fixed Create lobby becoming unresponsive when an older saved checklist was loaded.
