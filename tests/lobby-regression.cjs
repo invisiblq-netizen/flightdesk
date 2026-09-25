@@ -107,7 +107,7 @@ async function run() {
   assert.equal(join.nodes.get('desk').classList.contains('hidden'),false);
   assert.equal(join.eval('session.role'),'join');
   assert.equal(join.eval('data.notes.brief'),'Keep this briefing');
-  assert.match(join.nodes.get('tasks').innerHTML,/Preliminary Cockpit Prep/);
+  assert.match(join.nodes.get('phaseNav').innerHTML,/Preliminary Cockpit Prep/,'The joined checklist must render its operational phase navigation');
   assert.equal(join.peers.length,1);
   assert.equal(join.peers[0].connections.length,1);
   assert.equal(join.peers[0].connections[0].peer,savedSession.code);
