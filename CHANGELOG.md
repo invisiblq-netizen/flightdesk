@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1-alpha.5 — Alpha 0.3.1
+
+- Add separate aircraft-specific PF and PM simulator checklist flows.
+- Make the other pilot's flow read-only unless the crew role is changed.
+- Lock checklist phases in sequence and open the next phase when both flows are complete.
+- Document the research sources and aircraft-specific limits.
+
 ## 0.3.1-alpha.4 — Alpha 0.3.1
 
 - Stop automatically reconnecting to the previous lobby when the app opens.

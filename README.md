@@ -4,7 +4,7 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.3.1** · Build `0.3.1-alpha.4` · Windows x64
+**Alpha 0.3.1** · Build `0.3.1-alpha.5` · Windows x64
 
 ## Features
 
@@ -13,11 +13,12 @@ A Windows companion app for shared cockpit flying: import a SimBrief flight plan
 - Choose Pilot Flying (PF) or Pilot Monitoring (PM), and switch roles during flight.
 - Import the latest generated SimBrief OFP and view its PDF inside the app.
 - Expand flight phases into separate PF/PM tasks with short explanations.
+- Provide aircraft-specific PF/PM simulator reminders; only your selected role is editable, and phases unlock when both sides finish.
 - View airport names, METAR, nearby VATSIM controllers and frequencies.
 - Follow route progress using an included FSUIPC7 position bridge.
 - Navigate between Flight Board, Flight Plan, Checklist and crew notes.
 
-The aircraft profiles adapt the terminology of simulator crew flows. They are not complete aircraft/operator checklists; use the selected add-on's procedures for exact actions and limits.
+The checklist content and its source notes are documented in [docs/CHECKLIST-SOURCES.md](docs/CHECKLIST-SOURCES.md). These are simulator training reminders, not operational checklists; always use the exact aircraft/add-on procedures and limits.
 
 ## Install and use
 
@@ -53,7 +54,7 @@ The repository uses `pnpm-lock.yaml`. Do not replace it with an npm-generated lo
 
 ### Reuse the prebuilt helper
 
-To skip compiling the helper, download the matching `FlightPositionBridge-0.3.1-alpha.4-win-x64.zip` Release asset and extract it into the project root. It creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
+To skip compiling the helper, download the matching `FlightPositionBridge-0.3.1-alpha.5-win-x64.zip` Release asset and extract it into the project root. It creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
 
 The helper EXE is larger than GitHub's normal Git file limit. Its source belongs in this repo; the prebuilt archive belongs in Releases. The `publish` folder is ignored by Git.
 
@@ -63,7 +64,7 @@ The helper EXE is larger than GitHub's normal Git file limit. Its source belongs
 pnpm dist
 ```
 
-Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.3.1-alpha.4.exe`.
+Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.3.1-alpha.5.exe`.
 
 `pnpm dist` expects the helper to exist. It bundles the checked-in renderer assets and never publishes a release automatically. This project currently packages Windows only.
 
