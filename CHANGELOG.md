@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1-alpha.8 — Alpha 0.3.1
+
+- Move note templates below the text editor and provide separate templates for Briefing, Enroute and Debrief.
+
 ## 0.3.1-alpha.7 — Alpha 0.3.1
 
 - Add a synchronized crew handover and flight-event log with a flight timeline and route-progress milestones.

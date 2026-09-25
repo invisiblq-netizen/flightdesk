@@ -2,7 +2,7 @@
 
 ## Current state
 
-The Windows app is in alpha testing. Version `0.3.1-alpha.7` displays as **Alpha 0.3.1**. Keep `package.json` as the version source. Preserve the package name, app ID and product name when updating so installation and local storage continue using the existing identity.
+The Windows app is in alpha testing. Version `0.3.1-alpha.8` displays as **Alpha 0.3.1**. Keep `package.json` as the version source. Preserve the package name, app ID and product name when updating so installation and local storage continue using the existing identity.
 
 The earlier installer used version 1.3.0 before alpha numbering was introduced. The current NSIS installer is configured to preserve application data.
 
