@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('cockpitDesktop', {
   fetchSimbriefPdf: (plan) => ipcRenderer.invoke('fetch-simbrief-pdf', plan),
   getAirportInfo: (icao, options) => ipcRenderer.invoke('get-airport-info', icao, options),
   getRouteAtc: (origin, destination) => ipcRenderer.invoke('get-route-atc', origin, destination),
+  getVatsimFlight: (origin, destination) => ipcRenderer.invoke('get-vatsim-flight', origin, destination),
   getFsuipcStatus: () => ipcRenderer.invoke('get-fsuipc-status'),
   getSimPosition: () => ipcRenderer.invoke('get-sim-position'),
   copyText: (text) => ipcRenderer.invoke('clipboard-write', text)

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1-alpha.9 — Alpha 0.3.1
+
+- Detect flight timeline milestones automatically from FSUIPC telemetry: pushback, taxi, takeoff, climb, cruise, descent, approach, landing and parking.
+- Add a VATSIM live-flight match using simulator position and the filed route, including callsign, aircraft type, filed registration, altitude, groundspeed and locally tuned COM1 frequency.
+- Refresh public VATSIM live data on its 15-second feed interval.
+
 ## 0.3.1-alpha.8 — Alpha 0.3.1
 
 - Move note templates below the text editor and provide separate templates for Briefing, Enroute and Debrief.

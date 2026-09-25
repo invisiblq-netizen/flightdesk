@@ -85,7 +85,7 @@ async function getAirportInfo(icao, options = {}) {
         ]);
         if (!feedResponse.ok || !transceiverResponse.ok) throw new Error('VATSIM feed unavailable.');
         const [feed, transceivers] = await Promise.all([feedResponse.json(), transceiverResponse.json()]);
-        vatsimCache = { expiresAt: Date.now() + 5 * 60_000, feed, transceivers };
+        vatsimCache = { expiresAt: Date.now() + 15_000, feed, transceivers };
       }
       const radians = value => value * Math.PI / 180;
       const airportLat = Number(airport.lat);
@@ -153,7 +153,7 @@ async function getRouteAtc(originCode, destinationCode) {
     ]);
     if (!feedResponse.ok || !transceiverResponse.ok) throw new Error('VATSIM route data is unavailable.');
     const [feed, transceivers] = await Promise.all([feedResponse.json(), transceiverResponse.json()]);
-    vatsimCache = { expiresAt: Date.now() + 5 * 60_000, feed, transceivers };
+    vatsimCache = { expiresAt: Date.now() + 15_000, feed, transceivers };
   }
   const radians = value => value * Math.PI / 180;
   const distanceNm = (a, b) => {
@@ -193,6 +193,45 @@ async function getRouteAtc(originCode, destinationCode) {
   return { origin: codes[0], destination: codes[1], stations: [...stations.values()].sort((left, right) => left.routePercent - right.routePercent || left.distanceNm - right.distanceNm) };
 }
 
+async function getVatsimFlight(position, originCode, destinationCode) {
+  const latitude = Number(position?.latitude), longitude = Number(position?.longitude);
+  if (!Number.isFinite(latitude) || Math.abs(latitude) > 90 || !Number.isFinite(longitude) || Math.abs(longitude) > 180) {
+    throw new Error('Waiting for a valid simulator position before matching a VATSIM pilot.');
+  }
+  if (Date.now() >= vatsimCache.expiresAt || !vatsimCache.feed) {
+    const response = await fetch('https://data.vatsim.net/v3/vatsim-data.json', { headers: { 'user-agent': USER_AGENT } });
+    if (!response.ok) throw new Error(`VATSIM live data is unavailable (${response.status}).`);
+    vatsimCache = { ...vatsimCache, expiresAt: Date.now() + 15_000, feed: await response.json() };
+  }
+  const radians = value => value * Math.PI / 180;
+  const distanceNm = pilot => {
+    const dLat = radians(Number(pilot.latitude) - latitude), dLon = radians(Number(pilot.longitude) - longitude);
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(radians(latitude)) * Math.cos(radians(Number(pilot.latitude))) * Math.sin(dLon / 2) ** 2;
+    return 3440.065 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+  const origin = String(originCode || '').toUpperCase(), destination = String(destinationCode || '').toUpperCase();
+  const candidates = (vatsimCache.feed.pilots || []).filter(pilot => pilot.latitude != null && pilot.longitude != null && Number.isFinite(Number(pilot.latitude)) && Number.isFinite(Number(pilot.longitude)))
+    .map(pilot => ({ pilot, distance: distanceNm(pilot) })).filter(item => item.distance <= 30)
+    .map(item => {
+      const plan = item.pilot.flight_plan || {};
+      return { ...item, routeMatch: !!origin && !!destination && String(plan.departure || '').toUpperCase() === origin && String(plan.arrival || '').toUpperCase() === destination };
+    }).sort((a, b) => (a.distance - Number(a.routeMatch) * 2) - (b.distance - Number(b.routeMatch) * 2));
+  const match = candidates[0];
+  if (!match) return { found: false, checkedAt: Date.now(), tunedFrequencyMhz: simPosition.com1FrequencyMhz };
+  const plan = match.pilot.flight_plan || {};
+  const registration = String(plan.remarks || '').match(/(?:^|\s)REG\/([A-Z0-9-]{2,12})(?=\s|$)/i)?.[1]?.toUpperCase() || '';
+  return {
+    found: true, callsign: String(match.pilot.callsign || ''), distanceNm: Math.round(match.distance * 10) / 10,
+    routeMatch: match.routeMatch,
+    confidence: match.distance <= 3 && match.routeMatch ? 'High' : match.distance <= 10 ? 'Possible' : 'Low',
+    aircraftType: String(plan.aircraft_short || plan.aircraft || '').trim(), registration,
+    departure: String(plan.departure || ''), arrival: String(plan.arrival || ''),
+    altitudeFeet: match.pilot.altitude != null && Number.isFinite(Number(match.pilot.altitude)) ? Number(match.pilot.altitude) : null,
+    groundSpeedKnots: match.pilot.groundspeed != null && Number.isFinite(Number(match.pilot.groundspeed)) ? Number(match.pilot.groundspeed) : null,
+    transponder: String(match.pilot.transponder || ''), tunedFrequencyMhz: simPosition.com1FrequencyMhz, checkedAt: Date.now()
+  };
+}
+
 function startPositionBridge() {
   const executable = app.isPackaged
     ? path.join(process.resourcesPath, 'simtracker', 'FlightPositionBridge.exe')
@@ -213,6 +252,12 @@ function startPositionBridge() {
             connected: !!value.connected && Number.isFinite(value.latitude) && Number.isFinite(value.longitude),
             latitude: Number(value.latitude),
             longitude: Number(value.longitude),
+            onGround: typeof value.onGround === 'boolean' ? value.onGround : null,
+            groundSpeedKnots: Number.isFinite(value.groundSpeedKnots) ? value.groundSpeedKnots : null,
+            verticalSpeedFeetPerMinute: Number.isFinite(value.verticalSpeedFeetPerMinute) ? value.verticalSpeedFeetPerMinute : null,
+            headingDegrees: Number.isFinite(value.headingDegrees) ? value.headingDegrees : null,
+            altitudeFeet: Number.isFinite(value.altitudeFeet) ? value.altitudeFeet : null,
+            com1FrequencyMhz: Number.isFinite(value.com1FrequencyMhz) ? value.com1FrequencyMhz : null,
             updatedAt: Date.now()
           };
         } catch { }
@@ -338,6 +383,12 @@ ipcMain.handle('get-airport-info', async (_event, icao, options) => {
 ipcMain.handle('get-route-atc', async (_event, origin, destination) => {
   try { return { ok: true, data: await getRouteAtc(origin, destination) }; }
   catch (error) { return { ok: false, error: error.message || 'Could not load ATC along the route.' }; }
+});
+ipcMain.handle('get-vatsim-flight', async (_event, origin, destination) => {
+  try {
+    const livePosition = simPosition.connected && Date.now() - simPosition.updatedAt < 5000 ? simPosition : null;
+    return { ok: true, data: await getVatsimFlight(livePosition, origin, destination) };
+  } catch (error) { return { ok: false, error: error.message || 'Could not match a VATSIM pilot.' }; }
 });
 ipcMain.handle('get-fsuipc-status', async () => getFsuipcStatus());
 ipcMain.handle('clipboard-write', (_event, value) => { clipboard.writeText(String(value || '')); return true; });

@@ -2,7 +2,7 @@
 
 ## Current state
 
-The Windows app is in alpha testing. Version `0.3.1-alpha.8` displays as **Alpha 0.3.1**. Keep `package.json` as the version source. Preserve the package name, app ID and product name when updating so installation and local storage continue using the existing identity.
+The Windows app is in alpha testing. Version `0.3.1-alpha.9` displays as **Alpha 0.3.1**. Keep `package.json` as the version source. Preserve the package name, app ID and product name when updating so installation and local storage continue using the existing identity.
 
 The earlier installer used version 1.3.0 before alpha numbering was introduced. The current NSIS installer is configured to preserve application data.
 
@@ -30,7 +30,7 @@ Renderer bundles are committed so the app can run without fetching frontend scri
 
 The Windows workflow installs locked dependencies, runs the lobby checks, builds the helper and creates an installer artifact. It has read-only repository permissions and does not publish a GitHub Release. After a successful run, download its artifact from the Actions run page.
 
-Local regression checks use mocked connections. Manual checks still useful before a release include creating a lobby on one PC, joining from another internet connection, importing a real SimBrief OFP, viewing the PDF and running the simulator with FSUIPC7.
+The FSUIPC bridge reads position, on-ground state, groundspeed, vertical speed, heading, altitude and COM1 frequency. Timeline phase events are inferred from these telemetry values and synchronized through the lobby. VATSIM pilot matching uses the public VATSIM Data API; registration is shown only when supplied in the flight-plan remarks.
 
 ## Scope
 
