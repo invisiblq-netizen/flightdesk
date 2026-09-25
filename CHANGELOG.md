@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.1-alpha.17 — Alpha 0.3.1
+
+- Add vertical spacing between the Crew Tools status cards and Local preferences.
+- Keep the full SimBrief PDF page reachable by scrolling the Flight Plan page.
+- Show the SimBrief aircraft registration beside Aircraft and place its credited photo in a separate panel.
+
+
+## 0.3.1-alpha.16 — Alpha 0.3.1
+
+- Show the SimBrief aircraft registration beside the Aircraft label on the flight board.
+- Add a separate aircraft photo area when a registration-matched image is available, with photographer credit and a link to the original.
+
+
 ## 0.3.1-alpha.15 — Alpha 0.3.1
 
 - Add SimBrief PDF zoom controls with a live zoom percentage and a wider zoom range.

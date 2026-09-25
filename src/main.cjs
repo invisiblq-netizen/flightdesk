@@ -17,6 +17,7 @@ const USER_AGENT = `SharedCockpitFlightDesk/${APP_VERSION}`;
 let mainWindow;
 let vatsimCache = { expiresAt: 0, feed: null, transceivers: null };
 const airportCache = new Map();
+const aircraftPhotoCache = new Map();
 let positionBridge;
 let simPosition = { connected: false, updatedAt: 0 };
 let chartfoxToken = '';
@@ -193,6 +194,27 @@ async function getAirportInfo(icao, options = {}) {
   };
 }
 
+async function getAircraftPhoto(registration) {
+  const code = String(registration || '').trim().toUpperCase();
+  if (!/^[A-Z0-9-]{2,15}$/.test(code)) return null;
+  const cached = aircraftPhotoCache.get(code);
+  if (cached && cached.expiresAt > Date.now()) return cached.photo;
+  const response = await fetch(`https://api.planespotters.net/pub/photos/reg/${encodeURIComponent(code)}`, {
+    headers: { 'user-agent': `${USER_AGENT} (+https://github.com/invisiblq-netizen/flightdesk)` },
+    signal: AbortSignal.timeout(10000)
+  });
+  if (!response.ok) return null;
+  const result = await response.json();
+  const photo = result?.photos?.[0];
+  if (!photo) { aircraftPhotoCache.set(code, { photo: null, expiresAt: Date.now() + 6 * 60 * 60 * 1000 }); return null; }
+  let thumbnail, link;
+  try { thumbnail = new URL(photo.thumbnail?.src || ''); link = new URL(photo.link || ''); } catch { return null; }
+  if (thumbnail.protocol !== 'https:' || thumbnail.hostname !== 't.plnspttrs.net' || link.protocol !== 'https:' || !['planespotters.net', 'www.planespotters.net'].includes(link.hostname)) return null;
+  const value = { thumbnail: thumbnail.href, link: link.href, photographer: String(photo.photographer || '').slice(0, 100) };
+  aircraftPhotoCache.set(code, { photo: value, expiresAt: Date.now() + 6 * 60 * 60 * 1000 });
+  return value;
+}
+
 async function getVatsimFlight(callsign) {
   const requested = String(callsign || '').trim().toUpperCase();
   if (!requested) return { found: false, checkedAt: Date.now() };
@@ -326,6 +348,10 @@ ipcMain.handle('fetch-simbrief-pdf', async (_event, plan) => {
 ipcMain.handle('get-airport-info', async (_event, icao, options) => {
   try { return { ok: true, data: await getAirportInfo(icao, options) }; }
   catch (error) { return { ok: false, error: error.message || 'Could not load airport information.' }; }
+});
+ipcMain.handle('get-aircraft-photo', async (_event, registration) => {
+  try { return { ok: true, data: await getAircraftPhoto(registration) }; }
+  catch { return { ok: true, data: null }; }
 });
 ipcMain.handle('get-vatsim-flight', async (_event, callsign) => {
   try {
