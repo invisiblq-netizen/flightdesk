@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.1-alpha.13 — Alpha 0.3.1
+
+- Prevent UI regression tests from showing broken-pipe error dialogs when their output closes.
+- Fill the available desktop window and start maximized; scroll long pages inside the app.
+- Use a black and charcoal dark theme, yellow simulator-waiting status, and green online ATC indicators.
+- Preserve checklist scroll and focus when checking actions or receiving updates; completing a phase unlocks the next without switching away.
+- Keep route progress at zero before departure, reject stale positions, and reset the flight board between lobbies and plans.
+- Select the checklist profile from the imported flight plan and show its actual aircraft type, with no default A320 selection.
+
 ## 0.3.1-alpha.12 — Alpha 0.3.1
 
 - Fix joining lobbies with lowercase or mixed-case codes and codes pasted with surrounding spaces.

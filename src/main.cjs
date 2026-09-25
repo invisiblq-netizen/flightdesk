@@ -344,7 +344,8 @@ function createWindow() {
     minWidth: 920,
     minHeight: 640,
     title: WINDOW_TITLE,
-    backgroundColor: '#0a111a',
+    backgroundColor: '#000000',
+    show: false,
     icon: path.join(__dirname, 'vendor', 'app-icon.png'),
     autoHideMenuBar: false,
     webPreferences: {
@@ -360,6 +361,7 @@ function createWindow() {
     if (url.startsWith('https://')) require('electron').shell.openExternal(url);
     return { action: 'deny' };
   });
+  mainWindow.once('ready-to-show', () => { mainWindow.maximize(); mainWindow.show(); });
   mainWindow.loadFile(path.join(__dirname, 'flightdesk.html'));
 }
 

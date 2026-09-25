@@ -175,7 +175,7 @@ async function run() {
   assert.equal(tasksField.version.actor,fresh.eval('deviceId'));
   assert.ok(tasksField.value.length>0);
   assert.ok(tasksField.value.every(phase=>Array.isArray(phase.sections)));
-  assert.equal(aircraftField.value,'A320');
+  assert.equal(aircraftField.value,'GENERIC');
   console.log('PASS: A fresh host snapshot contains versioned PF/PM tasks and aircraft.');
 
   const crewTools=app();
@@ -189,4 +189,5 @@ async function run() {
   assert.ok(crewTools.eval("typeof installNoteTemplatesUI === 'function'"),'Note templates must be installed on the notes page.');
   console.log('PASS: Crew events, timeline markers, role handovers and callouts are recorded and synchronized.');
 }
-run().catch(error=>{console.error(error.stack);process.exitCode=1;});
+if(require.main===module)run().catch(error=>{console.error(error.stack);process.exitCode=1;});
+module.exports={app};

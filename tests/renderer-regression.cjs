@@ -1,0 +1,58 @@
+const {app, BrowserWindow} = require('electron');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+// GUI processes can outlive the shell's pipes on Windows. Keep test reporting
+// in a file so a closed stdout/stderr cannot trigger an Electron error dialog.
+const resultLog = path.join(__dirname,'../work/ui-checks/results.log');
+fs.mkdirSync(path.dirname(resultLog),{recursive:true});
+fs.writeFileSync(resultLog,'');
+const report = message => fs.appendFileSync(resultLog,message+'\n');
+app.commandLine.appendSwitch('force-device-scale-factor','1');
+app.disableHardwareAcceleration();
+app.setPath('userData',fs.mkdtempSync(path.join(app.getPath('temp'),'flightdesk-ui-')));
+let win;
+async function run() {
+  await app.whenReady();
+  win = new BrowserWindow({show:false,width:1920,height:1080,useContentSize:true,webPreferences:{offscreen:true,contextIsolation:false,nodeIntegration:false,sandbox:false,partition:'ui-regression',preload:path.join(__dirname,'renderer-preload.cjs')}});
+  win.webContents.session.webRequest.onBeforeRequest((details,callback)=>callback({cancel:!details.url.startsWith('file:')}));
+  await win.loadFile(path.join(__dirname,'../src/flightdesk.html'));
+  const evaluate = source => win.webContents.executeJavaScript(source);
+  await evaluate(`localStorage.clear();document.querySelector('#themeToggle').click();prepareSession('host','Test Pilot','ABC2345','PF');showDesk();data.plan={origin:{icao_code:'ENGM'},destination:{icao_code:'EGLL'},aircraft:{icaocode:'A21N'},general:{callsign:'TEST123',route_distance:'680'}};data.aircraft=aircraftType(data.plan);data.tasks=tasksFor(data.aircraft);applyState(data);`);
+  await evaluate('Promise.all([...airportRequests.values()])');
+  fs.mkdirSync(path.join(__dirname,'../work/ui-checks'),{recursive:true});
+  for(const [width,height] of [[3840,2160],[1920,1080],[1280,720],[920,640]]) {
+    win.setContentSize(width,height);
+    await evaluate('new Promise(resolve=>setTimeout(resolve,100))');
+    const layout=await evaluate(`(()=>{activatePage('overview');const shell=document.querySelector('.page-shell'),wrap=document.querySelector('.wrap');return {width:innerWidth,height:innerHeight,wrapWidth:wrap.getBoundingClientRect().width,bodyWidth:document.documentElement.scrollWidth,bodyHeight:document.documentElement.scrollHeight,shellHeight:shell.clientHeight,background:getComputedStyle(document.body).backgroundColor,waiting:getComputedStyle(document.querySelector('#fsuipcLabel')).color,atc:getComputedStyle(document.querySelector('.atc-online')).color}})()`);
+    assert.equal(layout.wrapWidth,layout.width);
+    assert.ok(layout.bodyWidth<=layout.width,JSON.stringify(layout));
+    assert.ok(layout.bodyHeight<=layout.height,JSON.stringify(layout));
+    assert.ok(layout.shellHeight>150,JSON.stringify(layout));
+    assert.equal(layout.background,'rgb(0, 0, 0)');
+    assert.equal(layout.waiting,'rgb(255, 207, 77)');
+    assert.equal(layout.atc,'rgb(163, 255, 182)');
+    fs.writeFileSync(path.join(__dirname,`../work/ui-checks/overview-${width}.png`),(await win.webContents.capturePage()).toPNG());
+    report(`PASS: ${width}×${height} fills the window without page overflow; black background and status colors verified.`);
+  }
+  win.setContentSize(1280,720);
+  await evaluate(`activatePage('checklist');renderTasks();document.querySelector('.page-shell').scrollTop=400;document.querySelector('#phaseNav').scrollLeft=300`);
+  const before=await evaluate(`({top:document.querySelector('.page-shell').scrollTop,left:document.querySelector('#phaseNav').scrollLeft})`);
+  assert.ok(before.top>0,'Test must start down the checklist');
+  await evaluate(`(()=>{const inputs=[...document.querySelectorAll('[data-scan-check]:not(:disabled)')];const target=inputs.find(input=>input.getBoundingClientRect().top>250&&input.getBoundingClientRect().top<600);if(!target)throw Error('No visible checkbox');target.focus({preventScroll:true});target.click()})()`);
+  await evaluate('new Promise(resolve=>setTimeout(resolve,100))');
+  const after=await evaluate(`({top:document.querySelector('.page-shell').scrollTop,left:document.querySelector('#phaseNav').scrollLeft,focused:document.activeElement.hasAttribute('data-scan-check')})`);
+  assert.equal(after.top,before.top);
+  assert.equal(after.left,before.left);
+  assert.equal(after.focused,true);
+  await evaluate(`applyState(data)`);
+  assert.equal(await evaluate(`document.querySelector('.page-shell').scrollTop`),before.top);
+  const current=await evaluate('activeChecklistPhase');
+  await evaluate(`phaseActions(data.tasks[0]).forEach(action=>action.done=true);openNextChecklistPhase(0);renderTasks()`);
+  assert.equal(await evaluate('activeChecklistPhase'),current);
+  assert.equal(await evaluate(`document.querySelectorAll('[data-scan-phase]')[1].disabled`),false);
+  fs.writeFileSync(path.join(__dirname,'../work/ui-checks/checklist.png'),(await win.webContents.capturePage()).toPNG());
+  report('PASS: Checkbox and state updates preserve scroll and keyboard focus; completion unlocks the next phase without jumping.');
+  win.destroy();app.quit();
+}
+run().catch(error=>{report(error.stack||String(error));if(win)win.destroy();app.exit(1)});
