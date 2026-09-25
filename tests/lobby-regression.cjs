@@ -6,15 +6,16 @@ const { webcrypto } = require('node:crypto');
 
 const html = fs.readFileSync(require('node:path').join(__dirname, '../src/flightdesk.html'), 'utf8');
 const source = html.slice(html.lastIndexOf('<script>') + 8, html.lastIndexOf('</script>'));
+const markup = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
 const savedSession = { code: 'ABC2345', name: 'Alex', role: 'host', pilotRole: 'PF' };
 const oldTasks = [{ text: 'Preflight and crew briefing', details: ['An existing crew reminder'], done: true, expanded: true }, { text: 'Bring the destination chart', details: ['Use the latest chart'], done: false }];
 
 function app({saved = false, tasks = oldTasks, failStorage = false, peerFailures = [], peerPending = false} = {}) {
-  const nodes = new Map([...html.slice(0, html.indexOf('<script')).matchAll(/\bid="([^"]+)"/g)].map(m => {
+  const nodes = new Map([...markup.matchAll(/\bid="([^"]+)"/g)].map(m => {
     const classes = new Set(['gate', 'name'].includes(m[1]) ? [] : ['hidden']);
     return [m[1], { value: '', textContent: '', innerHTML: '', disabled: false, dataset: {},
       classList: { add: x => classes.add(x), remove: x => classes.delete(x), contains: x => classes.has(x), toggle(x, on) { if(on === undefined) on = !classes.has(x); on ? classes.add(x) : classes.delete(x); } },
-      style: {setProperty(){}}, setAttribute(){}, focus(){}, scrollIntoView(){}, addEventListener(){}, querySelectorAll: () => [] }];
+      style: {setProperty(){}}, setAttribute(){}, focus(){}, scrollIntoView(){}, addEventListener(){}, prepend(){}, querySelectorAll: () => [] }];
   }));
   nodes.get('gateRole').value = 'PF';
   nodes.get('name').value = 'Alex';
@@ -36,7 +37,7 @@ function app({saved = false, tasks = oldTasks, failStorage = false, peerFailures
   const context = vm.createContext({ console, structuredClone, TextEncoder, TextDecoder, URL, crypto:webcrypto, Peer:FakePeer, queueMicrotask,
     setTimeout(fn, ms){const id=nextTimer++;timers.set(id,{fn,ms});return id;}, clearTimeout:id=>timers.delete(id), setInterval(){},
     localStorage: {getItem:key=>storage.get(key)||null,setItem(key,value){if(writesFail)throw new Error('Local storage write failed');storage.set(key,String(value));},removeItem:key=>storage.delete(key)},
-    document:{querySelector:selector=>nodes.get(selector.slice(1))||null,querySelectorAll:()=>[],activeElement:null},
+    document:{documentElement:{dataset:{theme:'light'}},querySelector:selector=>nodes.get(selector.slice(1))||null,querySelectorAll:()=>[],activeElement:null},
     window:{location:{href:'file:///flightdesk.html'},addEventListener(){},cockpitDesktop:{getFsuipcStatus:async()=>({running:false}),getSimPosition:async()=>({connected:false}),getAppInfo:async()=>({name:'Shared Cockpit Flight Desk',version:'0.3.1-alpha.8',displayVersion:'Alpha 0.3.1'})}}
   });
   vm.runInContext(source,context,{filename:'flightdesk.html'});
