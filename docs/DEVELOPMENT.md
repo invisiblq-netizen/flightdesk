@@ -2,7 +2,7 @@
 
 ## Current state
 
-The Windows app is in alpha testing. Version `0.3.1-alpha.5` displays as **Alpha 0.3.1**. Keep `package.json` as the version source. Preserve the package name, app ID and product name when updating so installation and local storage continue using the existing identity.
+The Windows app is in alpha testing. Version `0.3.1-alpha.6` displays as **Alpha 0.3.1**. Keep `package.json` as the version source. Preserve the package name, app ID and product name when updating so installation and local storage continue using the existing identity.
 
 The earlier installer used version 1.3.0 before alpha numbering was introduced. The current NSIS installer is configured to preserve application data.
 
@@ -14,7 +14,7 @@ The alpha fix normalizes saved state before rendering, retains old items in a sa
 
 Session patches carry per-field logical clocks. Large messages are chunked before transmission. SimBrief state is compacted so the full raw response is not sent to the other PC. The PDF is downloaded through Electron and rendered using the bundled PDF.js assets.
 
-Checklist source references and their aircraft-variant limits are documented in [CHECKLIST-SOURCES.md](CHECKLIST-SOURCES.md). Checklist synchronization is split into PF and PM fields so each peer can update only the flow matching its selected role.
+Checklist source references and their aircraft-variant limits are documented in [CHECKLIST-SOURCES.md](CHECKLIST-SOURCES.md). Checklist synchronization is split into PF, PM and shared CM fields. Each peer can update only its selected PF/PM flow; either pilot may acknowledge a shared CM item.
 
 ## Build tools
 
