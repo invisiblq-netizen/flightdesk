@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1-alpha.11 — Alpha 0.3.1
+
+- Refresh the Flight Desk with the Prismatic Pay inspired design, including light and dark themes with a saved theme toggle.
+- Refine the header and lobby layout and add the creator credit.
+
 ## 0.3.1-alpha.10 — Alpha 0.3.1
 
 - Restyle the interface using the supplied QuestUI palette, typography, angular controls, gold active states and layered card surfaces.
