@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1-alpha.15 — Alpha 0.3.1
+
+- Add SimBrief PDF zoom controls with a live zoom percentage and a wider zoom range.
+- Add a ChartFox Charts page with airport search, grouped chart categories, and direct links to selected charts. ChartFox API tokens are encrypted in Windows secure storage on this PC.
+- Remove the manual flight-event/debrief card from Crew Tools and checklist phase lock emojis.
+
+
 ## 0.3.1-alpha.14 — Alpha 0.3.1
 
 - Shorten the sidebar, keep the theme toggle in the top-right header, and remove the native File/View/Help menu.

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, clipboard } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, clipboard, safeStorage, shell } = require('electron');
 const path = require('node:path');
 const { exactVatsimFlight } = require('./vatsim-flight.cjs');
 const fs = require('node:fs/promises');
@@ -19,6 +19,67 @@ let vatsimCache = { expiresAt: 0, feed: null, transceivers: null };
 const airportCache = new Map();
 let positionBridge;
 let simPosition = { connected: false, updatedAt: 0 };
+let chartfoxToken = '';
+
+const chartfoxApi = 'https://api.chartfox.org/v2';
+
+function chartfoxAuth() {
+  if (!chartfoxToken) throw new Error('Add your ChartFox API token to search airports and charts.');
+  return { authorization: `Bearer ${chartfoxToken}`, accept: 'application/json', 'user-agent': USER_AGENT };
+}
+
+async function fetchChartfox(pathname) {
+  const response = await fetch(`${chartfoxApi}${pathname}`, {
+    headers: chartfoxAuth(), signal: AbortSignal.timeout(15000)
+  });
+  if (response.status === 401) throw new Error('ChartFox rejected this API token. Check it and save it again.');
+  if (response.status === 403) throw new Error('This ChartFox token does not have access to charts.');
+  if (!response.ok) throw new Error(response.status === 404 ? 'ChartFox could not find that airport.' : `ChartFox request failed (${response.status}).`);
+  return response.json();
+}
+
+function loadChartfoxToken() {
+  try {
+    const tokenPath = path.join(app.getPath('userData'), 'chartfox-token.enc');
+    const encrypted = require('node:fs').readFileSync(tokenPath);
+    if (safeStorage.isEncryptionAvailable()) chartfoxToken = safeStorage.decryptString(encrypted).trim();
+  } catch { chartfoxToken = ''; }
+}
+
+async function saveChartfoxToken(token) {
+  const value = String(token || '').trim();
+  if (value.length > 4096) throw new Error('The ChartFox token is too long.');
+  if (!value) {
+    chartfoxToken = '';
+    try { await fs.unlink(path.join(app.getPath('userData'), 'chartfox-token.enc')); } catch { }
+    return { configured: false };
+  }
+  if (!safeStorage.isEncryptionAvailable()) throw new Error('Secure credential storage is unavailable on this PC.');
+  const encrypted = safeStorage.encryptString(value);
+  await fs.writeFile(path.join(app.getPath('userData'), 'chartfox-token.enc'), encrypted);
+  chartfoxToken = value;
+  return { configured: true };
+}
+
+function openChartfox(ident, chartId) {
+  const code = String(ident || '').trim().toUpperCase();
+  const id = String(chartId || '').trim();
+  const pathPart = /^[A-Z0-9]{3,5}$/.test(code) ? `/${code}` : '/';
+  const hashPart = pathPart !== '/' && /^[A-Z0-9_-]{1,80}$/i.test(id) ? `#${code}_${id}` : '';
+  return shell.openExternal(`https://chartfox.org${pathPart}${hashPart}`);
+}
+
+async function searchChartfoxAirports(query) {
+  const value = String(query || '').trim().slice(0, 80);
+  if (value.length < 2) throw new Error('Enter at least two letters to search for an airport.');
+  return fetchChartfox(`/airports?query=${encodeURIComponent(value)}&page=1`);
+}
+
+async function getChartfoxAirportCharts(ident) {
+  const code = String(ident || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{3,5}$/.test(code)) throw new Error('Choose a valid airport from the search results.');
+  return fetchChartfox(`/airports/${encodeURIComponent(code)}/charts/grouped`);
+}
 
 async function fetchSimbrief(identity) {
   const pilot = String(identity || '').trim();
@@ -273,9 +334,24 @@ ipcMain.handle('get-vatsim-flight', async (_event, callsign) => {
 });
 ipcMain.handle('get-fsuipc-status', async () => getFsuipcStatus());
 ipcMain.handle('clipboard-write', (_event, value) => { clipboard.writeText(String(value || '')); return true; });
+ipcMain.handle('chartfox-token-status', () => ({ configured: !!chartfoxToken, secureStorage: safeStorage.isEncryptionAvailable() }));
+ipcMain.handle('save-chartfox-token', async (_event, token) => {
+  try { return { ok: true, data: await saveChartfoxToken(token) }; }
+  catch (error) { return { ok: false, error: error.message || 'Could not save the ChartFox token securely.' }; }
+});
+ipcMain.handle('search-chartfox-airports', async (_event, query) => {
+  try { return { ok: true, data: await searchChartfoxAirports(query) }; }
+  catch (error) { return { ok: false, error: error.message || 'Could not search ChartFox airports.' }; }
+});
+ipcMain.handle('get-chartfox-airport-charts', async (_event, ident) => {
+  try { return { ok: true, data: await getChartfoxAirportCharts(ident) }; }
+  catch (error) { return { ok: false, error: error.message || 'Could not load this airport’s charts.' }; }
+});
+ipcMain.handle('open-chartfox', (_event, ident, chartId) => openChartfox(ident, chartId));
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
+  loadChartfoxToken();
   createWindow();
   startPositionBridge();
   app.on('activate', () => {
