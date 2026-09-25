@@ -46,6 +46,28 @@ function app({saved = false, tasks = oldTasks, failStorage = false, peerFailures
 }
 
 async function run() {
+  assert.match(markup, /<form\b[^>]*id="joinForm"[^>]*\bnovalidate\b/, 'Join must normalize input before validation');
+  const codeInput = markup.match(/<input\b[^>]*id="lobbyCodeInput"[^>]*>/)[0];
+  assert.doesNotMatch(codeInput, /\bmaxlength=/, 'Pasting surrounding whitespace must not truncate the code');
+  for (const value of ['ABC2345', 'abc2345', 'AbC2345', '  abc2345  ']) {
+    const normalizedJoin = app();
+    normalizedJoin.nodes.get('lobbyCodeInput').value = value;
+    let prevented = false;
+    await normalizedJoin.nodes.get('joinForm').onsubmit({preventDefault(){prevented = true;}});
+    assert.equal(prevented, true);
+    assert.equal(normalizedJoin.peers[0].connections[0].peer, 'ABC2345');
+  }
+  console.log('PASS: Form submission accepts uppercase, lowercase, mixed case and padded lobby codes.');
+  for (const value of ['', 'ABC234', 'ABC23456', 'ABC 234', 'ABC!234', 'ABO2345']) {
+    const invalidJoin = app();
+    invalidJoin.nodes.get('lobbyCodeInput').value = value;
+    await invalidJoin.nodes.get('joinForm').onsubmit({preventDefault(){}});
+    assert.equal(invalidJoin.peers.length, 0);
+    assert.match(invalidJoin.nodes.get('gateerror').textContent, /seven-character lobby code/);
+    assert.equal(invalidJoin.nodes.get('join').disabled, false);
+  }
+  console.log('PASS: Invalid codes show the app validation message without opening a connection.');
+
   const legacy=app({saved:true});
   try {
     await legacy.nodes.get('create').onclick();

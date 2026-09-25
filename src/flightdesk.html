@@ -150,7 +150,7 @@ button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;transform:none}
   <label for="gateRole">Your role</label><select id="gateRole" class="field"><option value="PF">Pilot Flying (PF)</option><option value="PM">Pilot Monitoring (PM)</option></select>
   <div id="connectChoices" class="gate-actions">
     <div class="card"><h3>Host a lobby</h3><p class="muted small">Create a room and share its short code with your friend.</p><button class="primary" id="create">Create lobby</button></div>
-    <div class="card"><h3>Join a lobby</h3><form id="joinForm"><label for="lobbyCodeInput">Seven-character lobby code</label><input id="lobbyCodeInput" class="field room-code" maxlength="7" minlength="7" pattern="[A-HJ-NP-Z2-9]{7}" placeholder="UTOWQAS" autocomplete="off" spellcheck="false" required><button class="primary" id="join">Join lobby</button></form></div>
+    <div class="card"><h3>Join a lobby</h3><form id="joinForm" novalidate><label for="lobbyCodeInput">Seven-character lobby code</label><input id="lobbyCodeInput" class="field room-code" placeholder="ABC2345" autocomplete="off" spellcheck="false" required><button class="primary" id="join">Join lobby</button></form></div>
   </div>
   <div id="gateerror" class="status" role="status" aria-live="polite"></div>
   <div class="notice">The app automatically uses PeerJS Cloud to introduce the lobby participants; you do not need to run or sign up for a server. Notes, checklists and flight-plan data are sent directly between the PCs over WebRTC. A connection still depends on the signalling service and both networks allowing direct P2P traffic.</div>
@@ -709,7 +709,7 @@ async function renderPdfPage(){if(!currentPdf)return;const token=++pdfRenderToke
 function updatePilotRole(role){if(session)setPilotRole(role);else{$('#gateRole').value=role;localStorage.setItem('sharedCockpitPilotRole',role)}}
 function connectInviteHandlers(){
   $('#create').onclick=createLobby;
-  $('#joinForm').onsubmit=event=>{event.preventDefault();joinLobby()};
+  $('#joinForm').onsubmit=event=>{event.preventDefault();return joinLobby()};
   $('#pairAgain').onclick=showPairing;
   $('#leave').onclick=showPairing;
   document.querySelectorAll('.nav-item').forEach(button=>button.onclick=()=>activatePage(button.dataset.page,button.dataset.noteTab||null));
