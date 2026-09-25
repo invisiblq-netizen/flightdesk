@@ -32,6 +32,11 @@ async function run() {
     assert.equal(layout.background,'rgb(0, 0, 0)');
     assert.equal(layout.waiting,'rgb(255, 207, 77)');
     assert.equal(layout.atc,'rgb(163, 255, 182)');
+    const chrome=await evaluate(`(()=>{const nav=document.querySelector('.side-nav'),tools=document.querySelector('#headerTools'),theme=document.querySelector('#themeToggle');return {navHeight:nav.clientHeight,lastNavBottom:nav.lastElementChild.offsetTop+nav.lastElementChild.offsetHeight-nav.offsetTop,themeInHeader:theme.parentElement===tools,clocksInHeader:tools.contains(document.querySelector('#zuluClock')),progressBackground:getComputedStyle(document.querySelector('#routeProgress')).backgroundColor}})()`);
+    assert.ok(chrome.navHeight<=chrome.lastNavBottom+40,'Sidebar must end after its navigation links');
+    assert.equal(chrome.themeInHeader,true);
+    assert.equal(chrome.clocksInHeader,true);
+    assert.equal(chrome.progressBackground,'rgba(0, 0, 0, 0)');
     fs.writeFileSync(path.join(__dirname,`../work/ui-checks/overview-${width}.png`),(await win.webContents.capturePage()).toPNG());
     report(`PASS: ${width}×${height} fills the window without page overflow; black background and status colors verified.`);
   }
@@ -53,6 +58,27 @@ async function run() {
   assert.equal(await evaluate(`document.querySelectorAll('[data-scan-phase]')[1].disabled`),false);
   fs.writeFileSync(path.join(__dirname,'../work/ui-checks/checklist.png'),(await win.webContents.capturePage()).toPNG());
   report('PASS: Checkbox and state updates preserve scroll and keyboard focus; completion unlocks the next phase without jumping.');
+  await evaluate(`activatePage('crew-tools');currentSimPosition={connected:true};renderDiagnostics()`);
+  const crew=await evaluate(`(()=>{const page=document.querySelector('#page-crew-tools'),dot=document.querySelector('#connectionDiagnostics .dot');return {text:page.textContent,dotWidth:dot.getBoundingClientRect().width,dotHeight:dot.getBoundingClientRect().height}})()`);
+  assert.doesNotMatch(crew.text,/ATC route snapshot|Briefing templates/);
+  assert.equal(crew.dotWidth,7);assert.equal(crew.dotHeight,7);
+  fs.writeFileSync(path.join(__dirname,'../work/ui-checks/crew-tools.png'),(await win.webContents.capturePage()).toPNG());
+  report('PASS: Crew Tools removes the unused cards and renders small, contained status dots.');
+  await evaluate(`data.plan.files={directory:'https://www.simbrief.com/ofp/flightplans/',pdf:{link:'test.pdf'}};activatePage('flight-plan');showFlightPlan()`);
+  assert.equal(await evaluate(`document.querySelector('#pdfStatus').textContent`),'');
+  assert.equal(await evaluate(`document.querySelector('#pdfPage').textContent`),'Page 1 of 2');
+  const pdfLayout=await evaluate(`({canvas:document.querySelector('#pdfCanvas').getBoundingClientRect().width,viewport:document.querySelector('#pdfViewport').clientWidth})`);
+  assert.ok(Math.abs(pdfLayout.canvas-(pdfLayout.viewport-32))<2,JSON.stringify(pdfLayout));
+  assert.equal(BrowserWindow.getAllWindows().length,1,'PDF must remain inside the existing window');
+  await evaluate(`document.querySelector('#pdfNext').click();renderPdfPage()`);
+  assert.equal(await evaluate(`document.querySelector('#pdfPage').textContent`),'Page 2 of 2');
+  win.setContentSize(1920,1080);
+  await evaluate('new Promise(resolve=>setTimeout(resolve,350))');
+  await evaluate('renderPdfPage()');
+  const resized=await evaluate(`({canvas:document.querySelector('#pdfCanvas').getBoundingClientRect().width,viewport:document.querySelector('#pdfViewport').clientWidth})`);
+  assert.ok(Math.abs(resized.canvas-(resized.viewport-32))<2,JSON.stringify(resized));
+  fs.writeFileSync(path.join(__dirname,'../work/ui-checks/flight-plan.png'),(await win.webContents.capturePage()).toPNG());
+  report('PASS: Real PDF renders inline at full width, supports page navigation and resizes with the window.');
   win.destroy();app.quit();
 }
 run().catch(error=>{report(error.stack||String(error));if(win)win.destroy();app.exit(1)});

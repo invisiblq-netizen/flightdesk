@@ -4,22 +4,23 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.3.1** · Build `0.3.1-alpha.13` · Windows x64
+**Alpha 0.3.1** · Build `0.3.1-alpha.14` · Windows x64
 
 ## Features
 
 - Host a lobby and invite other pilots with a seven-character code.
 - Synchronize notes, checklist progress and flight-plan data directly over WebRTC.
 - Choose Pilot Flying (PF) or Pilot Monitoring (PM), and switch roles during flight.
-- Import the latest generated SimBrief OFP and view its PDF inside the app.
+- Import the latest generated SimBrief OFP and view its PDF inline, fitted to the page width. The saved SimBrief ID also supports automatic import during the hour before scheduled departure (UTC).
 - Expand flight phases into separate PF/PM tasks with short explanations.
 - Use an A320 operational scan flow with 18 phases, multiple sections, and side-by-side PF/PM actions; CM actions are shared acknowledgements.
 - View phase-based crew callout prompts, track handovers and flight events, and record a shared flight timeline (route progress is automatic; operational milestones are crew-entered).
-- Review VATSIM controllers near departure, enroute and arrival route segments, and export a text or printable PDF flight report.
+- Review VATSIM controllers near the departure and arrival airports, and export a text or printable PDF flight report.
 - Use local crew preferences and reusable briefing templates.
 - Check P2P, simulator-position and VATSIM status in Crew Tools.
 - View airport names, METAR, nearby VATSIM controllers and frequencies.
-- Track route progress and infer flight phases from FSUIPC7 telemetry. View a VATSIM pilot match from position and filed route data.
+- Track route progress and infer flight phases from FSUIPC7 telemetry. Find a VATSIM aircraft by its exact flight-plan callsign.
+- See local and Zulu clocks and dates in the header on every page; local time uses your computer's time zone.
 - Navigate between Flight Board, Flight Plan, Checklist and crew notes.
 
 Checklist content, source notes and aircraft-specific limits are documented in [docs/CHECKLIST-SOURCES.md](docs/CHECKLIST-SOURCES.md). The A320 scan flow is a simulator training aid, not an operational checklist; always use the exact aircraft/add-on procedures and limits.
@@ -34,6 +35,8 @@ Download the Windows `.exe` installer from this repository's **Releases** sectio
 4. Each flight starts with a newly generated lobby code. The app does not reconnect to a previous session when reopened.
 5. Open **Flight Plan** and enter the SimBrief username or pilot ID for an already generated plan.
 6. To track the aircraft, run the simulator and FSUIPC7 on a connected Windows PC. The helper is bundled with the installer.
+
+The SimBrief ID is remembered on this PC. While the host lobby has no plan, the app checks once a minute and imports when scheduled departure is between now and one hour ahead. It uses SimBrief's `times.sched_out` timestamp, so UTC midnight and local time-zone offsets are handled without a local-time conversion. [SimBrief documents its date/time values as Unix timestamps](https://forum.navigraph.com/t/simbrief-api-xml/5929). A missing or past departure time is skipped. **Fetch plan** always allows manual import, and automatic checks never replace an existing shared plan.
 
 ## How connections and data work
 
@@ -58,7 +61,7 @@ The repository uses `pnpm-lock.yaml`. Do not replace it with an npm-generated lo
 
 ### Reuse the prebuilt helper
 
-To skip compiling the helper, download the matching `FlightPositionBridge-0.3.1-alpha.13-win-x64.zip` Release asset and extract it into the project root. It creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
+To skip compiling the helper, download the matching `FlightPositionBridge-0.3.1-alpha.14-win-x64.zip` Release asset and extract it into the project root. It creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
 
 The helper EXE is larger than GitHub's normal Git file limit. Its source belongs in this repo; the prebuilt archive belongs in Releases. The `publish` folder is ignored by Git.
 
@@ -68,7 +71,7 @@ The helper EXE is larger than GitHub's normal Git file limit. Its source belongs
 pnpm dist
 ```
 
-Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.3.1-alpha.13.exe`.
+Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.3.1-alpha.14.exe`.
 
 `pnpm dist` expects the helper to exist. It bundles the checked-in renderer assets and never publishes a release automatically. This project currently packages Windows only.
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.1-alpha.14 — Alpha 0.3.1
+
+- Shorten the sidebar, keep the theme toggle in the top-right header, and remove the native File/View/Help menu.
+- Show local and Zulu clocks with dates on every page, and remove the flight-progress label background.
+- Fix diagnostic status dots and remove the Crew Tools route snapshot and briefing-template cards.
+- Match VATSIM aircraft by the exact flight-plan callsign, with no nearby-aircraft fallback.
+- Remember the SimBrief ID and check once a minute for a departure within the next hour in UTC when the host lobby has no plan. Preserve manual imports at any time.
+- Open the flight-plan PDF inline, fit it to the available width, and resize it with the app.
+
 ## 0.3.1-alpha.13 — Alpha 0.3.1
 
 - Prevent UI regression tests from showing broken-pipe error dialogs when their output closes.

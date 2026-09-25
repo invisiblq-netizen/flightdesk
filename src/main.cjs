@@ -1,5 +1,6 @@
-const { app, BrowserWindow, Menu, ipcMain, dialog, clipboard } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, clipboard } = require('electron');
 const path = require('node:path');
+const { exactVatsimFlight } = require('./vatsim-flight.cjs');
 const fs = require('node:fs/promises');
 const { execFile, spawn } = require('node:child_process');
 const { promisify } = require('node:util');
@@ -24,7 +25,7 @@ async function fetchSimbrief(identity) {
   if (!pilot || pilot.length > 80) throw new Error('Enter a SimBrief pilot ID or username.');
   const key = /^\d{1,7}$/.test(pilot) ? 'userid' : 'username';
   const url = `https://www.simbrief.com/api/xml.fetcher.php?${key}=${encodeURIComponent(pilot)}&json=v2`;
-  const response = await fetch(url, { headers: { 'user-agent': USER_AGENT } });
+  const response = await fetch(url, { headers: { 'user-agent': USER_AGENT }, signal: AbortSignal.timeout(15000) });
   const body = await response.text();
   if (!response.ok) throw new Error('Could not fetch the flight plan. Check the ID or username and make sure a plan has been generated.');
   try { return JSON.parse(body); } catch { throw new Error('SimBrief returned an unrecognized response.'); }
@@ -131,105 +132,15 @@ async function getAirportInfo(icao, options = {}) {
   };
 }
 
-async function getRouteAtc(originCode, destinationCode) {
-  const codes = [originCode, destinationCode].map(value => String(value || '').trim().toUpperCase());
-  if (codes.some(code => !/^[A-Z0-9]{4}$/.test(code))) throw new Error('Import a flight plan with valid origin and destination ICAO codes.');
-  async function airport(code) {
-    let value = airportCache.get(code);
-    if (!value) {
-      const response = await fetch(`https://aviationweather.gov/api/data/airport?ids=${code}&format=json`, { headers: { 'user-agent': USER_AGENT } });
-      if (!response.ok) throw new Error(`Could not load airport coordinates (${response.status}).`);
-      value = (await response.json())[0];
-      if (value) airportCache.set(code, value);
-    }
-    if (!Number.isFinite(Number(value?.lat)) || !Number.isFinite(Number(value?.lon))) throw new Error(`Coordinates unavailable for ${code}.`);
-    return { latitude: Number(value.lat), longitude: Number(value.lon) };
-  }
-  const [start, end] = await Promise.all(codes.map(airport));
-  if (Date.now() >= vatsimCache.expiresAt || !vatsimCache.feed || !vatsimCache.transceivers) {
-    const [feedResponse, transceiverResponse] = await Promise.all([
-      fetch('https://data.vatsim.net/v3/vatsim-data.json', { headers: { 'user-agent': USER_AGENT } }),
-      fetch('https://data.vatsim.net/v3/transceivers-data.json', { headers: { 'user-agent': USER_AGENT } })
-    ]);
-    if (!feedResponse.ok || !transceiverResponse.ok) throw new Error('VATSIM route data is unavailable.');
-    const [feed, transceivers] = await Promise.all([feedResponse.json(), transceiverResponse.json()]);
-    vatsimCache = { expiresAt: Date.now() + 15_000, feed, transceivers };
-  }
-  const radians = value => value * Math.PI / 180;
-  const distanceNm = (a, b) => {
-    const dLat = radians(b.latitude - a.latitude), dLon = radians(b.longitude - a.longitude);
-    const h = Math.sin(dLat / 2) ** 2 + Math.cos(radians(a.latitude)) * Math.cos(radians(b.latitude)) * Math.sin(dLon / 2) ** 2;
-    return 3440.065 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
-  };
-  const a = { latitude: radians(start.latitude), longitude: radians(start.longitude) };
-  const b = { latitude: radians(end.latitude), longitude: radians(end.longitude) };
-  const omega = Math.acos(Math.max(-1, Math.min(1, Math.sin(a.latitude) * Math.sin(b.latitude) + Math.cos(a.latitude) * Math.cos(b.latitude) * Math.cos(b.longitude - a.longitude))));
-  const route = Array.from({ length: 101 }, (_, index) => {
-    const fraction = index / 100;
-    if (omega < 1e-8) return { latitude: start.latitude, longitude: start.longitude, fraction };
-    const scaleA = Math.sin((1 - fraction) * omega) / Math.sin(omega), scaleB = Math.sin(fraction * omega) / Math.sin(omega);
-    const x = scaleA * Math.cos(a.latitude) * Math.cos(a.longitude) + scaleB * Math.cos(b.latitude) * Math.cos(b.longitude);
-    const y = scaleA * Math.cos(a.latitude) * Math.sin(a.longitude) + scaleB * Math.cos(b.latitude) * Math.sin(b.longitude);
-    const z = scaleA * Math.sin(a.latitude) + scaleB * Math.sin(b.latitude);
-    return { latitude: Math.atan2(z, Math.hypot(x, y)) * 180 / Math.PI, longitude: Math.atan2(y, x) * 180 / Math.PI, fraction };
-  });
-  const clients = new Map([...(vatsimCache.feed.controllers || []), ...(vatsimCache.feed.atis || [])].map(client => [client.callsign, client]));
-  const stations = new Map();
-  for (const station of vatsimCache.transceivers || []) {
-    const client = clients.get(station.callsign);
-    if (!client) continue;
-    for (const tx of station.transceivers || []) {
-      if (!Number.isFinite(tx.latDeg) || !Number.isFinite(tx.lonDeg)) continue;
-      const point = { latitude: tx.latDeg, longitude: tx.lonDeg };
-      let nearest = { distance: Infinity, fraction: 0 };
-      for (const sample of route) { const distance = distanceNm(point, sample); if (distance < nearest.distance) nearest = { distance, fraction: sample.fraction }; }
-      if (nearest.distance > 100 || (Number(tx.frequency) / 1_000_000).toFixed(3) !== Number(client.frequency).toFixed(3)) continue;
-      const section = nearest.fraction < .15 ? 'Departure' : nearest.fraction > .85 ? 'Arrival' : 'Enroute';
-      const item = { callsign: station.callsign, frequency: Number(client.frequency).toFixed(3), distanceNm: Math.round(nearest.distance), routePercent: Math.round(nearest.fraction * 100), section };
-      const key = `${item.callsign}|${item.frequency}`;
-      if (!stations.has(key) || item.distanceNm < stations.get(key).distanceNm) stations.set(key, item);
-    }
-  }
-  return { origin: codes[0], destination: codes[1], stations: [...stations.values()].sort((left, right) => left.routePercent - right.routePercent || left.distanceNm - right.distanceNm) };
-}
-
-async function getVatsimFlight(position, originCode, destinationCode) {
-  const latitude = Number(position?.latitude), longitude = Number(position?.longitude);
-  if (!Number.isFinite(latitude) || Math.abs(latitude) > 90 || !Number.isFinite(longitude) || Math.abs(longitude) > 180) {
-    throw new Error('Waiting for a valid simulator position before matching a VATSIM pilot.');
-  }
+async function getVatsimFlight(callsign) {
+  const requested = String(callsign || '').trim().toUpperCase();
+  if (!requested) return { found: false, checkedAt: Date.now() };
   if (Date.now() >= vatsimCache.expiresAt || !vatsimCache.feed) {
     const response = await fetch('https://data.vatsim.net/v3/vatsim-data.json', { headers: { 'user-agent': USER_AGENT } });
-    if (!response.ok) throw new Error(`VATSIM live data is unavailable (${response.status}).`);
+    if (!response.ok) throw new Error('VATSIM live data is unavailable (' + response.status + ').');
     vatsimCache = { ...vatsimCache, expiresAt: Date.now() + 15_000, feed: await response.json() };
   }
-  const radians = value => value * Math.PI / 180;
-  const distanceNm = pilot => {
-    const dLat = radians(Number(pilot.latitude) - latitude), dLon = radians(Number(pilot.longitude) - longitude);
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(radians(latitude)) * Math.cos(radians(Number(pilot.latitude))) * Math.sin(dLon / 2) ** 2;
-    return 3440.065 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  };
-  const origin = String(originCode || '').toUpperCase(), destination = String(destinationCode || '').toUpperCase();
-  const candidates = (vatsimCache.feed.pilots || []).filter(pilot => pilot.latitude != null && pilot.longitude != null && Number.isFinite(Number(pilot.latitude)) && Number.isFinite(Number(pilot.longitude)))
-    .map(pilot => ({ pilot, distance: distanceNm(pilot) })).filter(item => item.distance <= 30)
-    .map(item => {
-      const plan = item.pilot.flight_plan || {};
-      return { ...item, routeMatch: !!origin && !!destination && String(plan.departure || '').toUpperCase() === origin && String(plan.arrival || '').toUpperCase() === destination };
-    }).sort((a, b) => (a.distance - Number(a.routeMatch) * 2) - (b.distance - Number(b.routeMatch) * 2));
-  const match = candidates[0];
-  if (!match) return { found: false, checkedAt: Date.now(), tunedFrequencyMhz: simPosition.com1FrequencyMhz };
-  const plan = match.pilot.flight_plan || {};
-  const registration = String(plan.remarks || '').match(/(?:^|\s)REG\/([A-Z0-9-]{2,12})(?=\s|$)/i)?.[1]?.toUpperCase() || '';
-  return {
-    found: true, callsign: String(match.pilot.callsign || ''), distanceNm: Math.round(match.distance * 10) / 10,
-    routeMatch: match.routeMatch,
-    confidence: match.distance <= 3 && match.routeMatch ? 'High' : match.distance <= 10 ? 'Possible' : 'Low',
-    aircraftType: String(plan.aircraft_short || plan.aircraft || '').trim(), registration,
-    departure: String(plan.departure || ''), arrival: String(plan.arrival || ''),
-    altitudeFeet: match.pilot.altitude != null && Number.isFinite(Number(match.pilot.altitude)) ? Number(match.pilot.altitude) : null,
-    groundSpeedKnots: match.pilot.groundspeed != null && Number.isFinite(Number(match.pilot.groundspeed)) ? Number(match.pilot.groundspeed) : null,
-    transponder: String(match.pilot.transponder || ''), tunedFrequencyMhz: simPosition.com1FrequencyMhz, checkedAt: Date.now()
-  };
+  return exactVatsimFlight(vatsimCache.feed.pilots || [], requested, simPosition.com1FrequencyMhz);
 }
 
 function startPositionBridge() {
@@ -310,33 +221,6 @@ async function getFsuipcStatus() {
   }
 }
 
-function buildMenu() {
-  const menu = Menu.buildFromTemplate([
-    {
-      label: 'File',
-      submenu: [
-        { label: 'New lobby', click: () => mainWindow?.webContents.executeJavaScript("document.querySelector('#pairAgain')?.click()") },
-        { type: 'separator' },
-        { label: 'Exit', accelerator: 'Alt+F4', click: () => app.quit() }
-      ]
-    },
-    {
-      label: 'View',
-      submenu: [
-        { label: 'Reload', accelerator: 'Ctrl+R', click: () => mainWindow?.webContents.reload() },
-        { role: 'togglefullscreen', label: 'Full screen' }
-      ]
-    },
-    {
-      label: 'Help',
-      submenu: [
-        { label: 'About', click: () => dialog.showMessageBox(mainWindow, { type: 'info', title: WINDOW_TITLE, message: WINDOW_TITLE, detail: `Build ${APP_VERSION}\n\nA local Windows app that uses PeerJS Cloud to introduce lobby participants. Notes and flight-plan data travel directly between connected PCs over WebRTC. Internet access is also used for SimBrief, airport weather and VATSIM data. Uses the FSUIPC Client DLL for .NET by Paul Henty.` }) }
-      ]
-    }
-  ]);
-  Menu.setApplicationMenu(menu);
-}
-
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1420,
@@ -382,21 +266,16 @@ ipcMain.handle('get-airport-info', async (_event, icao, options) => {
   try { return { ok: true, data: await getAirportInfo(icao, options) }; }
   catch (error) { return { ok: false, error: error.message || 'Could not load airport information.' }; }
 });
-ipcMain.handle('get-route-atc', async (_event, origin, destination) => {
-  try { return { ok: true, data: await getRouteAtc(origin, destination) }; }
-  catch (error) { return { ok: false, error: error.message || 'Could not load ATC along the route.' }; }
-});
-ipcMain.handle('get-vatsim-flight', async (_event, origin, destination) => {
+ipcMain.handle('get-vatsim-flight', async (_event, callsign) => {
   try {
-    const livePosition = simPosition.connected && Date.now() - simPosition.updatedAt < 5000 ? simPosition : null;
-    return { ok: true, data: await getVatsimFlight(livePosition, origin, destination) };
+    return { ok: true, data: await getVatsimFlight(callsign) };
   } catch (error) { return { ok: false, error: error.message || 'Could not match a VATSIM pilot.' }; }
 });
 ipcMain.handle('get-fsuipc-status', async () => getFsuipcStatus());
 ipcMain.handle('clipboard-write', (_event, value) => { clipboard.writeText(String(value || '')); return true; });
 
 app.whenReady().then(() => {
-  buildMenu();
+  Menu.setApplicationMenu(null);
   createWindow();
   startPositionBridge();
   app.on('activate', () => {
