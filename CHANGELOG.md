@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1-alpha.10 — Alpha 0.3.1
+
+- Restyle the interface using the supplied QuestUI palette, typography, angular controls, gold active states and layered card surfaces.
+- Keep flight operations, checklist behavior and P2P synchronization unchanged.
+
 ## 0.3.1-alpha.9 — Alpha 0.3.1
 
 - Detect flight timeline milestones automatically from FSUIPC telemetry: pushback, taxi, takeoff, climb, cruise, descent, approach, landing and parking.

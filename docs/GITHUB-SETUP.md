@@ -24,12 +24,12 @@ ZIP-filen skal ikke være den eneste filen i repoet; GitHub og andre utviklere t
 
 ## Ferdig app og hjelper
 
-Opprett en Release med taggen `v0.3.1-alpha.9`, tittelen **Alpha 0.3.1**, og merk den som en **pre-release**. Bruk `CHANGELOG.md` som utgangspunkt for beskrivelsen.
+Opprett en Release med taggen `v0.3.1-alpha.10`, tittelen **Alpha 0.3.1**, og merk den som en **pre-release**. Bruk `CHANGELOG.md` som utgangspunkt for beskrivelsen.
 
 Legg ved:
 
-- `Shared-Cockpit-Flight-Desk-Setup-0.3.1-alpha.9.exe`
-- `FlightPositionBridge-0.3.1-alpha.9-win-x64.zip`
+- `Shared-Cockpit-Flight-Desk-Setup-0.3.1-alpha.10.exe`
+- `FlightPositionBridge-0.3.1-alpha.10-win-x64.zip`
 - `SHA256SUMS.txt`
 
 Installereren og simulatorhjelperen legges i Releases fordi de er for store for vanlige repo-filer. Hjelperpakken gjør at en annen utvikler kan gjenbruke den ferdige hjelperen uten å bygge C#-delen.
