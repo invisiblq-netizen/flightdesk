@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1-alpha.3 — Alpha 0.3.1
+
+- Capitalize the Flight Board, Flight Plan and sidebar labels consistently; write **Enroute** as one word in navigation and cockpit notes.
+
 ## 0.3.1-alpha.2 — Alpha 0.3.1
 
 - Avoid installing a separate uninstaller icon file that could fail with “Error opening file for writing: uninstallericon.ico” in restricted install folders. The app and setup icons remain unchanged.
