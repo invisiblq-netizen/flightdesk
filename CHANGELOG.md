@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1-alpha.12 — Alpha 0.3.1
+
+- Fix joining lobbies with lowercase or mixed-case codes and codes pasted with surrounding spaces.
+- Show the app validation message for invalid lobby codes instead of the browser format warning.
+- Add regression coverage for accepted and invalid lobby-code inputs.
+
 ## 0.3.1-alpha.11 — Alpha 0.3.1
 
 - Refresh the Flight Desk with the Prismatic Pay inspired design, including light and dark themes with a saved theme toggle.
