@@ -30,14 +30,14 @@
 </div></header>
 <section id="gate" class="gate card">
   <h2>Start or join a shared cockpit</h2>
-  <p>Enter your name and choose a role. The host opens a lobby; other pilots join with the seven-character code on the host’s screen.</p>
+  <p>Enter your name and choose a role. The host opens a new lobby; other pilots join with its seven-character code. A fresh code is generated for each flight, and previous sessions are not reopened automatically.</p>
   <label for="name">Your name</label><input id="name" class="field" maxlength="30" placeholder="For example: Alex" autocomplete="name">
   <label for="gateRole">Your role</label><select id="gateRole" class="field"><option value="PF">Pilot Flying (PF)</option><option value="PM">Pilot Monitoring (PM)</option></select>
   <div id="connectChoices" class="gate-actions">
     <div class="card"><h3>Host a lobby</h3><p class="muted small">Create a room and share its short code with your friend.</p><button class="primary" id="create">Create lobby</button></div>
     <div class="card"><h3>Join a lobby</h3><form id="joinForm"><label for="lobbyCodeInput">Seven-character lobby code</label><input id="lobbyCodeInput" class="field room-code" maxlength="7" minlength="7" pattern="[A-HJ-NP-Z2-9]{7}" placeholder="UTOWQAS" autocomplete="off" spellcheck="false" required><button class="primary" id="join">Join lobby</button></form></div>
   </div>
-  <button id="resumeLocal" class="hidden">Reopen saved lobby</button><div id="gateerror" class="status" role="status" aria-live="polite"></div>
+  <div id="gateerror" class="status" role="status" aria-live="polite"></div>
   <div class="notice">The app automatically uses PeerJS Cloud to introduce the lobby participants; you do not need to run or sign up for a server. Notes, checklists and flight-plan data are sent directly between the PCs over WebRTC. A connection still depends on the signalling service and both networks allowing direct P2P traffic.</div>
 </section><section id="desk" class="hidden desk-layout"><aside class="side-nav" aria-label="Flight desk pages"><div class="side-nav-title">FLIGHT DESK</div><button class="nav-item active" data-page="overview">Flight Board</button><button class="nav-item" data-page="flight-plan">Flight Plan</button><button class="nav-item" data-page="checklist">Checklist</button><button class="nav-item" data-page="notes" data-note-tab="brief">Briefing</button><button class="nav-item" data-page="notes" data-note-tab="enroute">Enroute</button><button class="nav-item" data-page="notes" data-note-tab="debrief">Debrief</button></aside><div class="page-shell"><section class="app-page active" id="page-overview"><div class="single-article"><article class="card"><div class="card-head"><span class="eyebrow">FLIGHT BOARD</span><span class="pill" id="aircraftBadge">A320</span></div><div class="route"><div class="airport-block"><div class="airport" id="orig">—</div><div class="city">Departure</div><div class="airport-name" id="origName">Airport name will appear here</div><div class="metar" id="origMetar">Import a flight plan for weather</div><ul class="atc-list" id="origAtc"></ul></div><div class="route-center"><div class="route-progress" id="routeProgress">Flight progress · waiting for simulator</div><div class="route-track" id="routeTrack"><span class="route-plane" id="routePlane">✈</span></div></div><div class="airport-block"><div class="airport" id="dest">—</div><div class="city">Arrival</div><div class="airport-name" id="destName">Airport name will appear here</div><div class="metar" id="destMetar">Import a flight plan for weather</div><ul class="atc-list" id="destAtc"></ul></div></div><div class="stats"><div class="stat"><small>Flight number</small><b id="flightno">—</b></div><div class="stat"><small>Block time</small><b id="time">—</b></div><div class="stat"><small>Distance</small><b id="distance">—</b></div><div class="stat"><small>Aircraft</small><b id="aircraftShort">A320</b></div></div></article></div><article class="card readiness-card" id="readiness"></article></section><section class="app-page" id="page-flight-plan"><div class="single-article"><article class="card"><div class="card-head"><h2>SimBrief flight plan</h2><span class="muted small" id="importLabel">Pilot ID / username</span></div><form class="simform" id="simform"><input id="simid" placeholder="Pilot ID or username" required><button class="primary">Fetch plan</button></form><div class="status" id="simstatus">Fetches the latest generated plan when clicked.</div><span class="muted small" id="ofpmeta"></span><button class="small" id="showofp" disabled>View flight plan PDF</button></article></div><article class="card hidden pdf-card" id="ofpCard"><div class="card-head"><div><h2>SimBrief flight plan PDF</h2><span class="muted small" id="pdfStatus" role="status"></span></div><div class="pdf-controls"><button class="small" id="pdfZoomOut" aria-label="Zoom out">−</button><button class="small" id="pdfZoomIn" aria-label="Zoom in">+</button><button class="small" id="pdfPrev">Previous</button><span class="muted small" id="pdfPage"></span><button class="small" id="pdfNext">Next</button><button class="small" id="closeOfp">Close</button></div></div><div class="pdf-viewport"><canvas id="pdfCanvas" class="hidden"></canvas></div></article></section><section class="app-page" id="page-checklist"><div class="single-article"><article class="card"><div class="card-head"><div><h2>Tasks / checklist</h2><span class="muted small" id="taskhint">Automatically selected by aircraft type</span></div><select id="aircraftSelect" class="select" aria-label="Select aircraft type"><option value="A320">Airbus A320</option><option value="B738">Boeing 737</option><option value="B789">Boeing 787</option><option value="B77W">Boeing 777</option><option value="A359">Airbus A350</option><option value="DH8D">Dash 8 Q400</option><option value="C172">Cessna 172</option><option value="GENERIC">Other aircraft</option></select></div><div class="tasks" id="tasks"></div><div style="display:flex;gap:7px;margin-top:12px"><button class="small" id="addtask">+ Add task</button><button class="small" id="resetTasks">Reset checklist</button></div></article></div><div class="notice">These are simulator crew-coordination flows and memory aids. Follow the exact aircraft add-on checklist, POH/QRH, limits and SOP; this app is not an operational checklist.</div></section><section class="app-page" id="page-notes"><div class="single-article"><article class="card"><div class="card-head"><h2>Cockpit notes</h2><div class="tabs"><button class="tab active" data-tab="brief">Briefing</button><button class="tab" data-tab="enroute">Enroute</button><button class="tab" data-tab="debrief">Debrief</button></div></div><textarea class="notes" id="notes" placeholder="Runway, taxi, callouts, who does what …"></textarea><div class="note-foot"><span class="muted small" id="saved">Saved on this PC</span><span class="muted small" id="myrole"></span></div></article></div></section></div></section>
 <p class="footer">PeerJS Cloud is used automatically to set up short-code lobbies. Shared cockpit data travels directly between connected PCs over WebRTC and session data is saved on this PC.</p></main>
@@ -144,6 +144,7 @@ const checklistPhases=[
 const $=selector=>document.querySelector(selector);
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const SESSION_KEY='sharedCockpitP2PSession';
+const LAST_LOBBY_CODE_KEY='sharedCockpitLastLobbyCode';
 const STATE_PREFIX='sharedCockpitP2PState:';
 const DEVICE_KEY='sharedCockpitP2PDevice';
 const ROOM_RE=/^[A-HJ-NP-Z2-9]{7}$/;
@@ -154,7 +155,7 @@ function activatePage(page,noteTab=null){const allowed=['overview','flight-plan'
 function activateNoteTab(next){if(!['brief','enroute','debrief'].includes(next))return;tab=next;document.querySelectorAll('.tab').forEach(item=>item.classList.toggle('active',item.dataset.tab===tab));$('#notes').value=data.notes[tab]||'';document.querySelectorAll('.nav-item[data-note-tab]').forEach(item=>item.classList.toggle('active',item.dataset.noteTab===tab))}
 const defaultData=()=>({notes:{brief:'',enroute:'',debrief:''},tasks:[],aircraft:'A320',plan:null});
 let session=null,data=defaultData(),tab='brief',activePage='overview',pendingNote=null,localEditAt=0;
-let lobbyBusy=false,resumeTimer=null;
+let lobbyBusy=false;
 let peer=null,connections=new Map(),peerConnected=false,remoteParticipants=new Map();
 let stateVersions={},localClock=0,remoteName='',remoteRole='PM';
 let currentPdf=null,currentPdfPage=1,currentPdfScale=1.15,currentPdfKey='',pdfRenderToken=0;
@@ -162,7 +163,7 @@ const incomingTransfers=new Map(),airportRequests=new Map(),airportInfoCache=new
 let currentSimPosition=null,remoteFlightPosition=null,routePosition=null,lastFlightPositionSent=0;
 function makeDeviceId(){if(crypto.randomUUID)return crypto.randomUUID();return [...crypto.getRandomValues(new Uint8Array(16))].map(byte=>byte.toString(16).padStart(2,'0')).join('')}
 let deviceId=localStorage.getItem(DEVICE_KEY)||makeDeviceId();localStorage.setItem(DEVICE_KEY,deviceId);
-function randomLobbyCode(){const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return [...crypto.getRandomValues(new Uint8Array(7))].map(byte=>alphabet[byte%alphabet.length]).join('')}
+function randomLobbyCode(){const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',previous=localStorage.getItem(LAST_LOBBY_CODE_KEY)||'';for(let attempt=0;attempt<8;attempt++){const code=[...crypto.getRandomValues(new Uint8Array(7))].map(byte=>alphabet[byte%alphabet.length]).join('');if(code!==previous){localStorage.setItem(LAST_LOBBY_CODE_KEY,code);return code}}throw new Error('Could not generate a new lobby code. Please try again.') }
 function expandChecklistText(value,profile){return value.replace(/\{\{(fms|guidance|engine|specific)\}\}/g,(_,key)=>profile[key]||'aircraft add-on')}
 function tasksFor(type){const profile=profiles[type]||profiles.GENERIC;return checklistPhases.map((phase,index)=>({id:phase.id,text:phase.text,expanded:index===0,custom:false,flows:{PF:phase.PF.map(step=>({text:expandChecklistText(step.text,profile),help:expandChecklistText(step.help,profile),done:false})),PM:phase.PM.map(step=>({text:expandChecklistText(step.text,profile),help:expandChecklistText(step.help,profile),done:false}))}}))}
 function normalizeChecklistTasks(source,type){
@@ -202,7 +203,7 @@ function prepareSession(role,name,code,pilotRole){
   session={code,name,role,pilotRole};loadSessionState(code);
   if(!stateVersions.tasks)postPatch({aircraft:data.aircraft,tasks:data.tasks});
   saveSessionState();
-  localStorage.setItem(SESSION_KEY,JSON.stringify(session));localStorage.setItem('sharedCockpitName',name);localStorage.setItem('sharedCockpitPilotRole',pilotRole);
+  localStorage.setItem('sharedCockpitName',name);localStorage.setItem('sharedCockpitPilotRole',pilotRole);
   return session;
 }
 function versionIsNewer(next,previous){if(!previous)return true;if(next.clock!==previous.clock)return next.clock>previous.clock;return String(next.actor)>String(previous.actor)}
@@ -242,12 +243,12 @@ function stopPeer(){
 }
 function setStatus(element,message,error=false){if(!element)return;element.textContent=message;element.classList.toggle('error',!!error)}
 function showDesk(){if(!session)return;$('#gate').classList.add('hidden');$('#desk').classList.remove('hidden');$('#sessionbar').classList.remove('hidden');$('#pairAgain').classList.remove('hidden');$('#who').textContent='You: '+session.name;$('#lobbyCode').textContent=session.code;$('#sessionRole').value=session.pilotRole;applyState(data);renderMembers();activatePage(activePage);refreshRouteInfo(true)}
-function showPairing(){clearTimeout(resumeTimer);stopPeer();renderMembers();$('#desk').classList.add('hidden');$('#sessionbar').classList.add('hidden');$('#gate').classList.remove('hidden');$('#gateerror').textContent='Create a lobby or join your pilots with the seven-character code.';$('#name').value=session?.name||localStorage.getItem('sharedCockpitName')||'';$('#gateRole').value=session?.pilotRole||localStorage.getItem('sharedCockpitPilotRole')||PM}
+function showPairing(){stopPeer();renderMembers();$('#desk').classList.add('hidden');$('#sessionbar').classList.add('hidden');$('#gate').classList.remove('hidden');$('#gateerror').textContent='Create a lobby or join your pilots with the seven-character code.';$('#name').value=session?.name||localStorage.getItem('sharedCockpitName')||'';$('#gateRole').value=session?.pilotRole||localStorage.getItem('sharedCockpitPilotRole')||PM}
 function validName(){const name=$('#name').value.trim();if(!name){setStatus($('#gateerror'),'Enter your name.',true);$('#name').focus();return''}if(name.length>30){setStatus($('#gateerror'),'Use a name with 30 characters or fewer.',true);return''}localStorage.setItem('sharedCockpitName',name);return name}
 function selectedRole(){const role=$('#gateRole').value;localStorage.setItem('sharedCockpitPilotRole',role);return role===PF?PF:PM}
 function setLobbyBusy(busy){
   lobbyBusy=busy;
-  for(const id of ['create','join','resumeLocal'])$('#'+id).disabled=busy;
+  for(const id of ['create','join'])$('#'+id).disabled=busy;
   $('#create').textContent=busy?'Connecting…':'Create lobby';
 }
 function lobbyFailed(error,fallback){
@@ -256,7 +257,7 @@ function lobbyFailed(error,fallback){
   setStatus($('#gateerror'),error?.message||fallback,true);
 }
 async function createLobby(){
-  if(lobbyBusy)return;clearTimeout(resumeTimer);setLobbyBusy(true);
+  if(lobbyBusy)return;setLobbyBusy(true);
   try{
     const name=validName();if(!name)return;const role=selectedRole();
     stopPeer();setStatus($('#gateerror'),'Opening a private lobby…');
@@ -271,7 +272,7 @@ async function createLobby(){
   }catch(error){lobbyFailed(error,'Could not create the lobby. Please try again.')}finally{setLobbyBusy(false)}
 }
 async function joinLobby(){
-  if(lobbyBusy)return;clearTimeout(resumeTimer);setLobbyBusy(true);
+  if(lobbyBusy)return;setLobbyBusy(true);
   try{
     const name=validName();if(!name)return;const code=$('#lobbyCodeInput').value.trim().toUpperCase();
     if(!ROOM_RE.test(code)){setStatus($('#gateerror'),'Enter the seven-character lobby code.',true);$('#lobbyCodeInput').focus();return}
@@ -281,17 +282,7 @@ async function joinLobby(){
     showDesk();setConnection('Connecting to host',false);setStatus($('#saved'),'Connecting directly to the lobby host…');
   }catch(error){lobbyFailed(error,'Could not join the lobby. Please try again.')}finally{setLobbyBusy(false)}
 }
-async function resumeSavedSession(){
-  if(lobbyBusy||!session||!ROOM_RE.test(session.code)||!['host','join'].includes(session.role))return;
-  clearTimeout(resumeTimer);setLobbyBusy(true);
-  try{
-    stopPeer();loadSessionState(session.code);saveSessionState();setStatus($('#gateerror'),'Reopening saved lobby…');
-    const instance=attachPeer(session.role,session.role==='host'?session.code:undefined);await waitForPeerOpen(instance);
-    if(session.role==='join'){const connection=instance.connect(session.code,{label:'shared-cockpit',reliable:true,serialization:'json'});registerConnection(connection)}
-    showDesk();setStatus($('#saved'),session.role==='host'?'Lobby reopened. Your pilots can join with the saved code.':'Rejoining your saved lobby…');
-  }catch(error){lobbyFailed(error,'Could not reopen the saved lobby.');$('#resumeLocal').classList.remove('hidden')}finally{setLobbyBusy(false)}
-}
-function setPilotRole(role){if(!session)return;session.pilotRole=role===PF?PF:PM;localStorage.setItem(SESSION_KEY,JSON.stringify(session));localStorage.setItem('sharedCockpitPilotRole',session.pilotRole);renderMembers();renderTasks();sendChannel({type:'hello',name:session.name,role:session.pilotRole,isHost:session.role==='host'});if(session.role==='host')broadcastRoster()}
+function setPilotRole(role){if(!session)return;session.pilotRole=role===PF?PF:PM;localStorage.setItem('sharedCockpitPilotRole',session.pilotRole);renderMembers();renderTasks();sendChannel({type:'hello',name:session.name,role:session.pilotRole,isHost:session.role==='host'});if(session.role==='host')broadcastRoster()}
 async function copyText(text,button){try{await window.cockpitDesktop.copyText(text);const previous=button.textContent;button.textContent='Copied';setTimeout(()=>button.textContent=previous,1300)}catch{setStatus($('#saved'),'Copy failed. Select the code and press Ctrl+C.',true)}}
 function first(object,paths){for(const path of paths){const value=path.split('.').reduce((current,key)=>current?.[key],object);if(value!==undefined&&value!==null&&value!==''&&typeof value!=='object')return String(value)}return''}
 function getPlanAirport(plan,type){return first(plan,[`${type}.icao_code`,`${type}.icao`,`${type}.icao_code.value`]).toUpperCase()}
@@ -372,7 +363,6 @@ function connectInviteHandlers(){
   $('#joinForm').onsubmit=event=>{event.preventDefault();joinLobby()};
   $('#pairAgain').onclick=showPairing;
   $('#leave').onclick=showPairing;
-  $('#resumeLocal').onclick=resumeSavedSession;
   document.querySelectorAll('.nav-item').forEach(button=>button.onclick=()=>activatePage(button.dataset.page,button.dataset.noteTab||null));
   $('#copyLobbyCode').onclick=()=>copyText(session?.code||'',$('#copyLobbyCode'));
   $('#gateRole').onchange=()=>localStorage.setItem('sharedCockpitPilotRole',$('#gateRole').value);
@@ -394,11 +384,11 @@ function connectInviteHandlers(){
 }
 function aircraftType(plan){const raw=first(plan,['aircraft.icaocode','aircraft.icao_code','aircraft.icaotype','aircraft.name','general.aircraft']).toUpperCase().replace(/[^A-Z0-9]/g,'');if(raw.includes('A320')||raw.includes('A20N')||raw.includes('A319')||raw.includes('A321'))return'A320';if(raw.includes('B738')||raw.includes('B737')||raw.includes('B739')||raw.includes('B38M'))return'B738';if(raw.includes('B789')||raw.includes('B788')||raw.includes('B78X'))return'B789';if(raw.includes('B77'))return'B77W';if(raw.includes('A359')||raw.includes('A35'))return'A359';if(raw.includes('DH8')||raw.includes('Q400')||raw.includes('AT76'))return'DH8D';if(raw.includes('C172'))return'C172';return'GENERIC'}
 const labels={A320:'Airbus A320',B738:'Boeing 737',B789:'Boeing 787',B77W:'Boeing 777',A359:'Airbus A350',DH8D:'Dash 8 Q400',C172:'Cessna 172',GENERIC:'Other aircraft'};
-function initializeSavedSession(){try{const saved=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');if(saved?.code&&saved?.name){session=saved;$('#name').value=saved.name;$('#gateRole').value=saved.pilotRole||localStorage.getItem('sharedCockpitPilotRole')||PM;loadSessionState(saved.code);if(ROOM_RE.test(saved.code)&&['host','join'].includes(saved.role)){$('#resumeLocal').classList.remove('hidden');$('#resumeLocal').textContent='Reopen saved lobby';resumeTimer=setTimeout(()=>resumeSavedSession(),700)}else setStatus($('#gateerror'),'This is an older local session. Create a new lobby to connect with a short code.')}}catch{}}
+function clearPreviousSession(){try{const saved=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');if(saved?.code&&ROOM_RE.test(saved.code))localStorage.setItem(LAST_LOBBY_CODE_KEY,saved.code);localStorage.removeItem(SESSION_KEY)}catch{}}
 if(window.pdfjsLib?.GlobalWorkerOptions)window.pdfjsLib.GlobalWorkerOptions.workerSrc=new URL('vendor/pdfjs-worker.bundle.js',window.location.href).toString();
 connectInviteHandlers();
 window.cockpitDesktop.getAppInfo?.().then(info=>{if(info?.displayVersion){$('#appVersion').textContent=info.displayVersion;$('#appVersion').title='Build '+info.version}}).catch(()=>{});
-initializeSavedSession();
+clearPreviousSession();
 setConnection('P2P disconnected',false);
 fetchFsuipcStatus();
 setInterval(fetchFsuipcStatus,5000);

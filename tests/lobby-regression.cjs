@@ -35,9 +35,9 @@ function app({saved = false, tasks = oldTasks, failStorage = false, peerFailures
   }
   const context = vm.createContext({ console, structuredClone, TextEncoder, TextDecoder, URL, crypto:webcrypto, Peer:FakePeer, queueMicrotask,
     setTimeout(fn, ms){const id=nextTimer++;timers.set(id,{fn,ms});return id;}, clearTimeout:id=>timers.delete(id), setInterval(){},
-    localStorage: {getItem:key=>storage.get(key)||null,setItem(key,value){if(writesFail)throw new Error('Local storage write failed');storage.set(key,String(value));}},
+    localStorage: {getItem:key=>storage.get(key)||null,setItem(key,value){if(writesFail)throw new Error('Local storage write failed');storage.set(key,String(value));},removeItem:key=>storage.delete(key)},
     document:{querySelector:selector=>nodes.get(selector.slice(1))||null,querySelectorAll:()=>[],activeElement:null},
-    window:{location:{href:'file:///flightdesk.html'},addEventListener(){},cockpitDesktop:{getFsuipcStatus:async()=>({running:false}),getSimPosition:async()=>({connected:false}),getAppInfo:async()=>({name:'Shared Cockpit Flight Desk',version:'0.3.1-alpha.3',displayVersion:'Alpha 0.3.1'})}}
+    window:{location:{href:'file:///flightdesk.html'},addEventListener(){},cockpitDesktop:{getFsuipcStatus:async()=>({running:false}),getSimPosition:async()=>({connected:false}),getAppInfo:async()=>({name:'Shared Cockpit Flight Desk',version:'0.3.1-alpha.4',displayVersion:'Alpha 0.3.1'})}}
   });
   vm.runInContext(source,context,{filename:'flightdesk.html'});
   writesFail=failStorage;
@@ -48,9 +48,12 @@ async function run() {
   const legacy=app({saved:true});
   try {
     await legacy.nodes.get('create').onclick();
-    assert.equal(legacy.nodes.get('desk').classList.contains('hidden'),false,'Create must open the desk with older saved data');
+    assert.equal(legacy.nodes.get('desk').classList.contains('hidden'),false,'Create must open a fresh desk despite a saved previous session');
     assert.equal(legacy.nodes.get('create').disabled,false,'Create must be available after finishing');
-    console.log('PASS: Create lobby after loading a legacy checklist.');
+    assert.notEqual(legacy.nodes.get('lobbyCode').textContent,savedSession.code,'A new host session must get a new code');
+    assert.equal(legacy.eval('data.notes.brief'),'','A fresh lobby must not restore the previous briefing');
+    assert.doesNotMatch(legacy.nodes.get('tasks').innerHTML,/Bring the destination chart/,'A fresh lobby must not restore the previous checklist');
+    console.log('PASS: Creating a lobby starts fresh and uses a new code.');
   } catch(error) {
     console.error('LEGACY CREATE FAILURE:',error.message,'create disabled:',legacy.nodes.get('create').disabled,'peer connections attempted:',legacy.peers.length);
     throw error;
@@ -61,12 +64,12 @@ async function run() {
   assert.equal(fresh.peers.length,1);
   console.log('PASS: Fresh host creates one seven-character lobby.');
 
-  const resume=app({saved:true});
-  await resume.eval('resumeSavedSession()');
-  assert.equal(resume.nodes.get('desk').classList.contains('hidden'),false);
-  assert.equal(resume.eval('data.notes.brief'),'Keep this briefing');
-  assert.match(resume.nodes.get('tasks').innerHTML,/Bring the destination chart/,'Legacy custom tasks must survive');
-  console.log('PASS: Reopening preserves notes and older custom checklist items.');
+  const noAutoResume=app({saved:true});
+  assert.equal(noAutoResume.nodes.get('desk').classList.contains('hidden'),true,'The app must stay on the lobby chooser at startup');
+  assert.equal(noAutoResume.peers.length,0,'The app must not reconnect to the saved session');
+  assert.equal(noAutoResume.storage.has('sharedCockpitP2PSession'),false,'The saved active-session pointer must be cleared');
+  assert.equal(noAutoResume.storage.get('sharedCockpitLastLobbyCode'),savedSession.code,'Remember the old code only to avoid reusing it');
+  console.log('PASS: Startup does not reconnect to the previous lobby.');
 
   const failed=app({peerFailures:['network']});
   await failed.nodes.get('create').onclick();
@@ -91,11 +94,10 @@ async function run() {
   console.log('PASS: Setup failure is caught and controls are restored.');
 
   const mixed=app({saved:true,tasks:[{id:'brief',text:'Preflight and crew briefing',flows:{PF:[{text:'PF item',done:true}],PM:[{text:'PM item'}]}},...oldTasks]});
-  await mixed.eval('resumeSavedSession()');
-  assert.equal(mixed.nodes.get('desk').classList.contains('hidden'),false);
+  await mixed.eval("loadSessionState('ABC2345');applyState(data)");
   assert.match(mixed.nodes.get('tasks').innerHTML,/PF item/);
   assert.match(mixed.nodes.get('tasks').innerHTML,/Bring the destination chart/);
-  console.log('PASS: Mixed checklist formats do not prevent reopening.');
+  console.log('PASS: Explicitly loading an existing lobby state preserves mixed checklist formats.');
 
   const join=app({saved:true});
   join.nodes.get('lobbyCodeInput').value=savedSession.code;
@@ -130,12 +132,15 @@ async function run() {
   assert.equal(doubleCreate.nodes.get('desk').classList.contains('hidden'),false);
   console.log('PASS: Concurrent Create clicks create only one peer.');
 
-  const scheduledResume=app({saved:true});
-  assert.equal([...scheduledResume.timers.values()].filter(timer=>timer.ms===700).length,1);
-  await scheduledResume.nodes.get('create').onclick();
-  assert.equal([...scheduledResume.timers.values()].filter(timer=>timer.ms===700).length,0,'Creating a lobby must cancel the pending saved-lobby resume');
-  assert.equal(scheduledResume.peers.length,1);
-  console.log('PASS: Create cancels the scheduled automatic reopen.');
+  const newSession=app({saved:true});
+  assert.equal([...newSession.timers.values()].filter(timer=>timer.ms===700).length,0,'Startup must not schedule an automatic resume');
+  await newSession.nodes.get('create').onclick();
+  const firstCode=newSession.nodes.get('lobbyCode').textContent;
+  newSession.nodes.get('leave').onclick();
+  await newSession.nodes.get('create').onclick();
+  assert.notEqual(newSession.nodes.get('lobbyCode').textContent,firstCode,'Every newly created lobby must have a different code');
+  assert.equal(newSession.peers.length,2);
+  console.log('PASS: Each created lobby gets a new code with no scheduled resume.');
 
   const snapshot=JSON.parse(fresh.eval('JSON.stringify(snapshotFields())'));
   const tasksField=snapshot.find(field=>field.key==='tasks');

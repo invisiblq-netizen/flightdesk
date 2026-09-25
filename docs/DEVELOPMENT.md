@@ -2,7 +2,7 @@
 
 ## Current state
 
-The Windows app is in alpha testing. Version `0.3.1-alpha.3` displays as **Alpha 0.3.1**. Keep `package.json` as the version source. Preserve the package name, app ID and product name when updating so installation and local storage continue using the existing identity.
+The Windows app is in alpha testing. Version `0.3.1-alpha.4` displays as **Alpha 0.3.1**. Keep `package.json` as the version source. Preserve the package name, app ID and product name when updating so installation and local storage continue using the existing identity.
 
 The earlier installer used version 1.3.0 before alpha numbering was introduced. The current NSIS installer is configured to preserve application data.
 
@@ -10,7 +10,7 @@ The earlier installer used version 1.3.0 before alpha numbering was introduced. 
 
 `Create lobby` previously disabled itself and called `stopPeer()` before entering its error handler. That cleanup rendered a checklist that could still contain the old `details`/`done` format; accessing `phase.flows.PF` then threw before any network connection was attempted.
 
-The alpha fix normalizes saved state before rendering, retains old items in a saved checklist section, separates connection cleanup from checklist rendering and restores controls in `finally`. Create/join/resume share a busy guard. Tests in `tests/lobby-regression.cjs` reproduce the relevant saved-state and connection-failure cases with simulated peers.
+The alpha fix normalizes saved state before rendering, retains old items in a saved checklist section, separates connection cleanup from checklist rendering and restores controls in `finally`. Create and join share a busy guard. Previous sessions are not resumed at startup; every host lobby gets a freshly generated code. Tests in `tests/lobby-regression.cjs` exercise lobby setup and connection failures with simulated peers.
 
 Session patches carry per-field logical clocks. Large messages are chunked before transmission. SimBrief state is compacted so the full raw response is not sent to the other PC. The PDF is downloaded through Electron and rendered using the bundled PDF.js assets.
 

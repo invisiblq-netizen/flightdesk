@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1-alpha.4 — Alpha 0.3.1
+
+- Stop automatically reconnecting to the previous lobby when the app opens.
+- Generate a fresh seven-character lobby code for every host session, avoiding the previous code.
+
 ## 0.3.1-alpha.3 — Alpha 0.3.1
 
 - Capitalize the Flight Board, Flight Plan and sidebar labels consistently; write **Enroute** as one word in navigation and cockpit notes.
