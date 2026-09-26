@@ -80,6 +80,16 @@ async function run() {
   assert.ok(Math.abs(resized.canvas-(resized.viewport-32))<2,JSON.stringify(resized));
   fs.writeFileSync(path.join(__dirname,'../work/ui-checks/flight-plan.png'),(await win.webContents.capturePage()).toPNG());
   report('PASS: Real PDF renders inline at full width, supports page navigation and resizes with the window.');
+  const splash=new BrowserWindow({show:false,width:1000,height:555,webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true}});
+  await splash.loadFile(path.join(__dirname,'../src/splash.html'));
+  const splashLayout=await splash.webContents.executeJavaScript(`new Promise(resolve=>{const image=new Image();image.onload=()=>resolve({width:image.naturalWidth,height:image.naturalHeight,background:getComputedStyle(document.querySelector('.splash')).backgroundImage,animation:getComputedStyle(document.querySelector('.spinner')).animationName,text:document.querySelector('[role=status]').textContent});image.onerror=()=>resolve({error:'Background image failed to load'});image.src='assets/loading-background.png'})`);
+  assert.ok(splashLayout.width>1000&&splashLayout.height>500,JSON.stringify(splashLayout));
+  assert.match(splashLayout.background,/loading-background\.png/);
+  assert.equal(splashLayout.animation,'spin');
+  assert.match(splashLayout.text,/Preparing your cockpit/);
+  fs.writeFileSync(path.join(__dirname,'../work/ui-checks/splash.png'),(await splash.webContents.capturePage()).toPNG());
+  splash.destroy();
+  report('PASS: Startup splash displays the provided background image with an animated loading spinner.');
   win.destroy();app.quit();
 }
 run().catch(error=>{report(error.stack||String(error));if(win)win.destroy();app.exit(1)});

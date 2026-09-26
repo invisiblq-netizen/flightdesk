@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1-alpha.20 — Alpha 0.3.1
+
+- Add a startup splash screen using the supplied airport background, with a spinning loading indicator.
+
 ## 0.3.1-alpha.19 — Alpha 0.3.1
 
 - Preserve the SimBrief aircraft registration when compacting imported flight plans so it appears on the Flight Board.

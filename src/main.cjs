@@ -15,6 +15,7 @@ const APP_DISPLAY_VERSION = APP_VERSION.includes('-alpha')
 const WINDOW_TITLE = `${APP_TITLE} — ${APP_DISPLAY_VERSION}`;
 const USER_AGENT = `SharedCockpitFlightDesk/${APP_VERSION}`;
 let mainWindow;
+let startupSplash;
 let vatsimCache = { expiresAt: 0, feed: null, transceivers: null };
 const airportCache = new Map();
 const aircraftPhotoCache = new Map();
@@ -304,7 +305,27 @@ async function getFsuipcStatus() {
   }
 }
 
+function createStartupSplash() {
+  startupSplash = new BrowserWindow({
+    width: 1000,
+    height: 555,
+    resizable: false,
+    frame: false,
+    show: false,
+    backgroundColor: '#070b16',
+    icon: path.join(__dirname, 'vendor', 'app-icon.png'),
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
+  });
+  startupSplash.once('ready-to-show', () => {
+    if (mainWindow?.isVisible()) startupSplash?.close();
+    else startupSplash?.show();
+  });
+  startupSplash.on('closed', () => { startupSplash = null; });
+  startupSplash.loadFile(path.join(__dirname, 'splash.html'));
+}
+
 function createWindow() {
+  createStartupSplash();
   mainWindow = new BrowserWindow({
     width: 1420,
     height: 920,
@@ -328,7 +349,12 @@ function createWindow() {
     if (url.startsWith('https://')) require('electron').shell.openExternal(url);
     return { action: 'deny' };
   });
-  mainWindow.once('ready-to-show', () => { mainWindow.maximize(); mainWindow.show(); });
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.maximize();
+    mainWindow.show();
+    startupSplash?.close();
+    startupSplash = null;
+  });
   mainWindow.loadFile(path.join(__dirname, 'flightdesk.html'));
 }
 

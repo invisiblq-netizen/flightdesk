@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Flight Desk</title>
+  <style>
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#070b16}
+    body{font-family:Inter,"Segoe UI",sans-serif;color:#f4f3ff}
+    .splash{position:relative;width:100%;height:100%;background:#070b16 url("assets/loading-background.png") center/cover no-repeat;-webkit-app-region:drag}
+    .loading{position:absolute;left:50%;bottom:28px;display:flex;align-items:center;gap:11px;transform:translateX(-50%);padding:10px 15px;border:1px solid #aaa1ff3d;border-radius:999px;background:#070b16b8;box-shadow:0 5px 24px #0008;backdrop-filter:blur(8px);font-size:13px;letter-spacing:.02em;text-shadow:0 1px 5px #000;-webkit-app-region:no-drag}
+    .spinner{width:19px;height:19px;flex:none;border:2px solid #b3aaff55;border-top-color:#a585ff;border-right-color:#7b61ff;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media(prefers-reduced-motion:reduce){.spinner{animation-duration:2s}}
+  </style>
+</head>
+<body>
+  <main class="splash" aria-label="Flight Desk is starting">
+    <div class="loading" role="status" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Preparing your cockpit…</span></div>
+  </main>
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
   "name": "shared-cockpit-flight-desk",
-  "version": "0.3.1-alpha.19",
+  "version": "0.3.1-alpha.20",
   "private": true,
   "description": "Windows companion for shared cockpit flying with SimBrief, shared crew notes, PF/PM flows, VATSIM information and P2P synchronization.",
   "packageManager": "pnpm@11.19.0",
