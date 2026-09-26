@@ -25,13 +25,15 @@ async function run() {
   console.log('PASS: UTC departure window and clocks handle midnight, date rollover and exact one-hour boundaries.');
 
   let calls=0;
-  const plan={times:{sched_out:String(Date.parse('2026-09-26T00:15:00Z')/1000)},aircraft:{icaocode:'B738'},general:{callsign:'SAS123'}};
+  const plan={times:{sched_out:String(Date.parse('2026-09-26T00:15:00Z')/1000)},aircraft:{icaocode:'B738',reg:'OY-KBH'},general:{callsign:'SAS123'}};
   flight.context.window.cockpitDesktop.fetchSimbrief=async id=>{calls++;assert.equal(id,'saved-pilot');return {ok:true,data:plan}};
   flight.storage.set('sharedCockpitSimBriefId','saved-pilot');
   flight.eval('connectInviteHandlers()');
   assert.equal(flight.nodes.get('simid').value,'saved-pilot');
   await flight.eval('autoImportSimbrief()');
   assert.equal(flight.eval('data.aircraft'),'B738');
+  assert.equal(flight.eval('data.plan.aircraft.reg'),'OY-KBH','SimBrief aircraft registration must survive plan compaction');
+  assert.equal(flight.nodes.get('aircraftReg').textContent,'OY-KBH','Flight Board must display the SimBrief registration');
   assert.equal(flight.nodes.get('importLabel').textContent,'Automatically imported');
   await flight.eval('autoImportSimbrief()');
   assert.equal(calls,1,'Existing plan must never be automatically replaced');

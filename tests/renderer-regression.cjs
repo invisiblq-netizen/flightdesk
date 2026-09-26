@@ -32,8 +32,9 @@ async function run() {
     assert.equal(layout.background,'rgb(0, 0, 0)');
     assert.equal(layout.waiting,'rgb(255, 207, 77)');
     assert.equal(layout.atc,'rgb(163, 255, 182)');
-    const chrome=await evaluate(`(()=>{const nav=document.querySelector('.side-nav'),tools=document.querySelector('#headerTools'),theme=document.querySelector('#themeToggle');return {navHeight:nav.clientHeight,lastNavBottom:nav.lastElementChild.offsetTop+nav.lastElementChild.offsetHeight-nav.offsetTop,themeInHeader:theme.parentElement===tools,clocksInHeader:tools.contains(document.querySelector('#zuluClock')),progressBackground:getComputedStyle(document.querySelector('#routeProgress')).backgroundColor}})()`);
-    assert.ok(chrome.navHeight<=chrome.lastNavBottom+40,'Sidebar must end after its navigation links');
+    const chrome=await evaluate(`(()=>{const nav=document.querySelector('.side-nav'),shell=document.querySelector('.page-shell'),board=document.querySelector('#page-overview .flight-board-layout > .card'),readiness=document.querySelector('#readiness'),tools=document.querySelector('#headerTools'),theme=document.querySelector('#themeToggle');return {navBottom:nav.getBoundingClientRect().bottom,shellBottom:shell.getBoundingClientRect().bottom,readinessBottom:readiness.getBoundingClientRect().bottom,boardWidth:board.getBoundingClientRect().width,readinessWidth:readiness.getBoundingClientRect().width,themeInHeader:theme.parentElement===tools,clocksInHeader:tools.contains(document.querySelector('#zuluClock')),progressBackground:getComputedStyle(document.querySelector('#routeProgress')).backgroundColor}})()`);
+    assert.ok(Math.abs(chrome.navBottom-Math.min(chrome.readinessBottom,chrome.shellBottom))<=2,'Sidebar must end level with the last Flight readiness box');
+    assert.ok(Math.abs(chrome.boardWidth-chrome.readinessWidth)<=1,'Flight Board must be as wide as Flight readiness');
     assert.equal(chrome.themeInHeader,true);
     assert.equal(chrome.clocksInHeader,true);
     assert.equal(chrome.progressBackground,'rgba(0, 0, 0, 0)');

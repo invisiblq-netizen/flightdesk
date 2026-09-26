@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1-alpha.19 — Alpha 0.3.1
+
+- Preserve the SimBrief aircraft registration when compacting imported flight plans so it appears on the Flight Board.
+- Extend the Flight Board to match the Flight readiness panel width.
+- Stretch the desktop side panel to the bottom of the page area.
+
 ## 0.3.1-alpha.18 — Alpha 0.3.1
 
 - Remove the bottom-left PeerJS Cloud footer from the lobby screen.
