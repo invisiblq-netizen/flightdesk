@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1-alpha.21 — Alpha 0.3.1
+
+- Keep the startup splash visible for at least three seconds before showing the main window.
+- Remove the aircraft photo panel and its background lookup.
+
 ## 0.3.1-alpha.20 — Alpha 0.3.1
 
 - Add a startup splash screen using the supplied airport background, with a spinning loading indicator.

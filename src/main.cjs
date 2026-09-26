@@ -14,11 +14,14 @@ const APP_DISPLAY_VERSION = APP_VERSION.includes('-alpha')
   : APP_VERSION;
 const WINDOW_TITLE = `${APP_TITLE} — ${APP_DISPLAY_VERSION}`;
 const USER_AGENT = `SharedCockpitFlightDesk/${APP_VERSION}`;
+const STARTUP_SPLASH_MINIMUM_MS = 3000;
 let mainWindow;
 let startupSplash;
+let startupSplashShownAt = 0;
+let mainWindowReady = false;
+let startupRevealTimer;
 let vatsimCache = { expiresAt: 0, feed: null, transceivers: null };
 const airportCache = new Map();
-const aircraftPhotoCache = new Map();
 let positionBridge;
 let simPosition = { connected: false, updatedAt: 0 };
 let chartfoxToken = '';
@@ -195,27 +198,6 @@ async function getAirportInfo(icao, options = {}) {
   };
 }
 
-async function getAircraftPhoto(registration) {
-  const code = String(registration || '').trim().toUpperCase();
-  if (!/^[A-Z0-9-]{2,15}$/.test(code)) return null;
-  const cached = aircraftPhotoCache.get(code);
-  if (cached && cached.expiresAt > Date.now()) return cached.photo;
-  const response = await fetch(`https://api.planespotters.net/pub/photos/reg/${encodeURIComponent(code)}`, {
-    headers: { 'user-agent': `${USER_AGENT} (+https://github.com/invisiblq-netizen/flightdesk)` },
-    signal: AbortSignal.timeout(10000)
-  });
-  if (!response.ok) return null;
-  const result = await response.json();
-  const photo = result?.photos?.[0];
-  if (!photo) { aircraftPhotoCache.set(code, { photo: null, expiresAt: Date.now() + 6 * 60 * 60 * 1000 }); return null; }
-  let thumbnail, link;
-  try { thumbnail = new URL(photo.thumbnail?.src || ''); link = new URL(photo.link || ''); } catch { return null; }
-  if (thumbnail.protocol !== 'https:' || thumbnail.hostname !== 't.plnspttrs.net' || link.protocol !== 'https:' || !['planespotters.net', 'www.planespotters.net'].includes(link.hostname)) return null;
-  const value = { thumbnail: thumbnail.href, link: link.href, photographer: String(photo.photographer || '').slice(0, 100) };
-  aircraftPhotoCache.set(code, { photo: value, expiresAt: Date.now() + 6 * 60 * 60 * 1000 });
-  return value;
-}
-
 async function getVatsimFlight(callsign) {
   const requested = String(callsign || '').trim().toUpperCase();
   if (!requested) return { found: false, checkedAt: Date.now() };
@@ -306,6 +288,9 @@ async function getFsuipcStatus() {
 }
 
 function createStartupSplash() {
+  startupSplashShownAt = 0;
+  mainWindowReady = false;
+  startupRevealTimer = null;
   startupSplash = new BrowserWindow({
     width: 1000,
     height: 555,
@@ -317,11 +302,36 @@ function createStartupSplash() {
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   startupSplash.once('ready-to-show', () => {
-    if (mainWindow?.isVisible()) startupSplash?.close();
-    else startupSplash?.show();
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) startupSplash?.close();
+    else {
+      startupSplashShownAt = Date.now();
+      startupSplash?.show();
+      revealMainWindowAfterSplash();
+    }
   });
-  startupSplash.on('closed', () => { startupSplash = null; });
+  startupSplash.on('closed', () => { startupSplash = null; revealMainWindowAfterSplash(); });
+  startupSplash.webContents.once('did-fail-load', () => startupSplash?.close());
   startupSplash.loadFile(path.join(__dirname, 'splash.html'));
+}
+
+function revealMainWindowAfterSplash() {
+  if (!mainWindowReady || !mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isVisible()) return;
+  if (startupSplash && !startupSplash.isDestroyed()) {
+    if (!startupSplashShownAt) return;
+    const remaining = STARTUP_SPLASH_MINIMUM_MS - (Date.now() - startupSplashShownAt);
+    if (remaining > 0) {
+      if (!startupRevealTimer) startupRevealTimer = setTimeout(() => {
+        startupRevealTimer = null;
+        revealMainWindowAfterSplash();
+      }, remaining);
+      return;
+    }
+    const splash = startupSplash;
+    startupSplash = null;
+    splash.close();
+  }
+  mainWindow.show();
 }
 
 function createWindow() {
@@ -351,9 +361,8 @@ function createWindow() {
   });
   mainWindow.once('ready-to-show', () => {
     mainWindow.maximize();
-    mainWindow.show();
-    startupSplash?.close();
-    startupSplash = null;
+    mainWindowReady = true;
+    revealMainWindowAfterSplash();
   });
   mainWindow.loadFile(path.join(__dirname, 'flightdesk.html'));
 }
@@ -374,10 +383,6 @@ ipcMain.handle('fetch-simbrief-pdf', async (_event, plan) => {
 ipcMain.handle('get-airport-info', async (_event, icao, options) => {
   try { return { ok: true, data: await getAirportInfo(icao, options) }; }
   catch (error) { return { ok: false, error: error.message || 'Could not load airport information.' }; }
-});
-ipcMain.handle('get-aircraft-photo', async (_event, registration) => {
-  try { return { ok: true, data: await getAircraftPhoto(registration) }; }
-  catch { return { ok: true, data: null }; }
 });
 ipcMain.handle('get-vatsim-flight', async (_event, callsign) => {
   try {
