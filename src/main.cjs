@@ -14,12 +14,8 @@ const APP_DISPLAY_VERSION = APP_VERSION.includes('-alpha')
   : APP_VERSION;
 const WINDOW_TITLE = `${APP_TITLE} — ${APP_DISPLAY_VERSION}`;
 const USER_AGENT = `SharedCockpitFlightDesk/${APP_VERSION}`;
-const STARTUP_SPLASH_MINIMUM_MS = 3000;
 let mainWindow;
 let startupSplash;
-let startupSplashShownAt = 0;
-let mainWindowReady = false;
-let startupRevealTimer;
 let vatsimCache = { expiresAt: 0, feed: null, transceivers: null };
 const airportCache = new Map();
 let positionBridge;
@@ -288,9 +284,6 @@ async function getFsuipcStatus() {
 }
 
 function createStartupSplash() {
-  startupSplashShownAt = 0;
-  mainWindowReady = false;
-  startupRevealTimer = null;
   startupSplash = new BrowserWindow({
     width: 1000,
     height: 555,
@@ -303,35 +296,11 @@ function createStartupSplash() {
   });
   startupSplash.once('ready-to-show', () => {
     if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) startupSplash?.close();
-    else {
-      startupSplashShownAt = Date.now();
-      startupSplash?.show();
-      revealMainWindowAfterSplash();
-    }
+    else startupSplash?.show();
   });
-  startupSplash.on('closed', () => { startupSplash = null; revealMainWindowAfterSplash(); });
+  startupSplash.on('closed', () => { startupSplash = null; });
   startupSplash.webContents.once('did-fail-load', () => startupSplash?.close());
   startupSplash.loadFile(path.join(__dirname, 'splash.html'));
-}
-
-function revealMainWindowAfterSplash() {
-  if (!mainWindowReady || !mainWindow || mainWindow.isDestroyed()) return;
-  if (mainWindow.isVisible()) return;
-  if (startupSplash && !startupSplash.isDestroyed()) {
-    if (!startupSplashShownAt) return;
-    const remaining = STARTUP_SPLASH_MINIMUM_MS - (Date.now() - startupSplashShownAt);
-    if (remaining > 0) {
-      if (!startupRevealTimer) startupRevealTimer = setTimeout(() => {
-        startupRevealTimer = null;
-        revealMainWindowAfterSplash();
-      }, remaining);
-      return;
-    }
-    const splash = startupSplash;
-    startupSplash = null;
-    splash.close();
-  }
-  mainWindow.show();
 }
 
 function createWindow() {
@@ -361,8 +330,9 @@ function createWindow() {
   });
   mainWindow.once('ready-to-show', () => {
     mainWindow.maximize();
-    mainWindowReady = true;
-    revealMainWindowAfterSplash();
+    mainWindow.show();
+    startupSplash?.close();
+    startupSplash = null;
   });
   mainWindow.loadFile(path.join(__dirname, 'flightdesk.html'));
 }

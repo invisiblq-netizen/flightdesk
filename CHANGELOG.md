@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1-alpha.22 — Alpha 0.3.1
+
+- Remove the fixed splash delay. The loading screen closes as soon as the main window is ready.
+
 ## 0.3.1-alpha.21 — Alpha 0.3.1
 
 - Keep the startup splash visible for at least three seconds before showing the main window.
