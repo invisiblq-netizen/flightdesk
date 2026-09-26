@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1-alpha.23 — Alpha 0.3.1
+
+- Add a subtle aviation-inspired gradient and grid to the app background in both light and dark themes.
+
 ## 0.3.1-alpha.22 — Alpha 0.3.1
 
 - Remove the fixed splash delay. The loading screen closes as soon as the main window is ready.

@@ -25,12 +25,14 @@ async function run() {
   for(const [width,height] of [[3840,2160],[1920,1080],[1280,720],[920,640]]) {
     win.setContentSize(width,height);
     await evaluate('new Promise(resolve=>setTimeout(resolve,100))');
-    const layout=await evaluate(`(()=>{activatePage('overview');const shell=document.querySelector('.page-shell'),wrap=document.querySelector('.wrap');return {width:innerWidth,height:innerHeight,wrapWidth:wrap.getBoundingClientRect().width,bodyWidth:document.documentElement.scrollWidth,bodyHeight:document.documentElement.scrollHeight,shellHeight:shell.clientHeight,background:getComputedStyle(document.body).backgroundColor,waiting:getComputedStyle(document.querySelector('#fsuipcLabel')).color,atc:getComputedStyle(document.querySelector('.atc-online')).color}})()`);
+    const layout=await evaluate(`(()=>{activatePage('overview');const shell=document.querySelector('.page-shell'),wrap=document.querySelector('.wrap'),style=getComputedStyle(document.body);return {width:innerWidth,height:innerHeight,wrapWidth:wrap.getBoundingClientRect().width,bodyWidth:document.documentElement.scrollWidth,bodyHeight:document.documentElement.scrollHeight,shellHeight:shell.clientHeight,background:style.backgroundColor,backgroundImage:style.backgroundImage,waiting:getComputedStyle(document.querySelector('#fsuipcLabel')).color,atc:getComputedStyle(document.querySelector('.atc-online')).color}})()`);
     assert.equal(layout.wrapWidth,layout.width);
     assert.ok(layout.bodyWidth<=layout.width,JSON.stringify(layout));
     assert.ok(layout.bodyHeight<=layout.height,JSON.stringify(layout));
     assert.ok(layout.shellHeight>150,JSON.stringify(layout));
     assert.equal(layout.background,'rgb(0, 0, 0)');
+    assert.match(layout.backgroundImage,/radial-gradient/);
+    assert.match(layout.backgroundImage,/linear-gradient/);
     assert.equal(layout.waiting,'rgb(255, 207, 77)');
     assert.equal(layout.atc,'rgb(163, 255, 182)');
     const chrome=await evaluate(`(()=>{const nav=document.querySelector('.side-nav'),shell=document.querySelector('.page-shell'),board=document.querySelector('#page-overview .flight-board-layout > .card'),readiness=document.querySelector('#readiness'),tools=document.querySelector('#headerTools'),theme=document.querySelector('#themeToggle');return {navBottom:nav.getBoundingClientRect().bottom,shellBottom:shell.getBoundingClientRect().bottom,readinessBottom:readiness.getBoundingClientRect().bottom,boardWidth:board.getBoundingClientRect().width,readinessWidth:readiness.getBoundingClientRect().width,themeInHeader:theme.parentElement===tools,clocksInHeader:tools.contains(document.querySelector('#zuluClock')),progressBackground:getComputedStyle(document.querySelector('#routeProgress')).backgroundColor}})()`);
@@ -42,6 +44,16 @@ async function run() {
     fs.writeFileSync(path.join(__dirname,`../work/ui-checks/overview-${width}.png`),(await win.webContents.capturePage()).toPNG());
     report(`PASS: ${width}×${height} fills the window without page overflow; black background and status colors verified.`);
   }
+  await evaluate(`document.querySelector('#themeToggle').click()`);
+  win.setContentSize(1920,1080);
+  await evaluate('new Promise(resolve=>setTimeout(resolve,100))');
+  const lightBackground=await evaluate(`({color:getComputedStyle(document.body).backgroundColor,image:getComputedStyle(document.body).backgroundImage})`);
+  assert.equal(lightBackground.color,'rgb(255, 255, 255)');
+  assert.match(lightBackground.image,/radial-gradient/);
+  assert.match(lightBackground.image,/linear-gradient/);
+  fs.writeFileSync(path.join(__dirname,'../work/ui-checks/overview-light.png'),(await win.webContents.capturePage()).toPNG());
+  report('PASS: Light and dark themes use a subtle aviation-inspired background gradient and grid.');
+  await evaluate(`document.querySelector('#themeToggle').click()`);
   win.setContentSize(1280,720);
   await evaluate(`activatePage('checklist');renderTasks();document.querySelector('.page-shell').scrollTop=400;document.querySelector('#phaseNav').scrollLeft=300`);
   const before=await evaluate(`({top:document.querySelector('.page-shell').scrollTop,left:document.querySelector('#phaseNav').scrollLeft})`);
