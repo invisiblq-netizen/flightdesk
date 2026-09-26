@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1-alpha.18 — Alpha 0.3.1
+
+- Remove the bottom-left PeerJS Cloud footer from the lobby screen.
+- Fix PDF reload cleanup by destroying the PDF.js loading task rather than the document proxy.
+- Give the aircraft registration its own stat, beside the aircraft type.
+
+
 ## 0.3.1-alpha.17 — Alpha 0.3.1
 
 - Add vertical spacing between the Crew Tools status cards and Local preferences.
