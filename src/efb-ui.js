@@ -21,9 +21,9 @@
       const surface=$('efbSurface'),r=surface.getBoundingClientRect(),shell=$('page-efb').classList.contains('efb-expanded')?{top:0,bottom:innerHeight}:document.querySelector('.page-shell').getBoundingClientRect();
       const visible=activePage==='efb'&&!document.querySelector('#desk').classList.contains('hidden');
       const top=Math.max(r.top,shell.top),bottom=Math.min(r.bottom,shell.bottom,innerHeight);
-      const availableHeight=Math.max(0,bottom-top),height=Math.min(availableHeight,r.width*3/4),width=height*4/3;
+      const height=Math.max(0,bottom-top),width=r.width;
       $('efbTablet').style.width=width+'px';$('efbTablet').style.height=height+'px';
-      const response=await window.cockpitDesktop.updateEfb({...settings,reload,visible,bounds:{x:r.left+(r.width-width)/2,y:top+(availableHeight-height)/2,width,height}});reload=false;
+      const response=await window.cockpitDesktop.updateEfb({...settings,reload,visible,bounds:{x:r.left,y:top,width,height}});reload=false;
       if(response.provider!==effective){effective=response.provider;address()}
       $('efbAircraft').textContent=(settings.provider==='auto'?'Automatic':'Manual')+' · '+(names[response.provider]||'No provider detected')+(response.aircraft?' · '+response.aircraft:'');
       $('efbStatus').textContent=response.status;

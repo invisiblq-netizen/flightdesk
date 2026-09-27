@@ -78,7 +78,7 @@ async function run() {
     await evaluate("document.querySelector('#efbExpand').click()");
     await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
     assert.ok(await evaluate('window.lastEfbOptions.bounds.height>250'));
-    assert.ok(await evaluate('Math.abs(window.lastEfbOptions.bounds.width/window.lastEfbOptions.bounds.height-4/3)<0.01'),'EFB must keep a taller tablet aspect ratio');
+    assert.ok(await evaluate("Math.abs(window.lastEfbOptions.bounds.width-document.querySelector('#efbSurface').getBoundingClientRect().width)<1"),'EFB must fill the available width');
     await evaluate("document.querySelector('#efbSettings').open=true");
     await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
     const settingsHeight=await evaluate('window.lastEfbOptions.bounds.height');

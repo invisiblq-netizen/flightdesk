@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0-alpha.11 — Alpha 0.4
+
+- Restore the EFB to the full available width while keeping the taller viewing area, compact controls and collapsible connection settings.
+- Verify full-width layout at all supported test resolutions, including Expand mode; reuse the unchanged simulator helper.
+
 ## 0.4.0-alpha.10 — Alpha 0.4
 
 - Keep the EFB connected and visible when switching its internal pages or loading embedded content, fixing a permanent Connecting status that previously required Save & connect.
