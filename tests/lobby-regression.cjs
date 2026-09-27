@@ -5,7 +5,7 @@ const { EventEmitter } = require('node:events');
 const { webcrypto } = require('node:crypto');
 
 const html = fs.readFileSync(require('node:path').join(__dirname, '../src/flightdesk.html'), 'utf8');
-const source = html.slice(html.lastIndexOf('<script>') + 8, html.lastIndexOf('</script>'));
+const source = html.slice(html.lastIndexOf('<script>') + 8, html.indexOf('</script>',html.lastIndexOf('<script>')));
 const markup = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
 const savedSession = { code: 'ABC2345', name: 'Alex', role: 'host', pilotRole: 'PF' };
 const oldTasks = [{ text: 'Preflight and crew briefing', details: ['An existing crew reminder'], done: true, expanded: true }, { text: 'Bring the destination chart', details: ['Use the latest chart'], done: false }];

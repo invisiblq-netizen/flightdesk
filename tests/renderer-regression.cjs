@@ -1,4 +1,5 @@
 const {app, BrowserWindow} = require('electron');
+app.on('window-all-closed',()=>{});
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -14,6 +15,7 @@ app.setPath('userData',fs.mkdtempSync(path.join(app.getPath('temp'),'flightdesk-
 let win;
 async function run() {
   await app.whenReady();
+  await require('./efb-regression.cjs')(report);
   win = new BrowserWindow({show:false,width:1920,height:1080,useContentSize:true,webPreferences:{offscreen:true,contextIsolation:false,nodeIntegration:false,sandbox:false,partition:'ui-regression',preload:path.join(__dirname,'renderer-preload.cjs')}});
   win.webContents.session.webRequest.onBeforeRequest((details,callback)=>callback({cancel:!details.url.startsWith('file:')}));
   await win.loadFile(path.join(__dirname,'../src/flightdesk.html'));
@@ -21,6 +23,17 @@ async function run() {
   await evaluate(`localStorage.clear();prepareSession('host','Test Pilot','ABC2345','PF');showDesk();data.plan={origin:{icao_code:'ENGM'},destination:{icao_code:'EGLL'},aircraft:{icaocode:'A21N'},general:{callsign:'TEST123',route_distance:'680'}};data.aircraft=aircraftType(data.plan);data.tasks=tasksFor(data.aircraft);applyState(data);`);
   assert.deepEqual(await evaluate("[...document.querySelector('#aircraftSelect').options].map(o=>o.textContent)"),['No checklist profile','Airbus A319/A320/A321']);
   assert.deepEqual(await evaluate("[...document.querySelector('#aircraftProfileSelect').options].map(o=>o.value)"),['fenix-a320']);
+  assert.deepEqual(await evaluate("[...document.querySelector('#efbProvider').options].map(o=>o.textContent)"),['Automatic','Fenix','PMDG','iniBuilds']);
+  await evaluate("activatePage('efb');FlightDeskEfb.sync()");
+  await evaluate('new Promise(resolve=>setTimeout(resolve,100))');
+  assert.equal(await evaluate('window.lastEfbOptions.visible'),true);
+  assert.equal(await evaluate("document.querySelector('#efbAddress').value"),'http://localhost:8083/');
+  await evaluate("document.querySelector('#efbProvider').value='pmdg';document.querySelector('#efbProvider').dispatchEvent(new Event('change'))");
+  await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
+  assert.equal(await evaluate('window.lastEfbOptions.provider'),'pmdg');
+  await evaluate("activatePage('overview');FlightDeskEfb.sync()");
+  await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
+  assert.equal(await evaluate('window.lastEfbOptions.visible'),false);
   await evaluate("data.aircraft='B738';applyState(data)");
   assert.equal(await evaluate("data.tasks.length"),0);
   assert.equal(await evaluate("document.querySelector('#phaseCaption').textContent"),'');
@@ -57,6 +70,16 @@ async function run() {
     assert.equal(chrome.progressBackground,'rgba(0, 0, 0, 0)');
     fs.writeFileSync(path.join(__dirname,`../work/ui-checks/overview-${width}.png`),(await win.webContents.capturePage()).toPNG());
     report(`PASS: ${width}×${height} fills the window without page overflow; black background and status colors verified.`);
+    await evaluate("activatePage('efb');FlightDeskEfb.sync()");
+    await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
+    const efbLayout=await evaluate(`(()=>{const r=document.querySelector('#efbSurface').getBoundingClientRect();return {width:r.width,height:r.height,right:r.right,windowWidth:innerWidth}})()`);
+    assert.ok(efbLayout.width>400&&efbLayout.height>=220&&efbLayout.right<=efbLayout.windowWidth,JSON.stringify(efbLayout));
+    fs.writeFileSync(path.join(__dirname,`../work/ui-checks/efb-${width}.png`),(await win.webContents.capturePage()).toPNG());
+    await evaluate("document.querySelector('#efbExpand').click()");
+    await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
+    assert.ok(await evaluate('window.lastEfbOptions.bounds.height>250'));
+    await evaluate("document.querySelector('#efbExpand').click()");
+    await evaluate("activatePage('overview')");
   }
   await evaluate(`document.querySelector('#themeToggle').click()`);
   win.setContentSize(1920,1080);

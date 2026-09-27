@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0-alpha.9 — Alpha 0.4
+
+- Add an EFB page with Automatic, Fenix, PMDG and iniBuilds selections and per-provider local addresses.
+- Detect the provider from fresh FSUIPC7 aircraft titles, with manual override for unknown aircraft.
+- Embed Fenix’s live web EFB inside the app with Reload and Expand controls; explain the compatible-server requirement for PMDG and iniBuilds.
+- Isolate the EFB from app privileges, restrict top-level navigation to its local origin, and hide it on page/session changes.
+- Test native embedding, isolation, disconnections/reload, aircraft switching and responsive renderer layout; reuse the unchanged alpha.8 simulator helper.
+
 ## 0.4.0-alpha.8 — Alpha 0.4
 
 - Read 45 Fenix cockpit variables through the FSUIPC WASM catalogue and share cockpit telemetry with the other pilot.

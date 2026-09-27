@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('cockpitDesktop', {
+  updateEfb: (options) => ipcRenderer.invoke('efb-update', options),
   getAppInfo: () => ipcRenderer.invoke('get-app-info'),
   fetchSimbrief: (identity) => ipcRenderer.invoke('fetch-simbrief', identity),
   fetchSimbriefPdf: (plan) => ipcRenderer.invoke('fetch-simbrief-pdf', plan),

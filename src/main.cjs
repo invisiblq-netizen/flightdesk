@@ -1,4 +1,5 @@
 const {sanitizeCockpit}=require('./cockpit-telemetry.cjs');
+const {EfbView}=require('./efb.cjs');
 const { app, BrowserWindow, Menu, ipcMain, clipboard, safeStorage, shell } = require('electron');
 const path = require('node:path');
 const { exactVatsimFlight } = require('./vatsim-flight.cjs');
@@ -16,6 +17,7 @@ const APP_DISPLAY_VERSION = APP_VERSION.includes('-alpha')
 const WINDOW_TITLE = `${APP_TITLE} — ${APP_DISPLAY_VERSION}`;
 const USER_AGENT = `SharedCockpitFlightDesk/${APP_VERSION}`;
 let mainWindow;
+let efbView;
 let startupSplash;
 let vatsimCache = { expiresAt: 0, feed: null, transceivers: null };
 const airportCache = new Map();
@@ -331,6 +333,7 @@ function createWindow() {
     }
   });
   // Keep the native title tied to the installed build when the HTML title loads.
+  efbView=new EfbView(mainWindow);
   mainWindow.on('page-title-updated', event => event.preventDefault());
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('https://')) require('electron').shell.openExternal(url);
@@ -345,6 +348,10 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, 'flightdesk.html'));
 }
 
+ipcMain.handle('efb-update', (event,input) => {
+  if(!mainWindow||event.sender!==mainWindow.webContents||event.senderFrame!==mainWindow.webContents.mainFrame)throw new Error('Invalid EFB sender');
+  return efbView.update(input,simPosition);
+});
 ipcMain.handle('get-app-info', () => ({
   name: APP_TITLE,
   version: APP_VERSION,

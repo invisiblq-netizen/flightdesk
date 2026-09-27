@@ -1,0 +1,44 @@
+const assert=require('node:assert/strict');
+const http=require('node:http');
+const {BrowserWindow}=require('electron');
+const {EfbView,detectProvider,localUrl}=require('../src/efb.cjs');
+module.exports=async function testEfb(report){
+  for(const [title,expected] of [['FenixA320 IAE WF','fenix'],['FNX_321','fenix'],['PMDG 737-800','pmdg'],['PMDG_777','pmdg'],['iniBuilds A350','inibuilds'],['ini_A320_NEO','inibuilds'],['Airbus A320neo',''],['Boeing 777','']])assert.equal(detectProvider(title),expected);
+  for(const url of ['http://localhost:8083','http://127.0.0.1:1234/','http://192.168.1.5:8083/','https://10.0.0.2/','http://172.16.2.3/','http://[::1]:8083/'])assert.ok(localUrl(url));
+  for(const url of ['file:///C:/Windows','javascript:alert(1)','https://example.com','http://localhost.evil.com','http://user:pass@localhost','http://172.32.0.1','http://169.254.169.254'])assert.throws(()=>localUrl(url));
+  let offline=false;
+  const server=http.createServer((req,res)=>{if(offline){req.socket.destroy();return}res.setHeader('Content-Type','text/html');res.end('<!doctype html><input aria-label="EFB fixture"><button onclick="document.querySelector(\'output\').textContent=document.querySelector(\'input\').value">Apply</button><output></output>')});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const win=new BrowserWindow({show:false,width:900,height:700,webPreferences:{sandbox:true}}),efb=new EfbView(win);
+  const url=`http://127.0.0.1:${server.address().port}/`,options={provider:'auto',addresses:{fenix:url,pmdg:url,inibuilds:url},visible:true,bounds:{x:200,y:100,width:600,height:500}};
+  const position=title=>({connected:true,updatedAt:Date.now(),cockpit:{aircraft:title}});
+  try{
+    const first=efb.update(options,position('FenixA320'));
+    assert.equal(first.provider,'fenix');
+    const view=efb.view;
+    await new Promise((resolve,reject)=>{view.webContents.once('did-finish-load',resolve);view.webContents.once('did-fail-load',()=>reject(Error('Fixture failed')))});
+    assert.equal(efb.update(options,position('FenixA320')).status,'EFB connected');
+    assert.equal(view.getVisible(),true);
+    assert.deepEqual(await view.webContents.executeJavaScript('({node:typeof require,bridge:typeof window.cockpitDesktop})'),{node:'undefined',bridge:'undefined'});
+    await view.webContents.executeJavaScript(`document.querySelector('input').value='EFB works';document.querySelector('button').click()`);
+    assert.equal(await view.webContents.executeJavaScript("document.querySelector('output').textContent"),'EFB works');
+    await view.webContents.executeJavaScript("const a=document.createElement('a');a.href='file:///C:/Windows';document.body.append(a);a.click()");
+    await new Promise(resolve=>setTimeout(resolve,50));assert.equal(view.webContents.getURL(),url);
+    offline=true;
+    const failed=new Promise(resolve=>view.webContents.once('did-fail-load',resolve));efb.update({...options,reload:true},position('FenixA320'));await failed;
+    assert.match(efb.status,/Could not connect/);assert.equal(view.getVisible(),false);
+    if(view.webContents.isLoading())await new Promise(resolve=>view.webContents.once('did-stop-loading',resolve));
+    offline=false;
+    const recovered=new Promise(resolve=>view.webContents.once('did-finish-load',resolve));efb.update({...options,reload:true},position('FenixA320'));await recovered;efb.update(options,position('FenixA320'));
+    assert.equal(efb.status,'EFB connected');
+    efb.update({...options,visible:false},position('FenixA320'));assert.equal(view.getVisible(),false);
+    efb.update(options,position('FenixA320'));assert.equal(efb.view,view);assert.equal(view.getVisible(),true);
+    const closed=new Promise(resolve=>view.webContents.once('destroyed',resolve));assert.equal(efb.update(options,position('PMDG 777')).provider,'pmdg');assert.notEqual(efb.view,view);await closed;
+    assert.equal(efb.update({...options,visible:false},position('iniBuilds A350')).provider,'inibuilds');
+    assert.equal(efb.update(options,{...position('FenixA320'),updatedAt:Date.now()-6000}).provider,'');assert.equal(efb.view,null);
+    assert.equal(efb.update({...options,provider:'pmdg',addresses:{}},{}).status.includes('No built-in'),true);assert.equal(efb.view,null);
+    efb.update({...options,provider:'fenix'},{});assert.ok(efb.view);
+    win.destroy();assert.equal(efb.view,null);
+    report('PASS: EFB provider detection, local URL validation, native embedding, interaction, isolation, page hiding, aircraft switching and cleanup.');
+  }finally{if(!win.isDestroyed())win.destroy();await new Promise(resolve=>server.close(resolve))}
+};

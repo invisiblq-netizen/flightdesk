@@ -4,9 +4,11 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.4** · Build `0.4.0-alpha.8` · Windows x64
+**Alpha 0.4** · Build `0.4.0-alpha.9` · Windows x64
 
 ## Features
+
+- Open **EFB** inside Flight Desk. Automatic mode uses the current local simulator aircraft title from FSUIPC7 to select Fenix, PMDG or iniBuilds; generic aircraft names remain unrecognized rather than guessing a manufacturer. Manual selection and each provider’s local address stay on this PC. Fenix defaults to `http://localhost:8083/`; use your simulator PC’s private IPv4 address when needed. PMDG and iniBuilds have no bundled web-EFB endpoint: a compatible web-EFB server/address is required. **Reload** reconnects and **Expand** fills more of the same app window. The simulator helper is unchanged from alpha.8.
 
 - Host a lobby and invite other pilots with a seven-character code.
 - Synchronize notes, checklist progress and flight-plan data directly over WebRTC.
@@ -62,7 +64,7 @@ The repository uses `pnpm-lock.yaml`. Do not replace it with an npm-generated lo
 
 ### Reuse the prebuilt helper
 
-To skip compiling the helper, download the matching `FlightPositionBridge-0.4.0-alpha.8-win-x64.zip` Release asset and extract it into the project root. It creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
+To skip compiling the helper, download the matching `FlightPositionBridge-0.4.0-alpha.9-win-x64.zip` Release asset and extract it into the project root. It creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
 
 The helper EXE is larger than GitHub's normal Git file limit. Its source belongs in this repo; the prebuilt archive belongs in Releases. The `publish` folder is ignored by Git.
 
@@ -72,7 +74,7 @@ The helper EXE is larger than GitHub's normal Git file limit. Its source belongs
 pnpm dist
 ```
 
-Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.4.0-alpha.8.exe`.
+Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.4.0-alpha.9.exe`.
 
 `pnpm dist` expects the helper to exist. It bundles the checked-in renderer assets and never publishes a release automatically. This project currently packages Windows only.
 
