@@ -1,3 +1,4 @@
+const {sanitizeCockpit}=require('./cockpit-telemetry.cjs');
 const { app, BrowserWindow, Menu, ipcMain, clipboard, safeStorage, shell } = require('electron');
 const path = require('node:path');
 const { exactVatsimFlight } = require('./vatsim-flight.cjs');
@@ -237,6 +238,7 @@ function startPositionBridge() {
             headingDegrees: Number.isFinite(value.headingDegrees) ? value.headingDegrees : null,
             altitudeFeet: Number.isFinite(value.altitudeFeet) ? value.altitudeFeet : null,
             com1FrequencyMhz: Number.isFinite(value.com1FrequencyMhz) ? value.com1FrequencyMhz : null,
+            cockpit: sanitizeCockpit(value.cockpit),
             updatedAt: Date.now()
           };
         } catch { }

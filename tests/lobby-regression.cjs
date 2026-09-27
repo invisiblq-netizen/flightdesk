@@ -42,6 +42,8 @@ function app({saved = false, tasks = oldTasks, failStorage = false, peerFailures
   });
   vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../src/aircraft-profiles/fenix-a320.js'),'utf8'),context);
   context.window.FlightDeskAircraftProfiles=context.FlightDeskAircraftProfiles;
+  vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../src/aircraft-profiles/fenix-telemetry.js'),'utf8'),context);
+  context.window.FlightDeskFenixTelemetry=context.FlightDeskFenixTelemetry;
   vm.runInContext(source,context,{filename:'flightdesk.html'});
   writesFail=failStorage;
   return {nodes,peers,storage,context,timers,eval:code=>vm.runInContext(code,context),restoreStorage(){writesFail=false;}};

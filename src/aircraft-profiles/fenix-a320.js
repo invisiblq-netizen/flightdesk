@@ -52,8 +52,9 @@
         check('Initialization cross-check', 'COMPARE WITH OFP', 'Read back the entered flight number and FROM/TO against the shared plan.')
       ] }),
       section('ecam-logbook', 'ECAM Recall / Logbook / Preliminary Performance', { PF: [
-        flow('ECAM RCL pushbutton', 'PRESS / REVIEW', 'Review any recalled messages and resolve them using the add-on documentation.'),
-        flow('Aircraft acceptance', 'REVIEW STATUS', 'Review the modeled aircraft status before continuing cockpit setup.')
+        flow('ECAM RCL pushbutton', 'PRESS', 'Press ECAM RCL; reviewing and resolving the recalled messages is a separate crew check.'),
+        flow('Aircraft acceptance', 'REVIEW STATUS', 'Review the modeled aircraft status before continuing cockpit setup.'),
+        check('Recalled ECAM messages', 'REVIEW / RESOLVE', 'Review recalled messages and resolve them using the add-on documentation.')
       ], PM: [
         flow('Logbook', 'REVIEW', 'Review modeled defects and deferred items; discuss discrepancies with the PF.'),
         flow('MEL / CDL', 'REVIEW IF SHOWN', 'Review any modeled dispatch item and its documentation; do not infer dispatch approval.'),
@@ -74,7 +75,7 @@
       ], CM: [check('Safe-state scan', 'CONFIRM BOTH PILOTS AGREE', 'Pause and resolve any unexpected control or indication before proceeding.')] }),
       section('battery-external-power', 'Electrical Power & Ground Services', { PF: [
         flow('Electrical panel', 'SET UP FROM FENIX FLOW', 'Follow the Fenix cockpit-preparation sequence and confirm the expected electrical indications.'),
-        flow('External power', 'USE IF AVAILABLE', 'Select ground power only when the modeled source is available and the Fenix flow calls for it.')
+        flow('External power', 'ON IF AVAILABLE', 'Select ground power only when the modeled source is available and the Fenix flow calls for it.')
       ], PM: [check('Electrical indications', 'CROSS-CHECK ECAM', 'Confirm the displayed electrical state is consistent with the selected power source.')], CM: [flow('Ground services', 'CONFIRM REQUESTED SERVICES', 'Coordinate only the ground services used in this simulator session.')] })
     ] },
     { id: 'walkaround', text: 'Walkaround', sections: [

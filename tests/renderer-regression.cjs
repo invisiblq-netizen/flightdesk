@@ -27,6 +27,12 @@ async function run() {
   assert.equal(await evaluate("document.querySelector('#aircraftProfilePicker').classList.contains('hidden')"),true);
   await evaluate("data.aircraft='A320';applyState(data)");
   assert.equal(await evaluate("data.tasks.length"),18);
+  await evaluate(`(()=>{const now=Date.now(),values={I_OH_ELEC_EXT_PWR_L:1,I_OH_ELEC_EXT_PWR_U:0,S_OH_IN_LT_ANN_LT:1};for(const time of [now-2000,now]){const p={connected:true,cockpitReady:true,cockpit:{available:true,aircraft:'FenixA320 IAE WF',sampledAt:time,generation:1,values}};currentSimPosition=p;updateAutomaticChecklist(p,time);}})()`);
+  assert.equal(await evaluate("data.tasks[0].sections.find(s=>s.id==='battery-external-power').flows.PF[1].autoChecked"),true);
+  assert.equal(await evaluate("document.querySelector('#tasks').textContent.includes('Checked automatically from Fenix')"),true);
+  assert.equal(await evaluate("document.querySelector('#fenixConnection').textContent.includes('Fenix connected')"),true);
+  await evaluate("data.tasks=tasksFor('A320');fenixChecklistTracker.reset();currentSimPosition=null;applyState(data)");
+  report('PASS: Real renderer auto-checks external power ON and displays Fenix connection and completion attribution.');
   assert.equal(await evaluate(`document.querySelector('#aircraftPhotoPanel')===null`),true,'Aircraft photos must be removed from the Flight Board');
   await evaluate('Promise.all([...airportRequests.values()])');
   fs.mkdirSync(path.join(__dirname,'../work/ui-checks'),{recursive:true});

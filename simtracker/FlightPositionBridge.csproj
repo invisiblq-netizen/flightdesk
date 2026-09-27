@@ -6,6 +6,11 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="../src/vendor/FSUIPC-WAPI-LICENSE.txt" Link="FSUIPC-WAPI-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <EmbeddedResource Include="../src/aircraft-profiles/fenix-variables.json" LogicalName="FenixVariables" />
+    <Content Include="native/FSUIPC_WAPID.dll" Link="FSUIPC_WAPID.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="FSUIPCClientDLL" Version="3.3.16" />
   </ItemGroup>
 </Project>

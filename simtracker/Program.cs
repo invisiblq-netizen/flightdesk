@@ -1,6 +1,10 @@
 using System.Text.Json;
 using FSUIPC;
 
+using var fenix = new FenixTelemetry();
+var aircraftTitle = new Offset<string>(0x3D00, 256);
+var sampleLimit = args.FirstOrDefault(arg => arg.StartsWith("--samples="));
+var remaining = sampleLimit is null ? int.MaxValue : int.Parse(sampleLimit.Split('=')[1]);
 var latitude = new Offset<long>(0x0560);
 var longitude = new Offset<long>(0x0568);
 var groundSpeed = new Offset<uint>(0x02B4);
@@ -13,7 +17,7 @@ var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingP
 var stopping = false;
 Console.CancelKeyPress += (_, eventArgs) => { eventArgs.Cancel = true; stopping = true; };
 
-while (!stopping)
+while (!stopping && remaining-- > 0)
 {
     try
     {
@@ -34,6 +38,7 @@ while (!stopping)
         Console.WriteLine(JsonSerializer.Serialize(new
         {
             connected = positionAvailable,
+            cockpit = fenix.Read(aircraftTitle.Value, positionAvailable),
             latitude = positionAvailable ? lat : (double?)null,
             longitude = positionAvailable ? lon : (double?)null,
             onGround = onGround.Value != 0,
@@ -50,7 +55,7 @@ while (!stopping)
         try { if (FSUIPCConnection.IsOpen) FSUIPCConnection.Close(); } catch { }
         Console.WriteLine(JsonSerializer.Serialize(new { connected = false, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }, jsonOptions));
     }
-    Thread.Sleep(1000);
+    Thread.Sleep(250);
 }
 
 try { if (FSUIPCConnection.IsOpen) FSUIPCConnection.Close(); } catch { }

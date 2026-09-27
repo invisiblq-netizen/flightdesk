@@ -2,6 +2,7 @@
 
 | Component | Project | Notice |
 | --- | --- | --- |
+| FSUIPC WAPI | John L. Dowson | [MIT notice](src/vendor/FSUIPC-WAPI-LICENSE.txt) |
 | PeerJS | https://peerjs.com/ | [MIT notice](src/vendor/PEERJS-LICENSE.txt) |
 | PDF.js | https://mozilla.github.io/pdf.js/ | [Apache 2.0 license](src/vendor/PDFJS-LICENSE.txt) |
 | FSUIPC Client DLL for .NET | Paul Henty | [Redistribution terms and credit](src/vendor/FSUIPCClientDLL-LICENSE.txt) |

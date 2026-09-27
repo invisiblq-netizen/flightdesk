@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0-alpha.8 — Alpha 0.4
+
+- Read 45 Fenix cockpit variables through the FSUIPC WASM catalogue and share cockpit telemetry with the other pilot.
+- Automatically check supported, explicit switch-state items in the current unlocked phase for the assigned PF/PM role; display AUTO hints and completion attribution.
+- Require external power ON rather than AVAIL, reject lamp-test indications and stale/missing data, and keep crew reviews manual.
+- Separate the detected ECAM RCL press from the manual message review, including migration of saved sessions.
+- Bundle the verified FSUIPC WAPI runtime with a rebuilt simulator helper and add automatic-check regression tests.
+
 ## 0.4.0-alpha.7 — Alpha 0.4
 
 - Prevent menu telemetry and spawning on the ground from creating false cruise, landing and parked events.

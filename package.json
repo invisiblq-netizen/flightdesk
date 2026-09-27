@@ -1,14 +1,15 @@
 {
   "name": "shared-cockpit-flight-desk",
-  "version": "0.4.0-alpha.7",
+  "version": "0.4.0-alpha.8",
   "private": true,
   "description": "Windows companion for shared cockpit flying with SimBrief, shared crew notes, PF/PM flows, VATSIM information and P2P synchronization.",
   "packageManager": "pnpm@11.19.0",
   "main": "src/main.cjs",
   "scripts": {
     "start": "electron .",
-    "test": "node tests/lobby-regression.cjs && node tests/flight-state-regression.cjs && node tests/simbrief-vatsim-regression.cjs && node tests/telemetry-regression.cjs",
+    "test": "node tests/lobby-regression.cjs && node tests/flight-state-regression.cjs && node tests/simbrief-vatsim-regression.cjs && node tests/telemetry-regression.cjs && node tests/auto-checklist-regression.cjs",
     "test:ui": "node tests/run-renderer-regression.cjs",
+    "prebuild:helper": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-wapi.ps1",
     "build:helper": "dotnet publish simtracker/FlightPositionBridge.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o simtracker/publish",
     "predist": "node scripts/check-helper.cjs",
     "dist": "electron-builder --win nsis --publish never"
