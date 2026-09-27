@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0-alpha.13 — Alpha 0.4
+
+- Show On ground / Preflight after stable ground data, before pushback/taxi movement, and display flight phases independently of checklist profiles.
+- Keep simulator and SimBrief polling active while the app is minimized and replace vague telemetry text with specific waiting reasons.
+- Keep Tools visible at the bottom of the sidebar, scroll the primary navigation separately in short windows, and let the sidebar grow past short pages when room is available.
+- Save the SimBrief ID as it is typed and check for automatic import after a short pause, without requiring the user to leave the field or press Fetch plan.
+- Immediately check a new ID when it changes during an automatic request, rejecting the previous ID's response.
+- Verify focused-field auto import, ID changes during requests, UTC departure boundaries and preservation of existing shared plans; reuse the unchanged simulator helper.
+
 ## 0.4.0-alpha.12 — Alpha 0.4
 
 - Replace the EFB header's multiple rows with one compact toolbar so the full-width screen starts higher and has more vertical room.

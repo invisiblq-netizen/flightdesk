@@ -327,6 +327,8 @@ function createWindow() {
     autoHideMenuBar: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
+      // Keep phase and SimBrief polling running while flying with the desk minimized.
+      backgroundThrottling: false,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true

@@ -63,7 +63,7 @@ async function run() {
     assert.equal(layout.waiting,'rgb(255, 207, 77)');
     assert.equal(layout.atc,'rgb(163, 255, 182)');
     const chrome=await evaluate(`(()=>{const nav=document.querySelector('.side-nav'),shell=document.querySelector('.page-shell'),board=document.querySelector('#page-overview .flight-board-layout > .card'),readiness=document.querySelector('#readiness'),tools=document.querySelector('#headerTools'),theme=document.querySelector('#themeToggle');return {navBottom:nav.getBoundingClientRect().bottom,shellBottom:shell.getBoundingClientRect().bottom,readinessBottom:readiness.getBoundingClientRect().bottom,boardWidth:board.getBoundingClientRect().width,readinessWidth:readiness.getBoundingClientRect().width,themeInHeader:theme.parentElement===tools,clocksInHeader:tools.contains(document.querySelector('#zuluClock')),progressBackground:getComputedStyle(document.querySelector('#routeProgress')).backgroundColor}})()`);
-    assert.ok(Math.abs(chrome.navBottom-Math.min(chrome.readinessBottom,chrome.shellBottom))<=2,'Sidebar must end level with the last Flight readiness box');
+    assert.ok(chrome.navBottom<=chrome.shellBottom+2&&chrome.navBottom>=Math.min(chrome.readinessBottom,chrome.shellBottom)-2,'Sidebar must fit the viewport and have enough room for its navigation');
     assert.ok(Math.abs(chrome.boardWidth-chrome.readinessWidth)<=1,'Flight Board must be as wide as Flight readiness');
     assert.equal(chrome.themeInHeader,true);
     assert.equal(chrome.clocksInHeader,true);
@@ -87,6 +87,12 @@ async function run() {
     await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
     assert.ok(await evaluate(`window.lastEfbOptions.bounds.height>=${settingsHeight}`),'Collapsing settings must leave more height for the tablet');
     await evaluate("document.querySelector('#efbExpand').click()");
+    await evaluate("activatePage('notes','brief');syncSidebarHeight()");
+    await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
+    const tools=await evaluate(`(()=>{const nav=document.querySelector('.side-nav').getBoundingClientRect();return [...document.querySelectorAll('#navTools .nav-item')].map(item=>{const r=item.getBoundingClientRect();return {page:item.dataset.page,top:r.top,bottom:r.bottom,navTop:nav.top,navBottom:nav.bottom,windowBottom:innerHeight}})})()`);
+    assert.equal(tools.length,3);
+    for(const tool of tools)assert.ok(tool.top>=tool.navTop&&tool.bottom<=tool.navBottom&&tool.bottom<=tool.windowBottom,'Tools must remain visible on a short notes page: '+JSON.stringify(tool));
+    fs.writeFileSync(path.join(__dirname,`../work/ui-checks/notes-sidebar-${width}.png`),(await win.webContents.capturePage()).toPNG());
     await evaluate("activatePage('overview')");
   }
   await evaluate(`document.querySelector('#themeToggle').click()`);
@@ -138,6 +144,15 @@ async function run() {
   assert.ok(Math.abs(resized.canvas-(resized.viewport-32))<2,JSON.stringify(resized));
   fs.writeFileSync(path.join(__dirname,'../work/ui-checks/flight-plan.png'),(await win.webContents.capturePage()).toPNG());
   report('PASS: Real PDF renders inline at full width, supports page navigation and resizes with the window.');
+  await evaluate(`data.plan=null;autoSimbriefLastCheck=0;localStorage.removeItem('sharedCockpitSimBriefId');const input=document.querySelector('#simid');input.focus();input.value='auto-pilot';input.dispatchEvent(new Event('input'));`);
+  await evaluate('new Promise(resolve=>setTimeout(resolve,850))');
+  assert.equal(await evaluate('data.plan.general.callsign'),'AUTO123');
+  assert.equal(await evaluate("document.querySelector('#importLabel').textContent"),'Automatically imported');
+  assert.equal(await evaluate("document.activeElement===document.querySelector('#simid')"),true);
+  report('PASS: Real renderer automatically imports within the departure window while the SimBrief ID field still has focus.');
+  await evaluate(`data.aircraft='B738';data.tasks=[];data.ops.currentFlightPhase=null;resetFlightProgress();const at=Date.now();for(let i=0;i<12;i++){const t=at-11000+i*1000;currentSimPosition={connected:true,onGround:true,latitude:60,longitude:10,groundSpeedKnots:0,altitudeFeet:100,verticalSpeedFeetPerMinute:0,updatedAt:t};updateAutomaticFlightPhases(currentSimPosition,t)}renderSessionDashboard()`);
+  assert.equal(await evaluate("document.querySelector('#sessionPhase').textContent"),'On ground / Preflight');
+  report('PASS: Dashboard shows a stable ground phase without a checklist profile, and Tools stay visible on short pages at all four resolutions.');
   const splash=new BrowserWindow({show:false,width:1000,height:555,webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true}});
   await splash.loadFile(path.join(__dirname,'../src/splash.html'));
   const splashLayout=await splash.webContents.executeJavaScript(`new Promise(resolve=>{const image=new Image();image.onload=()=>resolve({width:image.naturalWidth,height:image.naturalHeight,background:getComputedStyle(document.querySelector('.splash')).backgroundImage,animation:getComputedStyle(document.querySelector('.spinner')).animationName,text:document.querySelector('[role=status]').textContent});image.onerror=()=>resolve({error:'Background image failed to load'});image.src='assets/loading-background.png'})`);

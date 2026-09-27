@@ -10,6 +10,15 @@ function simulator(){
   return {flight,sample,repeat,markers};
 }
 const menu=simulator();
+const gate=simulator();gate.repeat(5,{});assert.equal(gate.flight.eval('data.ops.currentFlightPhase'),null,'Require a stable ground baseline before preflight');
+gate.repeat(7,{});assert.equal(gate.flight.eval('data.ops.currentFlightPhase.id'),'preliminary');
+assert.equal(gate.flight.eval('detectedFlightPhaseLabel()'),'On ground / Preflight');
+assert.deepEqual(gate.markers(),[],'Spawning at the gate must not invent a flight event');
+gate.repeat(4,{groundSpeedKnots:8,headingDegrees:0});assert.equal(gate.flight.eval('data.ops.currentFlightPhase.id'),'taxi-out');
+assert.equal(gate.flight.eval('detectedFlightPhaseLabel()'),'Taxi Out','Phase display must work without a checklist profile');
+assert.match(gate.flight.eval('flightReportText()'),/Detected phase: Taxi Out/);
+const push=simulator();push.repeat(12,{});push.repeat(4,{groundSpeedKnots:5,headingDegrees:180});assert.equal(push.flight.eval('data.ops.currentFlightPhase.id'),'push-start');
+console.log('PASS: Stable ground data displays preflight, then detects taxi/pushback; phase labels and reports work without checklist tasks.');
 menu.repeat(240,{onGround:false,altitudeFeet:35000,groundSpeedKnots:450});
 menu.repeat(300,{});
 assert.deepEqual(menu.markers(),[],'Menu cruise followed by spawn and five minutes parked is not a flight');

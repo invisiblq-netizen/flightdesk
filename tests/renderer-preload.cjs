@@ -1,6 +1,7 @@
 // Deterministic renderer fixtures; no simulator, network or saved user session.
 window.setInterval = () => 0;
 window.cockpitDesktop = {
+  fetchSimbrief: async () => ({ok:true,data:{times:{sched_out:String(Math.floor(Date.now()/1000)+1800)},origin:{icao_code:'ENGM'},destination:{icao_code:'EGLL'},aircraft:{icaocode:'A320'},general:{callsign:'AUTO123'}}}),
   updateEfb: async options => {window.lastEfbOptions=options;return {provider:options.provider==='auto'?'fenix':options.provider,aircraft:'FenixA320 IAE WF',status:'EFB connected'}},
   fetchSimbriefPdf: async () => ({ok:true,pdf:require('./fixture-pdf.cjs')()}),
   getAppInfo: async () => ({displayVersion:'UI regression check',version:'test'}),

@@ -58,5 +58,26 @@ async function run() {
   await pending;
   assert.equal(flight.eval('data.plan.general.callsign'),'PEER123');
   console.log('PASS: A pending auto import cannot overwrite a newly received shared plan.');
+
+  const focused=app();await focused.nodes.get('create').onclick();
+  focused.eval("Date.now=()=>Date.parse('2026-09-25T23:30:00Z')");
+  let focusedCalls=0;
+  focused.context.window.cockpitDesktop.fetchSimbrief=async id=>{focusedCalls++;assert.equal(id,'focused-pilot');return {ok:true,data:plan}};
+  focused.nodes.get('simid').value=' focused-pilot ';
+  assert.equal(typeof focused.nodes.get('simid').oninput,'function','Typing must enable auto import without a blur/change event');
+  focused.nodes.get('simid').oninput();
+  assert.equal(focused.storage.get('sharedCockpitSimBriefId'),'focused-pilot');
+  assert.equal(focusedCalls,0,'Do not fetch while typing');
+  const inputTimer=[...focused.timers.values()].find(timer=>timer.ms===700);assert.ok(inputTimer);
+  plan.times.sched_out=String(Date.parse('2026-09-26T00:15:00Z')/1000);
+  await inputTimer.fn();assert.equal(focusedCalls,1);assert.equal(focused.eval('data.plan.general.callsign'),'SAS123');
+  focused.eval('data.plan=null;autoSimbriefLastCheck=0');
+  let finishOld;
+  focused.context.window.cockpitDesktop.fetchSimbrief=id=>id==='focused-pilot'?new Promise(resolve=>finishOld=resolve):Promise.resolve({ok:true,data:{...plan,general:{callsign:'NEW123'}}});
+  const oldRequest=focused.eval('autoImportSimbrief()');
+  focused.nodes.get('simid').value='new-pilot';focused.nodes.get('simid').oninput();
+  finishOld({ok:true,data:plan});await oldRequest;await Promise.resolve();
+  assert.equal(focused.eval('data.plan.general.callsign'),'NEW123','An ID changed during a request must be checked immediately after it finishes');
+  console.log('PASS: Typing a SimBrief ID imports after a short pause without blur; changing IDs during a request retries the new ID and rejects the old plan.');
 }
 run().catch(error=>{console.error(error.stack);process.exitCode=1});

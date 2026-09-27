@@ -4,7 +4,7 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.4** · Build `0.4.0-alpha.12` · Windows x64
+**Alpha 0.4** · Build `0.4.0-alpha.13` · Windows x64
 
 ## Features
 
@@ -15,9 +15,10 @@ A Windows companion app for shared cockpit flying: import a SimBrief flight plan
 - Choose Pilot Flying (PF) or Pilot Monitoring (PM), and switch roles during flight.
 - Import the latest generated SimBrief OFP and view its PDF inline, fitted to the page width, with zoom controls. The saved SimBrief ID also supports automatic import during the hour before scheduled departure (UTC).
 - Use the Fenix A320 profile with 18 phases, concrete role-based cockpit prompts, separate FLOW and CHECKLIST groups, and side-by-side PF/PM progress. The Airbus A319/A320/A321 selection offers only the Fenix profile; other aircraft have no checklist profile.
-- Review the live crew/session dashboard, checklist readiness and telemetry-based phase suggestions. Items marked **AUTO** check themselves from stable Fenix cockpit readings in your current unlocked phase and assigned PF/PM role. External power requires ON, not AVAIL. Missing data leaves items manual; briefings, reviews and condition-dependent decisions remain manual. Both pilots should use the same build; cockpit telemetry and completed items synchronize across the lobby. Automatic flight tracking requires 10 seconds of stable ground data followed by a sustained takeoff; connecting in midair does not create a flight or landing history. Disconnections and position jumps require a new ground baseline.
+- Review the live crew/session dashboard, checklist readiness and telemetry-based phase suggestions. Items marked **AUTO** check themselves from stable Fenix cockpit readings in your current unlocked phase and assigned PF/PM role. External power requires ON, not AVAIL. Missing data leaves items manual; briefings, reviews and condition-dependent decisions remain manual. Both pilots should use the same build; cockpit telemetry and completed items synchronize across the lobby. After 10 seconds of stable ground data the dashboard shows **On ground / Preflight**, then detects pushback or taxi movement. Flight phases display even without a checklist profile, and polling continues while the app is minimized. Automatic flight tracking requires a stable ground baseline followed by a sustained takeoff; connecting in midair does not create a flight or landing history. Disconnections and position jumps require a new ground baseline.
 - View structured manual callout and response prompts, track crew handovers and record a shared flight timeline with checklist actions.
 - Search ChartFox airports and browse grouped charts such as taxi, SID, STAR and approach charts, then open a selected chart on ChartFox. A ChartFox API token is encrypted on this PC.
+- Keep Charts, Crew Tools and EFB visible in the sidebar. On short pages, the sidebar can extend below the content; in short windows, primary navigation scrolls separately above the Tools buttons.
 - Use local crew preferences.
 - Check P2P, simulator-position and VATSIM status in Crew Tools.
 - View airport names, METAR, TAF, nearby VATSIM controllers and frequencies when available.
@@ -39,7 +40,7 @@ Download the Windows `.exe` installer from this repository's **Releases** sectio
 5. Open **Flight Plan** and enter the SimBrief username or pilot ID for an already generated plan.
 6. To track the aircraft, run the simulator and FSUIPC7 on a connected Windows PC. The helper and its FSUIPC WAPI runtime are bundled with the installer. Fenix automatic checks also require the FSUIPC WASM module installed and enabled in the simulator; the Checklist page shows connection status.
 
-The SimBrief ID is remembered on this PC. While the host lobby has no plan, the app checks once a minute and imports when scheduled departure is between now and one hour ahead. It uses SimBrief's `times.sched_out` timestamp, so UTC midnight and local time-zone offsets are handled without a local-time conversion. [SimBrief documents its date/time values as Unix timestamps](https://forum.navigraph.com/t/simbrief-api-xml/5929). A missing or past departure time is skipped. **Fetch plan** always allows manual import, and automatic checks never replace an existing shared plan.
+The SimBrief ID is remembered as you type. After a short pause, automatic import checks immediately even while the ID field is still focused. While the host lobby has no plan, the app checks once a minute and imports when scheduled departure is between now and one hour ahead. It uses SimBrief's `times.sched_out` timestamp, so UTC midnight and local time-zone offsets are handled without a local-time conversion. [SimBrief documents its date/time values as Unix timestamps](https://forum.navigraph.com/t/simbrief-api-xml/5929). A missing or past departure time is skipped. **Fetch plan** always allows manual import, and automatic checks never replace an existing shared plan.
 
 ## How connections and data work
 
@@ -64,7 +65,7 @@ The repository uses `pnpm-lock.yaml`. Do not replace it with an npm-generated lo
 
 ### Reuse the prebuilt helper
 
-To skip compiling the helper, download the matching `FlightPositionBridge-0.4.0-alpha.12-win-x64.zip` Release asset and extract it into the project root. It creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
+To skip compiling the helper, download the matching `FlightPositionBridge-0.4.0-alpha.13-win-x64.zip` Release asset and extract it into the project root. It creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
 
 The helper EXE is larger than GitHub's normal Git file limit. Its source belongs in this repo; the prebuilt archive belongs in Releases. The `publish` folder is ignored by Git.
 
@@ -74,7 +75,7 @@ The helper EXE is larger than GitHub's normal Git file limit. Its source belongs
 pnpm dist
 ```
 
-Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.4.0-alpha.12.exe`.
+Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.4.0-alpha.13.exe`.
 
 `pnpm dist` expects the helper to exist. It bundles the checked-in renderer assets and never publishes a release automatically. This project currently packages Windows only.
 
