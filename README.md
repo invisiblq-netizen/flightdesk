@@ -4,7 +4,7 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.4** · Build `0.4.0-alpha.13` · Windows x64
+**Alpha 0.5** · Build `0.5.0-alpha.1` · Windows x64
 
 ## Features
 
@@ -16,6 +16,11 @@ A Windows companion app for shared cockpit flying: import a SimBrief flight plan
 - Import the latest generated SimBrief OFP and view its PDF inline, fitted to the page width, with zoom controls. The saved SimBrief ID also supports automatic import during the hour before scheduled departure (UTC).
 - Use the Fenix A320 profile with 18 phases, concrete role-based cockpit prompts, separate FLOW and CHECKLIST groups, and side-by-side PF/PM progress. The Airbus A319/A320/A321 selection offers only the Fenix profile; other aircraft have no checklist profile.
 - Review the live crew/session dashboard, checklist readiness and telemetry-based phase suggestions. Items marked **AUTO** check themselves from stable Fenix cockpit readings in your current unlocked phase and assigned PF/PM role. External power requires ON, not AVAIL. Missing data leaves items manual; briefings, reviews and condition-dependent decisions remain manual. Both pilots should use the same build; cockpit telemetry and completed items synchronize across the lobby. After 10 seconds of stable ground data the dashboard shows **On ground / Preflight**, then detects pushback or taxi movement. Flight phases display even without a checklist profile, and polling continues while the app is minimized. Automatic flight tracking requires a stable ground baseline followed by a sustained takeoff; connecting in midair does not create a flight or landing history. Disconnections and position jumps require a new ground baseline.
+- See a compact live Flight Overview with crew roles, simulator/P2P status, current phase, checklist progress, last event and block, taxi, airborne and taxi-in timers. Crew, checklist, simulator, connection and flight-phase events feed one ordered timeline.
+- Review completed flights in local Flight History, search reports, inspect flight statistics and export report data as JSON or CSV; use the print dialog to save a polished A4 PDF. Times and events come from the existing simulator and shared-session signals. Unsupported actual fuel and unavailable approach values are labelled unavailable, never filled with estimates.
+- Review arrival airport, STAR, approach, runway and other approach details when the imported SimBrief plan provides them. Crew Tools displays VATSIM ATIS and exact-callsign aircraft data when available.
+- Use the integrated cockpit voice link over the current peer connection in **Push to talk** or **Open mic** mode. Select the microphone and speakers, bind a PTT key, mute or adjust volume, and test the microphone locally. Voice status uses available WebRTC quality metrics; microphone access is requested by the app when voice is enabled.
+- Open **Settings** from the header for crew preferences, units, timeline time format, display density, voice controls, integration/connection diagnostics and event notification preferences. Simulator and P2P diagnostics show unavailable data explicitly.
 - View structured manual callout and response prompts, track crew handovers and record a shared flight timeline with checklist actions.
 - Search ChartFox airports and browse grouped charts such as taxi, SID, STAR and approach charts, then open a selected chart on ChartFox. A ChartFox API token is encrypted on this PC.
 - Keep Charts, Crew Tools and EFB visible in the sidebar. On short pages, the sidebar can extend below the content; in short windows, primary navigation scrolls separately above the Tools buttons.
@@ -65,7 +70,7 @@ The repository uses `pnpm-lock.yaml`. Do not replace it with an npm-generated lo
 
 ### Reuse the prebuilt helper
 
-To skip compiling the helper, download the matching `FlightPositionBridge-0.4.0-alpha.13-win-x64.zip` Release asset and extract it into the project root. It creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
+To skip compiling the helper, download the matching `FlightPositionBridge-0.5.0-alpha.1-win-x64.zip` Release asset and extract it into the project root. It creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
 
 The helper EXE is larger than GitHub's normal Git file limit. Its source belongs in this repo; the prebuilt archive belongs in Releases. The `publish` folder is ignored by Git.
 
@@ -75,7 +80,7 @@ The helper EXE is larger than GitHub's normal Git file limit. Its source belongs
 pnpm dist
 ```
 
-Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.4.0-alpha.13.exe`.
+Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.1.exe`.
 
 `pnpm dist` expects the helper to exist. It bundles the checked-in renderer assets and never publishes a release automatically. This project currently packages Windows only.
 

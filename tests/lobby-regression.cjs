@@ -38,8 +38,10 @@ function app({saved = false, tasks = oldTasks, failStorage = false, peerFailures
     setTimeout(fn, ms){const id=nextTimer++;timers.set(id,{fn,ms});return id;}, clearTimeout:id=>timers.delete(id), setInterval(){},
     localStorage: {getItem:key=>storage.get(key)||null,setItem(key,value){if(writesFail)throw new Error('Local storage write failed');storage.set(key,String(value));},removeItem:key=>storage.delete(key)},
     document:{documentElement:{dataset:{theme:'light'}},querySelector:selector=>nodes.get(selector.slice(1))||null,querySelectorAll:()=>[],activeElement:null},
-    window:{location:{href:'file:///flightdesk.html'},addEventListener(){},cockpitDesktop:{getFsuipcStatus:async()=>({running:false}),getSimPosition:async()=>({connected:false}),getAppInfo:async()=>({name:'Shared Cockpit Flight Desk',version:'0.4.0-alpha.5',displayVersion:'Alpha 0.4'})}}
+  window:{location:{href:'file:///flightdesk.html'},addEventListener(){},cockpitDesktop:{getFsuipcStatus:async()=>({running:false}),getSimPosition:async()=>({connected:false}),getAppInfo:async()=>({name:'Shared Cockpit Flight Desk',version:'0.4.0-alpha.5',displayVersion:'Alpha 0.4'})}}
   });
+  vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../src/flight-domain.js'),'utf8'),context);
+  context.window.FlightDeskDomain=context.FlightDeskDomain;
   vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../src/aircraft-profiles/fenix-a320.js'),'utf8'),context);
   context.window.FlightDeskAircraftProfiles=context.FlightDeskAircraftProfiles;
   vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../src/aircraft-profiles/fenix-telemetry.js'),'utf8'),context);
@@ -184,9 +186,9 @@ async function run() {
 
   const crewTools=app();
   crewTools.eval("prepareSession('host','Alex','ABC2345','PF');addFlightEvent('Runway change briefed');addMilestone('Takeoff');setPilotRole('PM')");
-  assert.equal(crewTools.eval('data.ops.activity[0].text'),'Runway change briefed');
-  assert.equal(crewTools.eval('data.ops.markers[0].text'),'Takeoff');
-  assert.match(crewTools.eval('data.ops.crewLog.map(item=>item.text).join(" ")'),/changed role from PF to PM/);
+  assert.ok(crewTools.eval('data.ops.events.some(item=>item.type==="crew.action"&&item.text==="Runway change briefed")'));
+  assert.ok(crewTools.eval('data.ops.events.some(item=>item.type==="flight.milestone"&&item.text==="Takeoff")'));
+  assert.match(crewTools.eval('data.ops.events.map(item=>item.text).join(" ")'),/changed role from PF to PM/);
   assert.ok(JSON.parse(crewTools.eval('JSON.stringify(snapshotFields())')).some(field=>field.key==='ops'),'Crew activity must be included in the shared session snapshot.');
   assert.ok(crewTools.eval("flightCallouts.takeoff.length >= 2"),'Phase callouts must be available for the operational phases.');
   assert.deepEqual(JSON.parse(crewTools.eval('JSON.stringify(Object.keys(noteTemplateGroups))')),['brief','enroute','debrief'],'Each notes phase must have its own template group.');

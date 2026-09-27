@@ -2,12 +2,16 @@ const assert = require('node:assert/strict');
 const {app} = require('./lobby-regression.cjs');
 const {exactVatsimFlight} = require('../src/vatsim-flight.cjs');
 async function run() {
-  const pilots=[{callsign:'SAS1234',latitude:60,longitude:11},{callsign:'SAS123',latitude:0,longitude:0,flight_plan:{aircraft_short:'A20N',remarks:'REG/LNABC',departure:'ENGM',arrival:'EGLL'}}];
+  const pilots=[{callsign:'SAS1234',latitude:60,longitude:11},{callsign:'SAS123',latitude:0,longitude:0,heading:305,altitude:32000,groundspeed:410,flight_plan:{aircraft_short:'A20N',remarks:'REG/LNABC',departure:'ENGM',arrival:'EGLL'}}];
   assert.equal(exactVatsimFlight(pilots,' sas123 ').callsign,'SAS123');
   assert.equal(exactVatsimFlight(pilots,'SAS12').found,false);
   assert.equal(exactVatsimFlight(pilots,'').found,false);
   assert.equal(exactVatsimFlight(pilots,'SAS 123').found,false);
   assert.equal(exactVatsimFlight(pilots,'SAS123').registration,'LNABC');
+  assert.equal(exactVatsimFlight(pilots,'SAS123').latitude,0,'Equator positions must be retained');
+  assert.equal(exactVatsimFlight(pilots,'SAS123').headingDegrees,305);
+  assert.equal(exactVatsimFlight([{callsign:'BAD',latitude:95,longitude:-190,heading:360}],'BAD').latitude,null);
+  assert.equal(exactVatsimFlight([{callsign:'BAD',latitude:95,longitude:-190,heading:360}],'BAD').headingDegrees,null);
   console.log('PASS: VATSIM matches the identical callsign only, irrespective of proximity.');
 
   const flight=app();

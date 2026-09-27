@@ -35,7 +35,7 @@ flight.eval("prepareSession('host','Pilot','ABC2345','PF');data.aircraft='A320';
 for(const time of [10000,12000]){flight.context.position={connected:true,cockpitReady:true,cockpit:sample(on,time)};flight.context.tickTime=time;flight.eval('updateAutomaticChecklist(position,tickTime)');}
 assert.equal(flight.eval("data.tasks[0].sections.find(s=>s.id==='battery-external-power').flows.PF[1].autoChecked"),true);
 assert.equal(flight.eval("data.tasks[0].sections.find(s=>s.id==='ecam-logbook').flows.PF.find(a=>a.title==='Recalled ECAM messages').done"),false);
-assert.equal(flight.eval('data.ops.activity.filter(a=>a.by===\'Fenix telemetry\').length'),1);
+assert.equal(flight.eval('data.ops.events.filter(a=>a.type===\'checklist.item-completed\'&&a.by===\'Fenix telemetry\').length'),1);
 flight.eval('applyState(data)');
 assert.equal(flight.eval("data.tasks[0].sections.find(s=>s.id==='battery-external-power').flows.PF[1].autoChecked"),true);
 const guest=app();guest.eval("prepareSession('join','Guest','ABC2345','PM')");guest.context.fields=JSON.parse(flight.eval('JSON.stringify(snapshotFields())'));guest.eval("stateVersions={};applyRemoteFields(fields,'PF')");

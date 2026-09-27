@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.0-alpha.1 — Alpha 0.5
+
+- Expand Flight Board into a live Flight Overview with simulator/session status, crew roles, checklist progress, recent events and block, taxi, airborne and taxi-in timers.
+- Unify crew activity, checklist, simulator, connection and flight-phase events in a chronological timeline shared with local completed-flight history and reports.
+- Add searchable local flight records, useful flight totals, structured flight details and JSON/CSV export with a print-ready A4 report. Keep actual fuel unavailable when simulator telemetry does not supply it.
+- Add an Approach Briefing from available SimBrief fields and show VATSIM ATIS plus matched VATSIM aircraft position and flight data when the feeds provide them.
+- Add peer-to-peer cockpit voice with Push to talk and Open mic modes, device selection, mute, volume, PTT key binding, a local mic-level test and WebRTC-based voice quality feedback.
+- Add Settings for crew preferences, units, time format, density, notifications, voice controls and simulator/P2P diagnostics; preserve explicit unavailable states.
+- Keep the Fenix A320's role-based operational flows and automatic checklist checks, and keep all Tools buttons reachable in short pages/windows with independent navigation scrolling.
+- Reuse the unchanged simulator helper. Validate with `pnpm test`, `pnpm test:ui` and Windows installer archive checks.
+
 ## 0.4.0-alpha.13 — Alpha 0.4
 
 - Show On ground / Preflight after stable ground data, before pushback/taxi movement, and display flight phases independently of checklist profiles.

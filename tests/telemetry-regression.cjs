@@ -6,7 +6,7 @@ function simulator(){
   let now=100000,latitude=60;
   function sample(values={},seconds=1){now+=seconds*1000;latitude+=(values.groundSpeedKnots||0)*seconds/3600/60;flight.context.sample={connected:true,latitude,longitude:10,onGround:true,groundSpeedKnots:0,altitudeFeet:100,verticalSpeedFeetPerMinute:0,updatedAt:now,...values};flight.context.sampleTime=now;flight.eval('currentSimPosition=sample;updateAutomaticFlightPhases(sample,sampleTime)');}
   function repeat(count,values){for(let i=0;i<count;i++)sample(typeof values==='function'?values(i):values)}
-  const markers=()=>JSON.parse(flight.eval('JSON.stringify(data.ops.markers.map(item=>item.id))'));
+  const markers=()=>JSON.parse(flight.eval('JSON.stringify(data.ops.events.filter(item=>item.id.startsWith("auto-")).map(item=>item.id))'));
   return {flight,sample,repeat,markers};
 }
 const menu=simulator();

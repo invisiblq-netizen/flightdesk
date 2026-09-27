@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const domain=require('../src/flight-domain.js');
+const legacy=domain.eventsFromOps({crewLog:[{id:'join',at:1,text:'Alex joined the flight as PM',by:'Alex'}],activity:[{id:'role',at:2,text:'PF action completed',by:'Cesar'}],markers:[{id:'push',at:3,text:'Pushback started',by:'FSUIPC7'},{id:'takeoff',at:4,text:'Takeoff detected',by:'FSUIPC7'}]});
+assert.deepEqual(legacy.map(event=>event.type),['crew.joined','crew.action','flight.pushback','flight.takeoff']);
+const merged=domain.mergeEvents(legacy,[{id:'takeoff',at:4,text:'Takeoff detected',by:'FSUIPC7',type:'flight.takeoff'}]);
+assert.equal(merged.length,4,'Merged timelines deduplicate events by stable event ID');
+const complete=domain.timing([{id:'push',at:1000,text:'Pushback',type:'flight.pushback'},{id:'to',at:21000,text:'Takeoff',type:'flight.takeoff'},{id:'ldg',at:702000,text:'Landing',type:'flight.landing'},{id:'park',at:762000,text:'Parked',type:'flight.parked'}],800000);
+assert.equal(complete.blockMs,761000);assert.equal(complete.taxiOutMs,20000);assert.equal(complete.airborneMs,681000);assert.equal(complete.taxiInMs,60000);assert.equal(complete.completed,true);
+const taxiing=domain.timing([{id:'taxi',at:1000,text:'Taxi out',type:'flight.taxi-out'}],31000);assert.equal(taxiing.taxiOutMs,30000);assert.equal(taxiing.blockMs,30000);assert.equal(taxiing.completed,false);
+assert.equal(domain.formatDuration(3660000),'01:01');assert.equal(domain.formatDuration(null),'—');
+console.log('PASS: Unified flight events migrate, merge without duplicates and produce live/completed phase timers.');

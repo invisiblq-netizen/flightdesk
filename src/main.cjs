@@ -1,6 +1,6 @@
 const {sanitizeCockpit}=require('./cockpit-telemetry.cjs');
 const {EfbView}=require('./efb.cjs');
-const { app, BrowserWindow, Menu, ipcMain, clipboard, safeStorage, shell } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, clipboard, safeStorage, shell, session } = require('electron');
 const path = require('node:path');
 const { exactVatsimFlight } = require('./vatsim-flight.cjs');
 const fs = require('node:fs/promises');
@@ -147,15 +147,18 @@ async function getAirportInfo(icao, options = {}) {
   const report = reports.sort((a, b) => Date.parse(b.reportTime || 0) - Date.parse(a.reportTime || 0))[0];
   const forecast = forecasts.sort((a, b) => Date.parse(b.issueTime || b.reportTime || 0) - Date.parse(a.issueTime || a.reportTime || 0))[0];
   let controllers = [];
-  if (includeAtc && Number.isFinite(Number(airport?.lat)) && Number.isFinite(Number(airport?.lon))) {
+  let atis = null;
+  if (includeAtc) {
     try {
       if (Date.now() >= vatsimCache.expiresAt) {
-        const [feedResponse, transceiverResponse] = await Promise.all([
-          fetch('https://data.vatsim.net/v3/vatsim-data.json', { headers }),
-          fetch('https://data.vatsim.net/v3/transceivers-data.json', { headers })
-        ]);
-        if (!feedResponse.ok || !transceiverResponse.ok) throw new Error('VATSIM feed unavailable.');
-        const [feed, transceivers] = await Promise.all([feedResponse.json(), transceiverResponse.json()]);
+        const feedResponse = await fetch('https://data.vatsim.net/v3/vatsim-data.json', { headers });
+        if (!feedResponse.ok) throw new Error('VATSIM feed unavailable.');
+        const feed = await feedResponse.json();
+        let transceivers = [];
+        try {
+          const transceiverResponse = await fetch('https://data.vatsim.net/v3/transceivers-data.json', { headers });
+          if (transceiverResponse.ok) transceivers = await transceiverResponse.json();
+        } catch {}
         vatsimCache = { expiresAt: Date.now() + 15_000, feed, transceivers };
       }
       const radians = value => value * Math.PI / 180;
@@ -170,7 +173,7 @@ async function getAirportInfo(icao, options = {}) {
       const clients = new Map([...(vatsimCache.feed.controllers || []), ...(vatsimCache.feed.atis || [])].map(client => [client.callsign, client]));
       for (const station of vatsimCache.transceivers || []) {
         const client = clients.get(station.callsign);
-        if (!client) continue;
+        if (!client || !Number.isFinite(Number(airport?.lat)) || !Number.isFinite(Number(airport?.lon))) continue;
         for (const tx of station.transceivers || []) {
           if (!Number.isFinite(tx.latDeg) || !Number.isFinite(tx.lonDeg)) continue;
           const distance = distanceNm(tx.latDeg, tx.lonDeg);
@@ -187,9 +190,15 @@ async function getAirportInfo(icao, options = {}) {
         const current = nearestByFrequency.get(key);
         if (!current || item.distance < current.distance) nearestByFrequency.set(key, item);
       }
-      controllers = [...nearestByFrequency.values()].sort((a, b) => a.distance - b.distance);
+        controllers = [...nearestByFrequency.values()].sort((a, b) => a.distance - b.distance);
+        const escapedCode = code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        atis = (vatsimCache.feed.atis || [])
+          .filter(item => new RegExp('^' + escapedCode + '(?:_[A-Z0-9]+)*_ATIS(?:_[A-Z0-9]+)*$', 'i').test(String(item.callsign || '')))
+          .sort((a, b) => Date.parse(b.last_updated || 0) - Date.parse(a.last_updated || 0))
+          .map(item => ({ callsign: String(item.callsign || '').slice(0, 24), frequency: String(item.frequency || '').slice(0, 12), identifier: String(item.atis_code || '').slice(0, 4), text: (Array.isArray(item.text_atis) ? item.text_atis : []).map(line => String(line).slice(0, 240)).slice(0, 20), updatedAt: String(item.last_updated || '').slice(0, 40) }))[0] || null;
     } catch {
       controllers = [];
+      atis = null;
     }
   }
   return {
@@ -199,7 +208,7 @@ async function getAirportInfo(icao, options = {}) {
     longitude: Number.isFinite(Number(airport?.lon)) ? Number(airport.lon) : null,
     ...(includeMetar ? { metar: report?.rawOb || '', reportTime: report?.reportTime || '' } : {}),
     ...(includeTaf ? { taf: forecast?.rawOb || '', tafIssueTime: forecast?.issueTime || forecast?.reportTime || '' } : {}),
-    ...(includeAtc ? { controllers } : {})
+    ...(includeAtc ? { controllers, atis } : {})
   };
 }
 
@@ -395,6 +404,11 @@ ipcMain.handle('open-chartfox', (_event, ident, chartId) => openChartfox(ident, 
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+    const audioOnly = permission === 'media' && Array.isArray(details?.mediaTypes)
+      && details.mediaTypes.includes('audio') && !details.mediaTypes.includes('video');
+    callback(webContents === mainWindow?.webContents && audioOnly);
+  });
   loadChartfoxToken();
   createWindow();
   startPositionBridge();
