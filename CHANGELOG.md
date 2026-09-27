@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0-alpha.10 — Alpha 0.4
+
+- Keep the EFB connected and visible when switching its internal pages or loading embedded content, fixing a permanent Connecting status that previously required Save & connect.
+- Give the EFB a centered 4:3 tablet layout and more vertical room, with compact provider controls and collapsible connection settings.
+- Track document navigation separately from hash/history and browser loading-spinner events; hide the EFB only for actual load failures or when leaving the app's EFB page.
+- Add regression coverage for hash/history, embedded-frame and full-document navigation, while retaining failed-server and Reload checks.
+- Reuse the unchanged simulator helper from alpha.8.
+
 ## 0.4.0-alpha.9 — Alpha 0.4
 
 - Add an EFB page with Automatic, Fenix, PMDG and iniBuilds selections and per-provider local addresses.

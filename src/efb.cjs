@@ -18,12 +18,12 @@ function localUrl(input){
 }
 class EfbView {
   constructor(win){
-    this.win=win;this.view=null;this.key='';this.status='';this.visible=false;
+    this.win=win;this.view=null;this.key='';this.status='';this.visible=false;this.ready=false;
     win.on('closed',()=>this.close());
     win.webContents.on('did-start-navigation',(_event,_url,_inPlace,mainFrame)=>{if(mainFrame)this.close()});
   }
   close(){
-    const view=this.view;this.view=null;this.key='';
+    const view=this.view;this.view=null;this.key='';this.ready=false;
     if(view){if(!this.win.isDestroyed())this.win.contentView.removeChildView(view);if(!view.webContents.isDestroyed())view.webContents.close()}
   }
   update(input={},position={}){
@@ -54,9 +54,15 @@ class EfbView {
       wc.on('will-redirect',(event,target)=>{if(!allowed(target))event.preventDefault()});
       wc.setWindowOpenHandler(({url:target})=>{if(allowed(target))wc.loadURL(target).catch(()=>{});return {action:'deny'}});
       let failed=false;
-      wc.on('did-start-loading',()=>{failed=false;if(this.view===view)this.status='Connecting…'});
-      wc.on('did-finish-load',()=>{if(this.view===view&&!failed)this.status='EFB connected'});
-      wc.on('did-fail-load',(_event,code,_description,_url,mainFrame)=>{if(this.view===view&&mainFrame&&code!==-3){failed=true;this.status='Could not connect. Start the aircraft EFB server, check the address, then select Reload.';view.setVisible(false)}});
+      // The browser loading spinner also runs for hash/history changes and
+      // subframes. Those do not finish a new document load and must not hide
+      // an already connected EFB or leave it stuck on "Connecting".
+      wc.on('did-start-navigation',details=>{if(this.view===view&&details.isMainFrame&&!details.isSameDocument){failed=false;this.status='Connecting…'}});
+      wc.on('did-finish-load',()=>{if(this.view===view&&!failed){this.ready=true;this.status='EFB connected'}});
+      const keepConnected=()=>{if(this.view===view&&this.ready&&!failed)this.status='EFB connected'};
+      wc.on('did-stop-loading',keepConnected);
+      wc.on('did-navigate-in-page',keepConnected);
+      wc.on('did-fail-load',(_event,code,_description,_url,mainFrame)=>{if(this.view===view&&mainFrame&&code!==-3){failed=true;this.ready=false;this.status='Could not connect. Start the aircraft EFB server, check the address, then select Reload.';view.setVisible(false)}});
       wc.on('render-process-gone',()=>{if(this.view===view){this.close();this.status='EFB stopped. Select Reload to reconnect.'}});
       wc.loadURL(url).catch(()=>{});
     }else if(input.reload){this.view.webContents.reload()}
@@ -66,7 +72,7 @@ class EfbView {
       const x=Math.max(0,Math.min(width,Math.round(bounds.x))),y=Math.max(0,Math.min(height,Math.round(bounds.y)));
       const w=Math.max(0,Math.min(width-x,Math.round(bounds.width))),h=Math.max(0,Math.min(height-y,Math.round(bounds.height)));
       this.view.setBounds({x,y,width:w,height:h});
-      this.view.setVisible(w>0&&h>0&&this.status==='EFB connected');
+      this.view.setVisible(w>0&&h>0&&this.ready);
     }else this.view.setVisible(false);
     return result();
   }

@@ -18,12 +18,33 @@ module.exports=async function testEfb(report){
     const view=efb.view;
     await new Promise((resolve,reject)=>{view.webContents.once('did-finish-load',resolve);view.webContents.once('did-fail-load',()=>reject(Error('Fixture failed')))});
     assert.equal(efb.update(options,position('FenixA320')).status,'EFB connected');
+    await view.webContents.executeJavaScript(`new Promise(resolve=>{const frame=document.createElement('iframe');frame.onload=resolve;frame.src=${JSON.stringify(url+'frame')};document.body.append(frame)})`);
+    if(view.webContents.isLoading())await new Promise(resolve=>view.webContents.once('did-stop-loading',resolve));
+    assert.equal(efb.update(options,position('FenixA320')).status,'EFB connected','Embedded content must not reset the EFB connection');
+    assert.equal(view.getVisible(),true);
+    await view.webContents.loadURL(url+'next');
+    assert.equal(efb.update(options,position('FenixA320')).status,'EFB connected');
+    assert.equal(efb.view,view,'Document navigation must reuse the same view');
+    assert.equal(view.getVisible(),true);
     assert.equal(view.getVisible(),true);
     assert.deepEqual(await view.webContents.executeJavaScript('({node:typeof require,bridge:typeof window.cockpitDesktop})'),{node:'undefined',bridge:'undefined'});
     await view.webContents.executeJavaScript(`document.querySelector('input').value='EFB works';document.querySelector('button').click()`);
     assert.equal(await view.webContents.executeJavaScript("document.querySelector('output').textContent"),'EFB works');
+    for(const route of ['#/performance','#/charts','#/efb']){
+      const navigated=new Promise(resolve=>view.webContents.once('did-navigate-in-page',resolve));
+      await view.webContents.executeJavaScript(`location.hash=${JSON.stringify(route)}`);
+      await navigated;
+      if(view.webContents.isLoading())await new Promise(resolve=>view.webContents.once('did-stop-loading',resolve));
+      assert.equal(efb.update(options,position('FenixA320')).status,'EFB connected','In-page EFB navigation must keep the connection');
+      assert.equal(efb.view,view,'EFB navigation must preserve the existing view');
+      assert.equal(view.getVisible(),true,'EFB navigation must not hide the tablet');
+    }
+    await view.webContents.executeJavaScript("history.pushState({},'', '/?page=brief');history.replaceState({},'', '/?page=brief&tab=documents')");
+    if(view.webContents.isLoading())await new Promise(resolve=>view.webContents.once('did-stop-loading',resolve));
+    assert.equal(efb.update(options,position('FenixA320')).status,'EFB connected');
+    const currentUrl=view.webContents.getURL();
     await view.webContents.executeJavaScript("const a=document.createElement('a');a.href='file:///C:/Windows';document.body.append(a);a.click()");
-    await new Promise(resolve=>setTimeout(resolve,50));assert.equal(view.webContents.getURL(),url);
+    await new Promise(resolve=>setTimeout(resolve,50));assert.equal(view.webContents.getURL(),currentUrl);
     offline=true;
     const failed=new Promise(resolve=>view.webContents.once('did-fail-load',resolve));efb.update({...options,reload:true},position('FenixA320'));await failed;
     assert.match(efb.status,/Could not connect/);assert.equal(view.getVisible(),false);
@@ -39,6 +60,6 @@ module.exports=async function testEfb(report){
     assert.equal(efb.update({...options,provider:'pmdg',addresses:{}},{}).status.includes('No built-in'),true);assert.equal(efb.view,null);
     efb.update({...options,provider:'fenix'},{});assert.ok(efb.view);
     win.destroy();assert.equal(efb.view,null);
-    report('PASS: EFB provider detection, local URL validation, native embedding, interaction, isolation, page hiding, aircraft switching and cleanup.');
+    report('PASS: EFB stays connected through hash/history, subframe and document navigation; provider detection, isolation, failure/reload, hiding and cleanup pass.');
   }finally{if(!win.isDestroyed())win.destroy();await new Promise(resolve=>server.close(resolve))}
 };
