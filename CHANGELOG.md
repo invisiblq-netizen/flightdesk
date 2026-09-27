@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0-alpha.5 — Alpha 0.4
+
+- Left-align all Flight Readiness text while keeping Open checklist at the right edge.
+
 ## 0.4.0-alpha.4 — Alpha 0.4
 
 - Align the Flight Readiness heading and details to the left, with Open checklist held at the right.

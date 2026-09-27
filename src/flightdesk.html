@@ -134,11 +134,11 @@ button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;transform:none}
 #page-overview .airport-block{text-align:center}
 #page-overview .stats{justify-content:center}
 #page-overview .atc-list{padding:0;text-align:center}
-#page-overview .readiness-head{display:grid;grid-template-columns:minmax(0,1fr) auto auto;justify-items:stretch;align-items:center;gap:12px;text-align:left}
+#page-overview .readiness-head{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;justify-items:stretch;align-items:center;gap:4px 12px;text-align:left}
 #page-overview .readiness-grid{justify-content:center}
 #page-overview .readiness-item{display:flex;align-items:center;justify-content:center;gap:8px;text-align:center}
 @media(max-width:900px){.session-toolbar{padding-right:155px;gap:8px}}
-@media(max-width:760px){.top{grid-template-columns:minmax(0,1fr);grid-template-areas:"brand" "tools" "session"}.top>.header-tools{justify-self:start}.top>.sessionbar{grid-area:session}.session-toolbar{padding-right:0;min-height:0;justify-content:center}.session-toolbar .connection-stack{position:static;transform:none;margin-left:auto}.session-identity{flex-wrap:wrap}.brand-copy{min-width:0}#page-overview .readiness-head{grid-template-columns:minmax(0,1fr) auto;align-items:center}#page-overview .readiness-head>strong{grid-column:1;grid-row:2}#page-overview .readiness-head>[data-open-checklist]{grid-column:2;grid-row:1/3;justify-self:end}}
+@media(max-width:760px){.top{grid-template-columns:minmax(0,1fr);grid-template-areas:"brand" "tools" "session"}.top>.header-tools{justify-self:start}.top>.sessionbar{grid-area:session}.session-toolbar{padding-right:0;min-height:0;justify-content:center}.session-toolbar .connection-stack{position:static;transform:none;margin-left:auto}.session-identity{flex-wrap:wrap}.brand-copy{min-width:0}#page-overview .readiness-head{grid-template-columns:minmax(0,1fr) auto;align-items:center}#page-overview .readiness-head>strong{grid-column:1;grid-row:2;justify-self:start}#page-overview .readiness-head>[data-open-checklist]{grid-column:2;grid-row:1/3;justify-self:end}}
 
 /* Fill the desktop window; only the current page needs to scroll. */
 html,body{height:100%;overflow:hidden}
@@ -217,11 +217,10 @@ body{background-color:var(--bg);background-image:radial-gradient(ellipse 66% 54%
 <style>
 #page-overview #flightSessionDashboard{margin-left:0;margin-right:auto;text-align:left}
 #page-overview #flightSessionDashboard>.card-head{justify-content:space-between;text-align:left}
-#page-overview .readiness-card .readiness-head{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center}
-#page-overview .readiness-card .readiness-head>div{grid-column:2;grid-row:1;text-align:center}
-#page-overview .readiness-card .readiness-head>strong{grid-column:2;grid-row:2}
-#page-overview .readiness-card .readiness-head>[data-open-checklist]{grid-column:3;grid-row:1 / span 2;justify-self:end;align-self:center}
-@media(max-width:560px){#page-overview .readiness-card .readiness-head{grid-template-columns:minmax(0,1fr) auto;row-gap:6px}#page-overview .readiness-card .readiness-head>div{grid-column:1;grid-row:1;text-align:left;justify-self:start}#page-overview .readiness-card .readiness-head>strong{grid-column:1;grid-row:2;justify-self:start}#page-overview .readiness-card .readiness-head>[data-open-checklist]{grid-column:2;grid-row:1 / span 2}}
+#page-overview .readiness-card .readiness-head{grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;column-gap:12px}
+#page-overview .readiness-card .readiness-head>div{grid-column:1;grid-row:1;text-align:left;justify-self:start}
+#page-overview .readiness-card .readiness-head>strong{grid-column:1;grid-row:2;text-align:left;justify-self:start}
+#page-overview .readiness-card .readiness-head>[data-open-checklist]{grid-column:2;grid-row:1 / span 2;justify-self:end;align-self:center}
 </style>
 <script src="aircraft-profiles/fenix-a320.js"></script>
 <script>
