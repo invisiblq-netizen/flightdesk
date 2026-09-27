@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0-alpha.4 — Alpha 0.4
+
+- Align the Flight Readiness heading and details to the left, with Open checklist held at the right.
+
 ## 0.4.0-alpha.3 — Alpha 0.4
 
 - Move the Open checklist button to the right side of Flight Readiness.
