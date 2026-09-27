@@ -2,7 +2,7 @@
 
 ## Current state
 
-The Windows app is in alpha testing. Version `0.3.1-alpha.11` displays as **Alpha 0.3.1**. Keep `package.json` as the version source. Preserve the package name, app ID and product name when updating so installation and local storage continue using the existing identity.
+The Windows app is in alpha testing. Version `0.4.0-alpha.1` displays as **Alpha 0.4**. Keep `package.json` as the version source. Preserve the package name, app ID and product name when updating so installation and local storage continue using the existing identity.
 
 The earlier installer used version 1.3.0 before alpha numbering was introduced. The current NSIS installer is configured to preserve application data.
 
@@ -14,7 +14,7 @@ The alpha fix normalizes saved state before rendering, retains old items in a sa
 
 Session patches carry per-field logical clocks. Large messages are chunked before transmission. SimBrief state is compacted so the full raw response is not sent to the other PC. The PDF is downloaded through Electron and rendered using the bundled PDF.js assets.
 
-Checklist source references and their aircraft-variant limits are documented in [CHECKLIST-SOURCES.md](CHECKLIST-SOURCES.md). Checklist synchronization is split into PF, PM and shared CM fields. Each peer can update only its selected PF/PM flow; either pilot may acknowledge a shared CM item.
+Checklist source references and their aircraft-variant limits are documented in [CHECKLIST-SOURCES.md](CHECKLIST-SOURCES.md). The Fenix A320 profile lives in `src/aircraft-profiles/fenix-a320.js`; it supplies normalized phase, section, role and action data to the renderer. Checklist synchronization is split into PF, PM and shared CM fields and also syncs the selected aircraft profile. Each peer can update only its selected PF/PM flow; either pilot may acknowledge a shared CM item. Stable item IDs and metadata are preserved over P2P patches so both pilots see the same FLOW/CHECKLIST state.
 
 ## Build tools
 

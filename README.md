@@ -4,7 +4,7 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.3.1** · Build `0.3.1-alpha.23` · Windows x64
+**Alpha 0.4** · Build `0.4.0-alpha.1` · Windows x64
 
 ## Features
 
@@ -12,18 +12,19 @@ A Windows companion app for shared cockpit flying: import a SimBrief flight plan
 - Synchronize notes, checklist progress and flight-plan data directly over WebRTC.
 - Choose Pilot Flying (PF) or Pilot Monitoring (PM), and switch roles during flight.
 - Import the latest generated SimBrief OFP and view its PDF inline, fitted to the page width, with zoom controls. The saved SimBrief ID also supports automatic import during the hour before scheduled departure (UTC).
-- Expand flight phases into separate PF/PM tasks with short explanations.
-- Use an A320 operational scan flow with 18 phases, multiple sections, and side-by-side PF/PM actions; CM actions are shared acknowledgements.
-- View phase-based crew callout prompts, track crew handovers and record a shared flight timeline (route progress is automatic).
+- Use the Fenix A320 profile with 18 phases, concrete role-based cockpit prompts, separate FLOW and CHECKLIST groups, and side-by-side PF/PM progress. Airbus A320 general reminders remain available as a separate profile.
+- Review the live crew/session dashboard, checklist readiness and telemetry-based phase suggestions. Simulator data never checks a procedure item automatically.
+- View structured manual callout and response prompts, track crew handovers and record a shared flight timeline with checklist actions.
 - Search ChartFox airports and browse grouped charts such as taxi, SID, STAR and approach charts, then open a selected chart on ChartFox. A ChartFox API token is encrypted on this PC.
 - Use local crew preferences.
 - Check P2P, simulator-position and VATSIM status in Crew Tools.
-- View airport names, METAR, nearby VATSIM controllers and frequencies.
+- View airport names, METAR, TAF, nearby VATSIM controllers and frequencies when available.
+- Review parsed SimBrief route, alternate, cruise level, times, fuel and weight data alongside the original PDF.
 - Show the SimBrief aircraft registration. Track route progress and infer flight phases from FSUIPC7 telemetry. Find a VATSIM aircraft by its exact flight-plan callsign.
 - See local and Zulu clocks and dates in the header on every page; local time uses your computer's time zone.
-- Navigate between Flight Board, Flight Plan, Checklist, crew notes, Crew Tools and Charts.
+- Open pages with Ctrl+1 through Ctrl+8 (shortcuts are ignored while entering text). The app opens in dark mode and remembers a selected light theme.
 
-Checklist content, source notes and aircraft-specific limits are documented in [docs/CHECKLIST-SOURCES.md](docs/CHECKLIST-SOURCES.md). The A320 scan flow is a simulator training aid, not an operational checklist; always use the exact aircraft/add-on procedures and limits.
+Checklist content, source notes and aircraft-specific limits are documented in [docs/CHECKLIST-SOURCES.md](docs/CHECKLIST-SOURCES.md). The Fenix A320 scan flow is an original simulator aid, not an operational checklist; use the exact current checklist in **Fenix EFB → Fenix → Pilot Brief → Documents**.
 
 ## Install and use
 
@@ -42,7 +43,7 @@ The SimBrief ID is remembered on this PC. While the host lobby has no plan, the 
 
 PeerJS Cloud exchanges connection details automatically; no account or manually operated server is needed. Session content travels directly between connected PCs. Local session data is stored in the Electron app's browser storage on each PC.
 
-The current configuration uses Google STUN and has no TURN relay configured. Some network combinations may prevent a direct connection. SimBrief, AviationWeather.gov and VATSIM are also contacted for their respective data. METAR refreshes every 15 minutes; VATSIM information refreshes every 5 minutes.
+The current configuration uses Google STUN and has no TURN relay configured. Some network combinations may prevent a direct connection. SimBrief, AviationWeather.gov and VATSIM are also contacted for their respective data. METAR refreshes every 15 minutes, TAF every 30 minutes, and VATSIM information every 5 minutes.
 
 ## Develop on Windows
 
@@ -61,7 +62,7 @@ The repository uses `pnpm-lock.yaml`. Do not replace it with an npm-generated lo
 
 ### Reuse the prebuilt helper
 
-To skip compiling the helper, download the matching `FlightPositionBridge-0.3.1-alpha.23-win-x64.zip` Release asset and extract it into the project root. It creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
+To skip compiling the helper, download the matching `FlightPositionBridge-0.4.0-alpha.1-win-x64.zip` Release asset and extract it into the project root. It creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
 
 The helper EXE is larger than GitHub's normal Git file limit. Its source belongs in this repo; the prebuilt archive belongs in Releases. The `publish` folder is ignored by Git.
 
@@ -71,7 +72,7 @@ The helper EXE is larger than GitHub's normal Git file limit. Its source belongs
 pnpm dist
 ```
 
-Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.3.1-alpha.23.exe`.
+Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.4.0-alpha.1.exe`.
 
 `pnpm dist` expects the helper to exist. It bundles the checked-in renderer assets and never publishes a release automatically. This project currently packages Windows only.
 
@@ -91,6 +92,7 @@ The regression checks cover lobby connections, saved data, plan-derived aircraft
 | `src/main.cjs` | Electron window, native menu, external-data requests and helper process |
 | `src/preload.cjs` | Narrow bridge between the window and Electron |
 | `src/flightdesk.html` | English interface, crew flows, state and P2P logic |
+| `src/aircraft-profiles/fenix-a320.js` | Structured Fenix A320 scan-flow profile and callouts |
 | `src/vendor/` | Bundled PDF.js, PeerJS, icon and notices |
 | `simtracker/` | C# source for the FSUIPC position helper |
 | `build/icon.ico` | Windows app and installer icon |

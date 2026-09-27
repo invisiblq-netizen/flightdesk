@@ -10,7 +10,7 @@ const execFileAsync = promisify(execFile);
 const APP_TITLE = 'Shared Cockpit Flight Desk';
 const APP_VERSION = app.getVersion();
 const APP_DISPLAY_VERSION = APP_VERSION.includes('-alpha')
-  ? `Alpha ${APP_VERSION.split('-')[0]}`
+  ? `Alpha ${APP_VERSION.match(/^(\d+\.\d+)/)?.[1] || APP_VERSION.split('-')[0]}`
   : APP_VERSION;
 const WINDOW_TITLE = `${APP_TITLE} — ${APP_DISPLAY_VERSION}`;
 const USER_AGENT = `SharedCockpitFlightDesk/${APP_VERSION}`;
@@ -121,6 +121,7 @@ async function getAirportInfo(icao, options = {}) {
   if (!/^[A-Z0-9]{4}$/.test(code)) throw new Error('Enter a four-character ICAO code.');
   const headers = { 'user-agent': USER_AGENT };
   const includeMetar = options?.metar !== false;
+  const includeTaf = options?.taf !== false;
   const includeAtc = options?.atc !== false;
   async function getJson(url) {
     const response = await fetch(url, { headers });
@@ -136,8 +137,12 @@ async function getAirportInfo(icao, options = {}) {
     airport = airports[0] || null;
     if (airport) airportCache.set(code, airport);
   }
-  const reports = includeMetar ? await getJson(`${root}metar?ids=${code}&format=json`) : [];
+  const [reports, forecasts] = await Promise.all([
+    includeMetar ? getJson(`${root}metar?ids=${code}&format=json`) : [],
+    includeTaf ? getJson(`${root}taf?ids=${code}&format=json`).catch(() => []) : []
+  ]);
   const report = reports.sort((a, b) => Date.parse(b.reportTime || 0) - Date.parse(a.reportTime || 0))[0];
+  const forecast = forecasts.sort((a, b) => Date.parse(b.issueTime || b.reportTime || 0) - Date.parse(a.issueTime || a.reportTime || 0))[0];
   let controllers = [];
   if (includeAtc && Number.isFinite(Number(airport?.lat)) && Number.isFinite(Number(airport?.lon))) {
     try {
@@ -190,6 +195,7 @@ async function getAirportInfo(icao, options = {}) {
     latitude: Number.isFinite(Number(airport?.lat)) ? Number(airport.lat) : null,
     longitude: Number.isFinite(Number(airport?.lon)) ? Number(airport.lon) : null,
     ...(includeMetar ? { metar: report?.rawOb || '', reportTime: report?.reportTime || '' } : {}),
+    ...(includeTaf ? { taf: forecast?.rawOb || '', tafIssueTime: forecast?.issueTime || forecast?.reportTime || '' } : {}),
     ...(includeAtc ? { controllers } : {})
   };
 }

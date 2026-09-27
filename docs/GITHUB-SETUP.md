@@ -1,6 +1,6 @@
 # Legg prosjektet på GitHub
 
-Repo-navn: `shared-cockpit-flight-desk`
+Repo: [`invisiblq-netizen/flightdesk`](https://github.com/invisiblq-netizen/flightdesk)
 
 Forslag til description:
 
@@ -24,12 +24,12 @@ ZIP-filen skal ikke være den eneste filen i repoet; GitHub og andre utviklere t
 
 ## Ferdig app og hjelper
 
-Opprett en Release med taggen `v0.3.1-alpha.11`, tittelen **Alpha 0.3.1**, og merk den som en **pre-release**. Bruk `CHANGELOG.md` som utgangspunkt for beskrivelsen.
+Opprett en Release med taggen `v0.4.0-alpha.1`, tittelen **Alpha 0.4**, og merk den som en **pre-release**. Bruk `CHANGELOG.md` som utgangspunkt for beskrivelsen.
 
 Legg ved:
 
-- `Shared-Cockpit-Flight-Desk-Setup-0.3.1-alpha.11.exe`
-- `FlightPositionBridge-0.3.1-alpha.11-win-x64.zip`
+- `Shared-Cockpit-Flight-Desk-Setup-0.4.0-alpha.1.exe`
+- `FlightPositionBridge-0.4.0-alpha.1-win-x64.zip`
 - `SHA256SUMS.txt`
 
 Installereren og simulatorhjelperen legges i Releases fordi de er for store for vanlige repo-filer. Hjelperpakken gjør at en annen utvikler kan gjenbruke den ferdige hjelperen uten å bygge C#-delen.

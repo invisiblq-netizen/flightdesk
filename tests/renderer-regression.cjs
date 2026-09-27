@@ -18,7 +18,7 @@ async function run() {
   win.webContents.session.webRequest.onBeforeRequest((details,callback)=>callback({cancel:!details.url.startsWith('file:')}));
   await win.loadFile(path.join(__dirname,'../src/flightdesk.html'));
   const evaluate = source => win.webContents.executeJavaScript(source);
-  await evaluate(`localStorage.clear();document.querySelector('#themeToggle').click();prepareSession('host','Test Pilot','ABC2345','PF');showDesk();data.plan={origin:{icao_code:'ENGM'},destination:{icao_code:'EGLL'},aircraft:{icaocode:'A21N'},general:{callsign:'TEST123',route_distance:'680'}};data.aircraft=aircraftType(data.plan);data.tasks=tasksFor(data.aircraft);applyState(data);`);
+  await evaluate(`localStorage.clear();prepareSession('host','Test Pilot','ABC2345','PF');showDesk();data.plan={origin:{icao_code:'ENGM'},destination:{icao_code:'EGLL'},aircraft:{icaocode:'A21N'},general:{callsign:'TEST123',route_distance:'680'}};data.aircraft=aircraftType(data.plan);data.tasks=tasksFor(data.aircraft);applyState(data);`);
   assert.equal(await evaluate(`document.querySelector('#aircraftPhotoPanel')===null`),true,'Aircraft photos must be removed from the Flight Board');
   await evaluate('Promise.all([...airportRequests.values()])');
   fs.mkdirSync(path.join(__dirname,'../work/ui-checks'),{recursive:true});

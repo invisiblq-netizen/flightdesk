@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0-alpha.1 — Alpha 0.4
+
+- Add a structured Fenix A320 profile with concrete actions across 18 phases and separate PF/PM FLOW and CHECKLIST groups.
+- Keep checklist progress synchronized while allowing each pilot to edit only their assigned role. Telemetry suggests a matching phase without marking checklist items complete.
+- Add a Flight Session dashboard with crew assignments, P2P/simulator status, current detected phase, recent timeline and latest crew action.
+- Record completed checklist actions and manual callouts in the shared timeline; include profile, progress and open items in the flight report.
+- Show expanded SimBrief route, alternate, time, fuel and weight details while retaining the PDF, and add available TAF data beside METAR.
+- Make dark mode the default, organize Crew Notes and Tools in the sidebar, and add Ctrl+1 through Ctrl+8 navigation shortcuts.
+- Keep the generic Airbus A320 flow available and document the Fenix EFB checklist as the exact aircraft reference.
+
 ## 0.3.1-alpha.23 — Alpha 0.3.1
 
 - Add a subtle aviation-inspired gradient and grid to the app background in both light and dark themes.

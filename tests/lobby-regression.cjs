@@ -38,7 +38,7 @@ function app({saved = false, tasks = oldTasks, failStorage = false, peerFailures
     setTimeout(fn, ms){const id=nextTimer++;timers.set(id,{fn,ms});return id;}, clearTimeout:id=>timers.delete(id), setInterval(){},
     localStorage: {getItem:key=>storage.get(key)||null,setItem(key,value){if(writesFail)throw new Error('Local storage write failed');storage.set(key,String(value));},removeItem:key=>storage.delete(key)},
     document:{documentElement:{dataset:{theme:'light'}},querySelector:selector=>nodes.get(selector.slice(1))||null,querySelectorAll:()=>[],activeElement:null},
-    window:{location:{href:'file:///flightdesk.html'},addEventListener(){},cockpitDesktop:{getFsuipcStatus:async()=>({running:false}),getSimPosition:async()=>({connected:false}),getAppInfo:async()=>({name:'Shared Cockpit Flight Desk',version:'0.3.1-alpha.8',displayVersion:'Alpha 0.3.1'})}}
+    window:{location:{href:'file:///flightdesk.html'},addEventListener(){},cockpitDesktop:{getFsuipcStatus:async()=>({running:false}),getSimPosition:async()=>({connected:false}),getAppInfo:async()=>({name:'Shared Cockpit Flight Desk',version:'0.4.0-alpha.1',displayVersion:'Alpha 0.4'})}}
   });
   vm.runInContext(source,context,{filename:'flightdesk.html'});
   writesFail=failStorage;
