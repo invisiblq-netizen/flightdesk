@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0-alpha.12 — Alpha 0.4
+
+- Replace the EFB header's multiple rows with one compact toolbar so the full-width screen starts higher and has more vertical room.
+- Keep provider, connection status, Expand, Reload and Settings together; move aircraft details and the address form behind Settings, with full status available on hover.
+- Validate the compact layout at four resolutions and reuse the unchanged simulator helper.
+
 ## 0.4.0-alpha.11 — Alpha 0.4
 
 - Restore the EFB to the full available width while keeping the taller viewing area, compact controls and collapsible connection settings.
