@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0-alpha.6 — Alpha 0.4
+
+- Keep checklist profiles only for Airbus A319/A320/A321 and rename the aircraft selection accordingly.
+- Remove the Airbus A320 general flow, keeping Fenix as the only scan profile.
+- Migrate old general-flow sessions to Fenix and clear checklist content for other aircraft.
+
 ## 0.4.0-alpha.5 — Alpha 0.4
 
 - Left-align all Flight Readiness text while keeping Open checklist at the right edge.

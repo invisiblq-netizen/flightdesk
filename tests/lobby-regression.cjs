@@ -22,7 +22,7 @@ function app({saved = false, tasks = oldTasks, failStorage = false, peerFailures
   const storage = new Map([['sharedCockpitName', 'Alex'], ['sharedCockpitPilotRole', 'PF']]);
   if(saved) {
     storage.set('sharedCockpitP2PSession', JSON.stringify(savedSession));
-    storage.set('sharedCockpitP2PState:ABC2345', JSON.stringify({data: {notes:{brief:'Keep this briefing', enroute:'', debrief:''}, aircraft:'A320', plan:null, tasks}, versions:{tasks:{clock:4,actor:'old-client'}, 'notes.brief':{clock:3,actor:'old-client'}}, clock:4}));
+    storage.set('sharedCockpitP2PState:ABC2345', JSON.stringify({data: {notes:{brief:'Keep this briefing', enroute:'', debrief:''}, aircraft:'A320', aircraftProfile:'fenix-a320', plan:null, tasks}, versions:{tasks:{clock:4,actor:'old-client'}, 'notes.brief':{clock:3,actor:'old-client'}}, clock:4}));
   }
   const peers = [], timers = new Map();
   let nextTimer = 1, writesFail = false;
@@ -40,6 +40,8 @@ function app({saved = false, tasks = oldTasks, failStorage = false, peerFailures
     document:{documentElement:{dataset:{theme:'light'}},querySelector:selector=>nodes.get(selector.slice(1))||null,querySelectorAll:()=>[],activeElement:null},
     window:{location:{href:'file:///flightdesk.html'},addEventListener(){},cockpitDesktop:{getFsuipcStatus:async()=>({running:false}),getSimPosition:async()=>({connected:false}),getAppInfo:async()=>({name:'Shared Cockpit Flight Desk',version:'0.4.0-alpha.5',displayVersion:'Alpha 0.4'})}}
   });
+  vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../src/aircraft-profiles/fenix-a320.js'),'utf8'),context);
+  context.window.FlightDeskAircraftProfiles=context.FlightDeskAircraftProfiles;
   vm.runInContext(source,context,{filename:'flightdesk.html'});
   writesFail=failStorage;
   return {nodes,peers,storage,context,timers,eval:code=>vm.runInContext(code,context),restoreStorage(){writesFail=false;}};
@@ -116,7 +118,7 @@ async function run() {
   assert.equal(storage.nodes.get('desk').classList.contains('hidden'),false);
   console.log('PASS: Setup failure is caught and controls are restored.');
 
-  const mixed=app({saved:true,tasks:[{id:'preliminary',text:'Preliminary Cockpit Prep',sections:[{id:'briefing',title:'Flight Prep Briefing',flows:{PF:[{role:'PF',text:'PF item',done:true}],PM:[{role:'PM',text:'PM item'}],CM:[]}}]},...oldTasks]});
+  const mixed=app({saved:true,tasks:[{id:'preliminary',text:'Preliminary Cockpit Prep',sections:[{id:'briefing',title:'Flight Prep Briefing',flows:{PF:[{role:'PF',aircraftProfile:'fenix-a320',text:'PF item',done:true}],PM:[{role:'PM',text:'PM item'}],CM:[]}}]},...oldTasks]});
   await mixed.eval("loadSessionState('ABC2345');applyState(data)");
   assert.match(mixed.nodes.get('tasks').innerHTML,/PF item/);
   assert.match(mixed.nodes.get('tasks').innerHTML,/Pilot Flying \(PF\)/);
@@ -173,7 +175,7 @@ async function run() {
   assert.ok(tasksField&&aircraftField,'A fresh host must publish versioned tasks and aircraft');
   assert.ok(Number.isFinite(tasksField.version.clock)&&tasksField.version.clock>0);
   assert.equal(tasksField.version.actor,fresh.eval('deviceId'));
-  assert.ok(tasksField.value.length>0);
+  assert.equal(tasksField.value.length,0);
   assert.ok(tasksField.value.every(phase=>Array.isArray(phase.sections)));
   assert.equal(aircraftField.value,'GENERIC');
   console.log('PASS: A fresh host snapshot contains versioned PF/PM tasks and aircraft.');

@@ -12,14 +12,25 @@ async function run() {
     await flight.nodes.get('simform').onsubmit({preventDefault(){}});
     assert.equal(flight.eval('data.aircraft'), profile);
     assert.equal(flight.nodes.get('aircraftShort').textContent, code);
-    assert.equal(flight.nodes.get('aircraftSelect').value, profile);
+    assert.equal(flight.nodes.get('aircraftSelect').value, profile==='A320'?'A320':'GENERIC');
     const guest = app();
     guest.eval("prepareSession('join','Guest','ABC2345','PM')");
     guest.context.fields = JSON.parse(flight.eval('JSON.stringify(snapshotFields())'));
     guest.eval("stateVersions={};applyRemoteFields(fields,'PF')");
     assert.equal(guest.nodes.get('aircraftShort').textContent, code);
-    assert.equal(guest.nodes.get('aircraftSelect').value, profile);
+    assert.equal(guest.nodes.get('aircraftSelect').value, profile==='A320'?'A320':'GENERIC');
   }
+  assert.equal(flight.eval("tasksFor('A320','airbus-a320')[0].sections[0].flows.PF[0].aircraftProfile"),'fenix-a320');
+  for(const type of ['B738','B789','B77W','A359','DH8D','C172','GENERIC']) {
+    assert.equal(flight.eval("tasksFor('"+type+"').length"),0);
+    assert.equal(flight.eval("normalizeChecklistTasks(tasksFor('A320'),'"+type+"').length"),0);
+  }
+  flight.eval("data.aircraft='A320';data.aircraftProfile='airbus-a320';data.tasks=[{id:'preliminary',text:'Old general flow',sections:[]}];applyState(data)");
+  assert.equal(flight.eval('data.aircraftProfile'),'fenix-a320');
+  assert.equal(flight.eval('data.tasks.length'),18);
+  flight.eval("data.tasks[0].sections[0].flows.PF[0].done=true;applyState(data)");
+  assert.equal(flight.eval('data.tasks[0].sections[0].flows.PF[0].done'),true);
+  console.log('PASS: Removed profiles stay empty, legacy A320 migrates to Fenix, and Fenix progress survives rendering.');
   console.log('PASS: Plan imports and peer snapshots select a profile and preserve the actual aircraft type.');
 
   flight.eval("data.plan={origin:{icao_code:'ORIG'},destination:{icao_code:'DEST'}};airportInfoCache.set('ORIG',{data:{latitude:0,longitude:0}});airportInfoCache.set('DEST',{data:{latitude:0,longitude:10}});resetFlightProgress()");

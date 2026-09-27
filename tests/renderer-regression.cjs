@@ -19,6 +19,14 @@ async function run() {
   await win.loadFile(path.join(__dirname,'../src/flightdesk.html'));
   const evaluate = source => win.webContents.executeJavaScript(source);
   await evaluate(`localStorage.clear();prepareSession('host','Test Pilot','ABC2345','PF');showDesk();data.plan={origin:{icao_code:'ENGM'},destination:{icao_code:'EGLL'},aircraft:{icaocode:'A21N'},general:{callsign:'TEST123',route_distance:'680'}};data.aircraft=aircraftType(data.plan);data.tasks=tasksFor(data.aircraft);applyState(data);`);
+  assert.deepEqual(await evaluate("[...document.querySelector('#aircraftSelect').options].map(o=>o.textContent)"),['No checklist profile','Airbus A319/A320/A321']);
+  assert.deepEqual(await evaluate("[...document.querySelector('#aircraftProfileSelect').options].map(o=>o.value)"),['fenix-a320']);
+  await evaluate("data.aircraft='B738';applyState(data)");
+  assert.equal(await evaluate("data.tasks.length"),0);
+  assert.equal(await evaluate("document.querySelector('#phaseCaption').textContent"),'');
+  assert.equal(await evaluate("document.querySelector('#aircraftProfilePicker').classList.contains('hidden')"),true);
+  await evaluate("data.aircraft='A320';applyState(data)");
+  assert.equal(await evaluate("data.tasks.length"),18);
   assert.equal(await evaluate(`document.querySelector('#aircraftPhotoPanel')===null`),true,'Aircraft photos must be removed from the Flight Board');
   await evaluate('Promise.all([...airportRequests.values()])');
   fs.mkdirSync(path.join(__dirname,'../work/ui-checks'),{recursive:true});
