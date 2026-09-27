@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0-alpha.2 — Alpha 0.4
+
+- Align the Flight Session heading and content to the left on the Flight Board.
+
 ## 0.4.0-alpha.1 — Alpha 0.4
 
 - Add a structured Fenix A320 profile with concrete actions across 18 phases and separate PF/PM FLOW and CHECKLIST groups.

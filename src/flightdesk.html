@@ -213,6 +213,10 @@ body{background-color:var(--bg);background-image:radial-gradient(ellipse 66% 54%
 @media(max-width:900px){.session-dashboard-grid,.session-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.plan-data-details{grid-template-columns:repeat(2,minmax(0,1fr))}.plan-data-item:first-child{grid-column:span 2}}
 @media(max-width:560px){.session-dashboard-grid,.session-status-grid{grid-template-columns:1fr}.session-recent>div{display:grid}.phase-suggestion{align-items:flex-start;flex-direction:column}.profile-picker{min-width:100%}.plan-data-details{grid-template-columns:1fr}.plan-data-item:first-child{grid-column:auto}}
 </style>
+<style>
+#page-overview #flightSessionDashboard{margin-left:0;margin-right:auto;text-align:left}
+#page-overview #flightSessionDashboard>.card-head{justify-content:space-between;text-align:left}
+</style>
 <script src="aircraft-profiles/fenix-a320.js"></script>
 <script>
 const profiles={
