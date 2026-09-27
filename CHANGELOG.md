@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0-alpha.7 — Alpha 0.4
+
+- Prevent menu telemetry and spawning on the ground from creating false cruise, landing and parked events.
+- Require a stable ground baseline, sustained moving/climbing departure and confirmed ground contact before recording flight transitions.
+- Reset automatic detection on stale data, disconnects, telemetry gaps, position jumps and flight changes; gate route progress on confirmed departure.
+- Add telemetry regression coverage for spawn, glitches and a complete valid flight sequence.
+
 ## 0.4.0-alpha.6 — Alpha 0.4
 
 - Keep checklist profiles only for Airbus A319/A320/A321 and rename the aircraft selection accordingly.

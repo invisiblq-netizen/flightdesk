@@ -36,7 +36,7 @@ async function run() {
   flight.eval("data.plan={origin:{icao_code:'ORIG'},destination:{icao_code:'DEST'}};airportInfoCache.set('ORIG',{data:{latitude:0,longitude:0}});airportInfoCache.set('DEST',{data:{latitude:0,longitude:10}});resetFlightProgress()");
   flight.eval("routePosition={connected:true,latitude:0,longitude:10,onGround:true,groundSpeedKnots:0};renderFlightProgress()");
   assert.match(flight.nodes.get('routeProgress').textContent,/0% complete/);
-  flight.eval("routePosition={connected:true,latitude:0,longitude:5,onGround:false,groundSpeedKnots:250};renderFlightProgress()");
+  flight.eval("routePosition={connected:true,latitude:0,longitude:5,onGround:false,groundSpeedKnots:250};currentSimPosition=routePosition;autoPhaseState.airborne=true;renderFlightProgress()");
   assert.match(flight.nodes.get('routeProgress').textContent,/Progress 50%/);
   flight.eval("routePosition.longitude=15;renderFlightProgress()");
   assert.match(flight.nodes.get('routeProgress').textContent,/Progress 99%/);
@@ -44,7 +44,7 @@ async function run() {
   assert.equal(flight.nodes.get('routeProgress').textContent,'Arrived · 100% complete');
   flight.eval("routePosition.updatedAt=Date.now()-6000;renderFlightProgress()");
   assert.match(flight.nodes.get('routeProgress').textContent,/waiting for live simulator/);
-  flight.eval("resetFlightProgress();handleChannelText({type:'position',position:{latitude:0,longitude:5,onGround:false,groundSpeedKnots:250,route:currentRouteKey()}},null)");
+  flight.eval("resetFlightProgress();currentSimPosition=null;handleChannelText({type:'position',position:{latitude:0,longitude:5,onGround:false,groundSpeedKnots:250,flightStarted:true,route:currentRouteKey()}},null)");
   assert.match(flight.nodes.get('routeProgress').textContent,/Progress 50%/);
   flight.eval("remoteFlightPosition.receivedAt=Date.now()-11000;renderFlightProgress()");
   assert.match(flight.nodes.get('routeProgress').textContent,/waiting for live simulator/);
