@@ -6,8 +6,7 @@
   function create({audio,onStatus=()=>{},onQuality=()=>{},onInputLevel=()=>{},onError=()=>{},setTimer=setTimeout,clearTimer=clearTimeout}={}){
     let peer=null,role='',connections=[],rawStream=null,txStream=null,txContext=null,txTrack=null,txDestination=null;
     let mode='ptt',muted=false,transmitting=false,releaseTimer=null,qualityTimer=null;
-    let remoteAudioContext=null,remoteSource=null,remoteFilter=null,remoteNoiseGain=null,remoteGain=null;
-    const calls=new Map(),remoteReady=new Map(),pending=new Map();
+    const calls=new Map(),remoteReady=new Map();
     let outputDeviceId='',volume=.8,quality={level:'unavailable',rttMs:null,jitterMs:null,packetLoss:null};
     const say=(text,level='connecting')=>onStatus({text,level});
     const contextConstructor=()=>globalThis.AudioContext||globalThis.webkitAudioContext;
@@ -61,12 +60,9 @@
       else if(muted){transmitting=false;txTrack.enabled=false}
       else if(mode!=='ptt'){transmitting=false;txTrack.enabled=false}
     }
-    function clearPending(){for(const timer of pending.values())clearTimer(timer);pending.clear()}
-    function removeCall(id,call){const current=calls.get(id);if(!current||current.call!==call)return;calls.delete(id);if(!calls.size){closeRemoteAudio();say(txStream?'Voice link ready':'Voice link off',txStream?'ready':'unavailable')}onQuality({...quality,level:calls.size?quality.level:'unavailable'})}
+    function removeCall(id,call){const current=calls.get(id);if(!current||current.call!==call)return;calls.delete(id);if(!calls.size){closeRemoteAudio();say(txStream?'Voice link ready · waiting for crew':'Voice link off',txStream?'ready':'unavailable')}onQuality({...quality,level:calls.size?quality.level:'unavailable'})}
     function closeRemoteAudio(){
       if(audio){audio.pause?.();audio.srcObject=null}
-      remoteSource=null;remoteFilter=null;remoteNoiseGain=null;remoteGain=null;
-      if(remoteAudioContext){remoteAudioContext.close().catch(()=>{});remoteAudioContext=null}
     }
     async function setOutputDevice(id=outputDeviceId){
       outputDeviceId=id||'';if(!audio)return;
@@ -99,47 +95,41 @@
     }
     function receiveStream(stream){
       closeRemoteAudio();if(!audio)return;
-      const AudioContextClass=contextConstructor();
-      if(AudioContextClass)try{
-        const context=new AudioContextClass(),source=context.createMediaStreamSource(stream),high=context.createBiquadFilter(),low=context.createBiquadFilter(),compressor=context.createDynamicsCompressor(),gain=context.createGain(),destination=context.createMediaStreamDestination();
-        high.type='highpass';high.frequency.value=260;low.type='lowpass';low.frequency.value=6000;
-        compressor.threshold.value=-28;compressor.knee.value=20;compressor.ratio.value=2.5;compressor.attack.value=.01;compressor.release.value=.2;
-        gain.gain.value=volume;source.connect(high).connect(low).connect(compressor).connect(gain).connect(destination);
-        const noiseLength=Math.max(1,Math.floor(context.sampleRate*.25)),buffer=context.createBuffer(1,noiseLength,context.sampleRate),data=buffer.getChannelData(0);
-        for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
-        const noise=context.createBufferSource(),noiseGain=context.createGain();noise.buffer=buffer;noise.loop=true;noiseGain.gain.value=.00008;noise.connect(noiseGain).connect(destination);noise.start();
-        audio.srcObject=destination.stream;remoteAudioContext=context;remoteSource=source;remoteFilter=low;remoteNoiseGain=noiseGain;remoteGain=gain;
-      }catch{audio.srcObject=stream}
-      else audio.srcObject=stream;
-      audio.volume=volume;setOutputDevice();audio.play?.().catch(()=>say('Tap Enable voice to allow audio playback','ready'));
+      audio.autoplay=true;audio.playsInline=true;audio.muted=false;audio.srcObject=stream;
+      audio.volume=volume;setOutputDevice();
+      audio.play?.().catch(()=>say('Voice is connected. Select Enable speakers to allow playback.','ready'));
     }
-    function finishCall(id,call){call.on('stream',stream=>{receiveStream(stream);say('Voice link connected','connected')});call.on('close',()=>removeCall(id,call));call.on('error',error=>{removeCall(id,call);onError('Voice connection failed: '+(error?.message||'unknown error'))});}
+    async function enablePlayback(){
+      if(!audio)return{ok:false,error:'Speaker playback is unavailable.'};
+      try{await audio.play();return{ok:true}}
+      catch(error){return{ok:false,error:error?.message||'Could not start speaker playback.'}}
+    }
+    function finishCall(id,call){
+      const pc=call.peerConnection,inspectRoute=()=>{if(calls.get(id)?.call!==call)return;if(pc?.connectionState==='failed'||pc?.iceConnectionState==='failed')say('Voice route failed · check firewall/NAT; this build has no TURN relay.','unavailable')};
+      pc?.addEventListener?.('connectionstatechange',inspectRoute);pc?.addEventListener?.('iceconnectionstatechange',inspectRoute);inspectRoute();
+      let receivedAudio=false;const streamTimer=setTimer(()=>{if(!receivedAudio&&calls.get(id)?.call===call)say('Voice is still waiting for audio · check both microphones and the firewall/NAT route.','connecting')},12000);
+      call.on('stream',stream=>{receivedAudio=true;clearTimer(streamTimer);receiveStream(stream);say('Voice link connected','connected')});call.on('close',()=>{clearTimer(streamTimer);removeCall(id,call)});call.on('error',error=>{clearTimer(streamTimer);removeCall(id,call);onError('Voice connection failed: '+(error?.message||'unknown error'))});
+    }
     function acceptIncoming(call){
       const id=call?.peer;if(typeof id!=='string'||!id){call?.close?.();return}
       const current=calls.get(id);
-      if(current&&current.call!==call){
-        if(role==='host'&&current.outgoing){call.close?.();return}
-        current.call.close?.();calls.delete(id);
-      }
-      calls.set(id,{call,outgoing:false,bidirectional:!!txStream});finishCall(id,call);
+      // The host starts one bidirectional call only after both microphones are ready.
+      // This avoids simultaneous PeerJS calls racing and closing each other's audio.
+      if(role!=='join'||!txStream||remoteReady.get(id)!==true||current){call.close?.();return}
+      calls.set(id,{call,outgoing:false,bidirectional:true});finishCall(id,call);
       try{call.answer(txStream||undefined)}catch(error){calls.delete(id);onError(error.message||'Could not answer the incoming voice link.');return}
       say('Connecting voice link','connecting');
     }
     function beginOutgoing(connection){
-      if(!peer||!txStream||!connection?.open||!connection.peer||calls.has(connection.peer))return;
+      if(role!=='host'||!peer||!txStream||!connection?.open||!connection.peer||remoteReady.get(connection.peer)!==true||calls.has(connection.peer))return;
       try{const call=peer.call(connection.peer,txStream,{metadata:{channel:'flightdesk-voice',version:1}});if(!call){say('Voice link could not be started','unavailable');return}calls.set(connection.peer,{call,outgoing:true});finishCall(connection.peer,call);say('Connecting voice link','connecting')}
       catch(error){onError(error.message||'Could not start the voice link.')}
     }
     function syncCalls(){
-      clearPending();if(!peer||!txStream)return;
+      if(!peer||!txStream||role!=='host')return;
       for(const connection of connections){
         if(!connection?.open||!connection.peer)continue;
-        const active=calls.get(connection.peer);
-        if(active){if(active.bidirectional||!txStream)continue;active.call.close?.();calls.delete(connection.peer)}
-        if(role==='host'){beginOutgoing(connection);continue}
-        if(remoteReady.get(connection.peer)===true)continue;
-        const timer=setTimer(()=>{pending.delete(connection.peer);const current=connections.find(item=>item.peer===connection.peer&&item.open);if(current&&remoteReady.get(connection.peer)!==true)beginOutgoing(current)},1200);
-        pending.set(connection.peer,timer);
+        if(remoteReady.get(connection.peer)===true)beginOutgoing(connection);
       }
     }
     function onIncoming(call){acceptIncoming(call)}
@@ -158,32 +148,31 @@
     function rootNavigator(){return typeof navigator==='object'?navigator:null}
     function setMode(value){mode=value==='open'?'open':'ptt';if(mode!=='ptt'){transmitting=false;if(releaseTimer)clearTimer(releaseTimer);releaseTimer=null}updateTransmit();say(mode==='open'&&!muted?'Open mic active':mode==='ptt'?'Push to talk ready':'Microphone muted',mode==='open'&&!muted?'connected':'ready')}
     function setMuted(value){muted=!!value;if(muted){transmitting=false;if(releaseTimer)clearTimer(releaseTimer);releaseTimer=null}updateTransmit();say(muted?'Microphone muted':mode==='open'?'Open mic active':'Push to talk ready',muted?'muted':'ready')}
-    function setVolume(value){volume=Math.max(0,Math.min(1,Number(value)||0));if(remoteGain)remoteGain.gain.value=volume;if(audio)audio.volume=volume}
+    function setVolume(value){volume=Math.max(0,Math.min(1,Number(value)||0));if(audio)audio.volume=volume}
     function setPeer(nextPeer,nextRole){if(peer&&peer!==nextPeer)peer.off?.('call',onIncoming);peer=nextPeer||null;role=nextRole==='host'?'host':'join';if(peer)peer.on('call',onIncoming);syncCalls()}
     function setConnections(list){connections=Array.isArray(list)?list:[];syncCalls()}
-    function setRemoteReady(id,ready){if(!id)return;remoteReady.set(id,!!ready);if(ready&&role==='join'){const timer=pending.get(id);if(timer){clearTimer(timer);pending.delete(id)}}syncCalls()}
+    function setRemoteReady(id,ready){if(!id)return;remoteReady.set(id,!!ready);if(!ready&&role==='host'){const active=calls.get(id);if(active){calls.delete(id);try{active.call.close()}catch{}if(!calls.size)closeRemoteAudio()}}syncCalls()}
     async function sampleQuality(){
       const active=[...calls.values()][0]?.call,pc=active?.peerConnection;
+      if(pc?.connectionState==='failed'||pc?.iceConnectionState==='failed'){quality={level:'unavailable',rttMs:null,jitterMs:null,packetLoss:null};onQuality(quality);return}
       if(!pc?.getStats){quality={level:calls.size?'connected':'unavailable',rttMs:null,jitterMs:null,packetLoss:null};onQuality(quality);return}
       try{
         const report=await pc.getStats(),rows=[...report.values()],pair=rows.find(item=>item.type==='candidate-pair'&&item.state==='succeeded'&&item.nominated),inbound=rows.find(item=>item.type==='inbound-rtp'&&item.kind==='audio'&&!item.isRemote);
         const rttMs=Number.isFinite(pair?.currentRoundTripTime)?Math.round(pair.currentRoundTripTime*1000):null,jitterMs=Number.isFinite(inbound?.jitter)?Math.round(inbound.jitter*1000):null,received=Number(inbound?.packetsReceived)||0,lost=Math.max(0,Number(inbound?.packetsLost)||0),packetLoss=received+lost>0?lost/(received+lost):null;
         let level='excellent';if((rttMs??0)>300||(jitterMs??0)>60||(packetLoss??0)>.05)level='degraded';else if((rttMs??0)>150||(jitterMs??0)>30||(packetLoss??0)>.015)level='good';
         quality={level:calls.size?level:'unavailable',rttMs,jitterMs,packetLoss};
-        if(remoteFilter)remoteFilter.frequency.setTargetAtTime(level==='excellent'?6000:level==='good'?4800:3600,remoteAudioContext.currentTime,.8);
-        if(remoteNoiseGain)remoteNoiseGain.gain.setTargetAtTime(level==='excellent'?.00008:level==='good'?.00022:.0005,remoteAudioContext.currentTime,1);
         onQuality(quality);
       }catch{quality={level:'unavailable',rttMs:null,jitterMs:null,packetLoss:null};onQuality(quality)}
     }
     function close(){
-      clearPending();if(qualityTimer)clearInterval(qualityTimer);qualityTimer=null;
+      if(qualityTimer)clearInterval(qualityTimer);qualityTimer=null;
       for(const {call} of calls.values())try{call.close()}catch{}calls.clear();
       if(peer)peer.off?.('call',onIncoming);peer=null;connections=[];remoteReady.clear();
       if(rawStream)for(const track of rawStream.getTracks())track.stop();rawStream=null;txStream=null;txTrack=null;txDestination=null;
       if(txContext){txContext.close().catch(()=>{});txContext=null}closeRemoteAudio();transmitting=false;muted=false;
       quality={level:'unavailable',rttMs:null,jitterMs:null,packetLoss:null};onQuality(quality);say('Voice link off','unavailable');
     }
-    return{start,close,setPeer,setConnections,setRemoteReady,setMode,setMuted,setVolume,setInputDevice,setOutputDevice,testMicrophone,press,release,getState:()=>({ready:!!txStream,muted,mode,transmitting,quality,calls:calls.size})};
+    return{start,close,setPeer,setConnections,setRemoteReady,setMode,setMuted,setVolume,setInputDevice,setOutputDevice,enablePlayback,testMicrophone,press,release,getState:()=>{const pc=[...calls.values()][0]?.call?.peerConnection;return{ready:!!txStream,muted,mode,transmitting,quality,calls:calls.size,connectionState:pc?.connectionState||'new',iceConnectionState:pc?.iceConnectionState||'new'}}};
   }
   return{create};
 });

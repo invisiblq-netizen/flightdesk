@@ -1,11 +1,20 @@
 # Changelog
 
+## 0.5.0-alpha.2 — Alpha 0.5
+
+- Stabilize Voice Link setup: the host starts one bidirectional call after both microphones are ready, received audio uses the direct speaker stream, and a playback-unlock button covers blocked autoplay.
+- Show title-cased voice quality in diagnostics and report when a voice ICE route fails. This app still has no TURN relay, so restrictive NAT/firewall combinations can prevent voice even when lobby data is connected.
+- Replace large ATIS cards with collapsed inline disclosures whose text scrolls within the Flight Board layout.
+- Remove the Crew Callouts panel and remove the SimBrief-driven Approach Briefing card. Keep manual Arrival Briefing templates for crew-confirmed ATIS, clearance, approach chart, minima and missed-approach details.
+- Keep completed flights on each PC and sync reports directly over P2P whenever the same crew names reconnect. Different crew combinations do not receive each other's reports. No storage account or separate cloud service is needed.
+- Build the Windows installer with the current simulator helper source and verify the packaged FSUIPC runtime DLL checksum.
+
 ## 0.5.0-alpha.1 — Alpha 0.5
 
 - Expand Flight Board into a live Flight Overview with simulator/session status, crew roles, checklist progress, recent events and block, taxi, airborne and taxi-in timers.
 - Unify crew activity, checklist, simulator, connection and flight-phase events in a chronological timeline shared with local completed-flight history and reports.
 - Add searchable local flight records, useful flight totals, structured flight details and JSON/CSV export with a print-ready A4 report. Keep actual fuel unavailable when simulator telemetry does not supply it.
-- Add an Approach Briefing from available SimBrief fields and show VATSIM ATIS plus matched VATSIM aircraft position and flight data when the feeds provide them.
+- Show VATSIM ATIS plus matched VATSIM aircraft position and flight data when the feeds provide them.
 - Add peer-to-peer cockpit voice with Push to talk and Open mic modes, device selection, mute, volume, PTT key binding, a local mic-level test and WebRTC-based voice quality feedback.
 - Add Settings for crew preferences, units, time format, density, notifications, voice controls and simulator/P2P diagnostics; preserve explicit unavailable states.
 - Keep the Fenix A320's role-based operational flows and automatic checklist checks, and keep all Tools buttons reachable in short pages/windows with independent navigation scrolling.

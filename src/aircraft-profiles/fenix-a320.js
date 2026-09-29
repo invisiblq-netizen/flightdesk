@@ -332,28 +332,13 @@
       }
     }
   }
-  const callouts = {
-    preliminary: [{ role: 'PF', trigger: 'Before cockpit preparation', callout: 'Flight preparation briefing complete.', response: 'PM confirms route, alternate, fuel plan and shared threats.' }],
-    'before-start': [{ role: 'PM', trigger: 'Before push or engine start', callout: 'Parking brake set, beacon on, doors closed.', response: 'PF confirms the before-start items against the Fenix checklist.' }],
-    'push-start': [{ role: 'PM', trigger: 'During each engine start', callout: 'Monitoring engine start indications.', response: 'PF confirms stable indications before continuing.' }],
-    'taxi-out': [{ role: 'PM', trigger: 'At taxi intersections and hold points', callout: 'Hold short / intersection ahead.', response: 'PF confirms position and clearance.' }],
-    'before-takeoff': [{ role: 'PM', trigger: 'Before entering the runway', callout: 'Runway, takeoff data and clearance cross-checked.', response: 'PF confirms the brief and applicable Fenix checklist.' }],
-    takeoff: [{ role: 'PM', trigger: 'During the takeoff roll', callout: 'Use the current Fenix/operator speed callouts.', response: 'PF acknowledges using the agreed callout wording.' }],
-    'after-takeoff': [{ role: 'PM', trigger: 'After liftoff', callout: 'Positive climb indication.', response: 'PF confirms and continues the Fenix after-takeoff flow.' }],
-    'descent-inrange': [{ role: 'PF', trigger: 'Before descent setup', callout: 'Approach, threats and go-around plan briefed.', response: 'PM confirms chart, route and missed-approach cross-check.' }],
-    approach: [{ role: 'PM', trigger: 'During approach monitoring', callout: 'Call deviations early; use the agreed go-around criteria.', response: 'PF confirms the flight path or initiates the briefed go-around.' }],
-    landing: [{ role: 'PM', trigger: 'After touchdown', callout: 'Runway rollout; monitor deceleration and exit.', response: 'PF confirms runway exit only when safe and cleared.' }],
-    'after-landing': [{ role: 'PM', trigger: 'After runway exit', callout: 'Confirm clear of runway before after-landing actions.', response: 'PF confirms position and taxi clearance.' }],
-    parking: [{ role: 'PF', trigger: 'After shutdown', callout: 'Flight complete; review open items and debrief.', response: 'PM records follow-up items in shared Debrief notes.' }]
-  };
   const profile = {
     id: 'fenix-a320',
     label: 'Fenix A320',
     aircraft: 'A320',
     description: 'Detailed simulator flow with separate PF/PM FLOW and CHECKLIST items.',
     checklistReference: 'For exact current Fenix items use EFB → Fenix → Pilot Brief → Documents.',
-    phases,
-    callouts
+    phases
   };
   for (const phase of phases) for (const group of phase.sections) {
     for (const role of ['PF', 'PM', 'CM']) for (const item of group.flows[role]) item.checklistReference = profile.checklistReference;
