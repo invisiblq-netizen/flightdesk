@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.0-alpha.3 — Alpha 0.5
+
+- Add a SimBrief Route Viewer with navlog waypoint geometry, live aircraft position, waypoint sequencing, route distance/progress, altitude, speed, ETA and available departure/arrival procedures.
+- Surface shared PF/PM activity and checklist flow, flight-phase context, a clickable What’s Next prompt, contextual Flight Desk focus and a state-based Flight Readiness checklist.
+- Add Clean Headset, VHF, Slight Degradation and Heavy Degradation microphone profiles with configurable effect strength, optional network-quality influence, band limiting, compression, noise, distortion, squelch and PTT clicks.
+- Add an opt-in local Cockpit Voice Recorder with session metadata, playback, duration and timeline markers. Newly arriving remote audio joins an active recording; no recording is uploaded.
+- Add live departure/arrival/nearby ATC, copyable frequencies, simulator COM1, and a distance/altitude-sorted VATSIM traffic map and detail panel.
+- Add local flight-track replay, two-flight comparison, airport/aircraft/shared-crew statistics and links to airport statistics from reports.
+- Preserve incomplete session state for explicit restart recovery, retry interrupted P2P connections, compare synchronized state versions after reconnect, and show offline service availability.
+- Export a ZIP diagnostics package with application/OS, simulator, P2P/voice, online-service, recent event and renderer-error details; redact credentials and lobby codes.
+- Extend regression coverage for these features. Actual fuel, runway usage, Navigraph, VAMsys and TURN relay configuration are not provided by the current integrations and remain explicitly unavailable/not configured.
+
 ## 0.5.0-alpha.2 — Alpha 0.5
 
 - Stabilize Voice Link setup: the host starts one bidirectional call after both microphones are ready, received audio uses the direct speaker stream, and a playback-unlock button covers blocked autoplay.

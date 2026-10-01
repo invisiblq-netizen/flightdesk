@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('cockpitDesktop', {
   fetchSimbriefPdf: (plan) => ipcRenderer.invoke('fetch-simbrief-pdf', plan),
   getAirportInfo: (icao, options) => ipcRenderer.invoke('get-airport-info', icao, options),
   getVatsimFlight: (callsign) => ipcRenderer.invoke('get-vatsim-flight', callsign),
+  getVatsimOperations: (position) => ipcRenderer.invoke('get-vatsim-operations', position),
   getFsuipcStatus: () => ipcRenderer.invoke('get-fsuipc-status'),
   getChartfoxTokenStatus: () => ipcRenderer.invoke('chartfox-token-status'),
   saveChartfoxToken: (token) => ipcRenderer.invoke('save-chartfox-token', token),
@@ -14,5 +15,10 @@ contextBridge.exposeInMainWorld('cockpitDesktop', {
   getChartfoxAirportCharts: (ident) => ipcRenderer.invoke('get-chartfox-airport-charts', ident),
   openChartfox: (ident, chartId) => ipcRenderer.invoke('open-chartfox', ident, chartId),
   getSimPosition: () => ipcRenderer.invoke('get-sim-position'),
+  beginCvrRecording: (metadata) => ipcRenderer.invoke('cvr-begin', metadata),
+  appendCvrRecording: (chunk) => ipcRenderer.invoke('cvr-append', chunk),
+  endCvrRecording: (metadata) => ipcRenderer.invoke('cvr-end', metadata),
+  listCvrRecordings: () => ipcRenderer.invoke('cvr-list'),
+  exportDiagnostics: (payload) => ipcRenderer.invoke('export-diagnostics', payload),
   copyText: (text) => ipcRenderer.invoke('clipboard-write', text)
 });

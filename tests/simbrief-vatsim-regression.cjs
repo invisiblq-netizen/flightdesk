@@ -29,7 +29,7 @@ async function run() {
   console.log('PASS: UTC departure window and clocks handle midnight, date rollover and exact one-hour boundaries.');
 
   let calls=0;
-  const plan={times:{sched_out:String(Date.parse('2026-09-26T00:15:00Z')/1000)},aircraft:{icaocode:'B738',reg:'OY-KBH'},general:{callsign:'SAS123'}};
+  const plan={times:{sched_out:String(Date.parse('2026-09-26T00:15:00Z')/1000)},origin:{icao_code:'ENGM',plan_sid:'NEMES5A'},destination:{icao_code:'EGLL',plan_star:'LAM3A'},aircraft:{icaocode:'B738',reg:'OY-KBH'},general:{callsign:'SAS123'},navlog:{fix:[{ident:'MID',name:'MID',pos_lat:'55.5',pos_long:'8.25',stage:'CRZ',via_airway:'UL997',altitude_feet:'35000',ind_airspeed:'280',unused_large_object:{secret:'discard'}}]}};
   flight.context.window.cockpitDesktop.fetchSimbrief=async id=>{calls++;assert.equal(id,'saved-pilot');return {ok:true,data:plan}};
   flight.storage.set('sharedCockpitSimBriefId','saved-pilot');
   flight.eval('connectInviteHandlers()');
@@ -37,6 +37,10 @@ async function run() {
   await flight.eval('autoImportSimbrief()');
   assert.equal(flight.eval('data.aircraft'),'B738');
   assert.equal(flight.eval('data.plan.aircraft.reg'),'OY-KBH','SimBrief aircraft registration must survive plan compaction');
+  assert.equal(flight.eval('data.plan.navlog.fix.length'),1,'Detailed SimBrief fixes must survive plan compaction and P2P sync');
+  assert.equal(flight.eval('data.plan.navlog.fix[0].pos_lat'),55.5,'Waypoint coordinates must be normalized for map rendering');
+  assert.equal(flight.eval('data.plan.navlog.fix[0].unused_large_object'),undefined,'Navlog compaction must discard unrelated nested data');
+  assert.equal(flight.eval('data.plan.origin.plan_sid'),'NEMES5A','Departure SID data must survive plan compaction');
   assert.equal(flight.nodes.get('aircraftReg').textContent,'OY-KBH','Flight Board must display the SimBrief registration');
   assert.equal(flight.nodes.get('importLabel').textContent,'Automatically imported');
   await flight.eval('autoImportSimbrief()');

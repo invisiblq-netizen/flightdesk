@@ -42,6 +42,7 @@ function app({saved = false, tasks = oldTasks, failStorage = false, peerFailures
   });
   vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../src/flight-domain.js'),'utf8'),context);
   context.window.FlightDeskDomain=context.FlightDeskDomain;
+  vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../src/flight-operations.js'),'utf8'),context);
   vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../src/aircraft-profiles/fenix-a320.js'),'utf8'),context);
   context.window.FlightDeskAircraftProfiles=context.FlightDeskAircraftProfiles;
   vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../src/aircraft-profiles/fenix-telemetry.js'),'utf8'),context);
@@ -96,9 +97,8 @@ async function run() {
   const noAutoResume=app({saved:true});
   assert.equal(noAutoResume.nodes.get('desk').classList.contains('hidden'),true,'The app must stay on the lobby chooser at startup');
   assert.equal(noAutoResume.peers.length,0,'The app must not reconnect to the saved session');
-  assert.equal(noAutoResume.storage.has('sharedCockpitP2PSession'),false,'The saved active-session pointer must be cleared');
-  assert.equal(noAutoResume.storage.get('sharedCockpitLastLobbyCode'),savedSession.code,'Remember the old code only to avoid reusing it');
-  console.log('PASS: Startup does not reconnect to the previous lobby.');
+  assert.equal(noAutoResume.storage.has('sharedCockpitP2PSession'),true,'Keep the active-session pointer available for explicit recovery');
+  console.log('PASS: Startup does not reconnect automatically and preserves a recoverable session pointer.');
 
   const failed=app({peerFailures:['network']});
   await failed.nodes.get('create').onclick();

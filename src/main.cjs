@@ -1,15 +1,22 @@
 const {sanitizeCockpit}=require('./cockpit-telemetry.cjs');
 const {EfbView}=require('./efb.cjs');
-const { app, BrowserWindow, Menu, ipcMain, clipboard, safeStorage, shell, session } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, clipboard, safeStorage, shell, session, protocol, dialog } = require('electron');
 const path = require('node:path');
+const os = require('node:os');
 const { exactVatsimFlight } = require('./vatsim-flight.cjs');
+const { nearbyControllers, nearbyTraffic } = require('./vatsim-operations.cjs');
+const { createDiagnosticsArchive } = require('./diagnostics-archive.cjs');
 const fs = require('node:fs/promises');
+const fsSync = require('node:fs');
+const { Readable } = require('node:stream');
+const { randomUUID } = require('node:crypto');
 const { execFile, spawn } = require('node:child_process');
 const { promisify } = require('node:util');
 
 const execFileAsync = promisify(execFile);
 
 const APP_TITLE = 'Shared Cockpit Flight Desk';
+protocol.registerSchemesAsPrivileged([{ scheme: 'flightdesk-recording', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }]);
 const APP_VERSION = app.getVersion();
 const APP_DISPLAY_VERSION = APP_VERSION.includes('-alpha')
   ? `Alpha ${APP_VERSION.match(/^(\d+\.\d+)/)?.[1] || APP_VERSION.split('-')[0]}`
@@ -24,6 +31,31 @@ const airportCache = new Map();
 let positionBridge;
 let simPosition = { connected: false, updatedAt: 0 };
 let chartfoxToken = '';
+const cvrRecordings = new Map();
+const MAX_CVR_CHUNK_BYTES = 1024 * 1024;
+const MAX_CVR_RECORDING_BYTES = 1024 * 1024 * 1024;
+
+function isMainFrame(event) { return !!mainWindow && event.sender === mainWindow.webContents && event.senderFrame === mainWindow.webContents.mainFrame; }
+function recordingPath(id, extension = '.webm') {
+  if (typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id)) throw new Error('Invalid local recording ID.');
+  return path.join(app.getPath('userData'), 'recordings', id + extension);
+}
+function cvrMetadata(value = {}) {
+  const safe = item => String(item || '').replace(/[<>\u0000-\u001f]/g, '').slice(0, 160);
+  return {
+    sessionId: safe(value.sessionId), route: safe(value.route), callsign: safe(value.callsign),
+    phase: safe(value.phase), startedAt: Number.isFinite(value.startedAt) ? value.startedAt : Date.now(),
+    durationMs: Number.isFinite(value.durationMs) ? Math.max(0, value.durationMs) : 0,
+    mimeType: ['audio/webm', 'audio/ogg', 'audio/mp4'].includes(value.mimeType) ? value.mimeType : 'audio/webm'
+  };
+}
+async function saveCvrChunk(id, encoded) {
+  const active = cvrRecordings.get(id);
+  if (!active || typeof encoded !== 'string' || encoded.length > Math.ceil(MAX_CVR_CHUNK_BYTES * 4 / 3) + 8 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded)) throw new Error('Invalid local recording chunk.');
+  const chunk = Buffer.from(encoded, 'base64');
+  if (!chunk.length || chunk.length > MAX_CVR_CHUNK_BYTES || active.bytes + chunk.length > MAX_CVR_RECORDING_BYTES) throw new Error('The local recording exceeded its size limit.');
+  await active.handle.write(chunk); active.bytes += chunk.length;
+}
 
 const chartfoxApi = 'https://api.chartfox.org/v2';
 
@@ -223,6 +255,31 @@ async function getVatsimFlight(callsign) {
   return exactVatsimFlight(vatsimCache.feed.pilots || [], requested, simPosition.com1FrequencyMhz);
 }
 
+async function getVatsimOperations(fallbackPosition) {
+  if (Date.now() >= vatsimCache.expiresAt || !vatsimCache.feed || !vatsimCache.transceivers) {
+    const headers = { 'user-agent': USER_AGENT };
+    const response = await fetch('https://data.vatsim.net/v3/vatsim-data.json', { headers, signal: AbortSignal.timeout(15000) });
+    if (!response.ok) throw new Error('VATSIM live data is unavailable (' + response.status + ').');
+    const feed = await response.json();
+    let transceivers = [];
+    try {
+      const radios = await fetch('https://data.vatsim.net/v3/transceivers-data.json', { headers, signal: AbortSignal.timeout(15000) });
+      if (radios.ok) transceivers = await radios.json();
+    } catch {}
+    vatsimCache = { expiresAt: Date.now() + 15_000, feed, transceivers };
+  }
+  const livePosition = simPosition.connected && Date.now() - simPosition.updatedAt < 5000 ? simPosition : null;
+  const fallback = fallbackPosition && Number.isFinite(Number(fallbackPosition.latitude)) && Number.isFinite(Number(fallbackPosition.longitude)) && Math.abs(Number(fallbackPosition.latitude)) <= 90 && Math.abs(Number(fallbackPosition.longitude)) <= 180
+    ? { latitude: Number(fallbackPosition.latitude), longitude: Number(fallbackPosition.longitude) } : null;
+  const position = livePosition || fallback;
+  return {
+    checkedAt: Date.now(), positionAvailable: !!position,
+    activeCom1FrequencyMhz: livePosition?.com1FrequencyMhz || null,
+    nearbyControllers: nearbyControllers([...(vatsimCache.feed.controllers || []), ...(vatsimCache.feed.atis || [])], vatsimCache.transceivers || [], position, 150),
+    traffic: nearbyTraffic(vatsimCache.feed.pilots || [], position, 100, 120)
+  };
+}
+
 function startPositionBridge() {
   const executable = app.isPackaged
     ? path.join(process.resourcesPath, 'simtracker', 'FlightPositionBridge.exe')
@@ -385,6 +442,10 @@ ipcMain.handle('get-vatsim-flight', async (_event, callsign) => {
     return { ok: true, data: await getVatsimFlight(callsign) };
   } catch (error) { return { ok: false, error: error.message || 'Could not match a VATSIM pilot.' }; }
 });
+ipcMain.handle('get-vatsim-operations', async (_event, position) => {
+  try { return { ok: true, data: await getVatsimOperations(position) }; }
+  catch (error) { return { ok: false, error: error.message || 'VATSIM traffic and controller data are unavailable.' }; }
+});
 ipcMain.handle('get-fsuipc-status', async () => getFsuipcStatus());
 ipcMain.handle('clipboard-write', (_event, value) => { clipboard.writeText(String(value || '')); return true; });
 ipcMain.handle('chartfox-token-status', () => ({ configured: !!chartfoxToken, secureStorage: safeStorage.isEncryptionAvailable() }));
@@ -402,7 +463,88 @@ ipcMain.handle('get-chartfox-airport-charts', async (_event, ident) => {
 });
 ipcMain.handle('open-chartfox', (_event, ident, chartId) => openChartfox(ident, chartId));
 
+ipcMain.handle('cvr-begin', async (event, input = {}) => {
+  if (!isMainFrame(event)) throw new Error('Invalid recording request.');
+  const id = randomUUID(), metadata = cvrMetadata(input), extension = metadata.mimeType === 'audio/ogg' ? '.ogg' : metadata.mimeType === 'audio/mp4' ? '.m4a' : '.webm';
+  const directory = path.dirname(recordingPath(id, extension));
+  await fs.mkdir(directory, { recursive: true });
+  const file = recordingPath(id, extension), handle = await fs.open(file, 'w');
+  cvrRecordings.set(id, { handle, file, extension, bytes: 0, metadata });
+  return { ok: true, id, url: `flightdesk-recording://local/${id}${extension}`, mimeType: metadata.mimeType };
+});
+ipcMain.handle('cvr-append', async (event, input = {}) => {
+  if (!isMainFrame(event)) throw new Error('Invalid recording request.');
+  try { await saveCvrChunk(input.id, input.data); return { ok: true }; }
+  catch (error) { return { ok: false, error: error.message }; }
+});
+ipcMain.handle('cvr-end', async (event, input = {}) => {
+  if (!isMainFrame(event)) throw new Error('Invalid recording request.');
+  const active = cvrRecordings.get(input.id);
+  if (!active) return { ok: false, error: 'This local recording is no longer active.' };
+  cvrRecordings.delete(input.id);
+  try {
+    await active.handle.close();
+    const metadata = { ...active.metadata, ...cvrMetadata(input), durationMs: Number.isFinite(input.durationMs) ? Math.max(0, input.durationMs) : 0, bytes: active.bytes };
+    await fs.writeFile(active.file + '.json', JSON.stringify(metadata, null, 2), 'utf8');
+    return { ok: true, id: input.id };
+  } catch (error) { return { ok: false, error: error.message || 'Could not finish the local recording.' }; }
+});
+ipcMain.handle('cvr-list', async event => {
+  if (!isMainFrame(event)) throw new Error('Invalid recording request.');
+  const directory = path.join(app.getPath('userData'), 'recordings');
+  try {
+    const names = await fs.readdir(directory), results = [];
+    for (const name of names.filter(item => /^[0-9a-f-]{36}\.(?:webm|ogg|m4a)$/i.test(item))) {
+      const file = path.join(directory, name), stat = await fs.stat(file), id = name.slice(0, 36), extension = path.extname(name);
+      let metadata = { startedAt: stat.birthtimeMs, durationMs: 0, route: '', callsign: '', phase: '', mimeType: extension === '.ogg' ? 'audio/ogg' : extension === '.m4a' ? 'audio/mp4' : 'audio/webm', interrupted: true };
+      try { metadata = { ...metadata, ...JSON.parse(await fs.readFile(file + '.json', 'utf8')), interrupted: false }; } catch {}
+      results.push({ id, url: `flightdesk-recording://local/${id}${extension}`, bytes: stat.size, ...metadata });
+    }
+    return { ok: true, recordings: results.sort((a, b) => b.startedAt - a.startedAt).slice(0, 100) };
+  } catch (error) { return error.code === 'ENOENT' ? { ok: true, recordings: [] } : { ok: false, error: 'Could not read local cockpit recordings.' }; }
+});
+ipcMain.handle('export-diagnostics', async (event, payload = {}) => {
+  if (!isMainFrame(event)) throw new Error('Invalid diagnostics request.');
+  try {
+    const serialized = JSON.stringify(payload);
+    if (Buffer.byteLength(serialized, 'utf8') > 2 * 1024 * 1024) throw new Error('Diagnostics data exceeds the 2 MB limit.');
+    const latestPosition = simPosition.connected && Date.now() - simPosition.updatedAt < 5000
+      ? { latitude: simPosition.latitude, longitude: simPosition.longitude, altitudeFeet: simPosition.altitudeFeet, groundSpeedKnots: simPosition.groundSpeedKnots, verticalSpeedFeetPerMinute: simPosition.verticalSpeedFeetPerMinute, headingDegrees: simPosition.headingDegrees, com1FrequencyMhz: simPosition.com1FrequencyMhz, updatedAt: simPosition.updatedAt }
+      : { connected: false, status: 'Simulator telemetry unavailable' };
+    const archive = createDiagnosticsArchive({ ...payload, simulator: { ...(payload.simulator || {}), fsuipc7: await getFsuipcStatus(), telemetry: latestPosition } }, {
+      application: APP_TITLE, version: APP_VERSION, electron: process.versions.electron, node: process.versions.node,
+      platform: process.platform, operatingSystem: os.type(), release: os.release(), architecture: process.arch,
+      generatedAt: new Date().toISOString()
+    });
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const save = await dialog.showSaveDialog(mainWindow, { defaultPath: path.join(app.getPath('downloads'), `FlightDesk-Diagnostics-${stamp}.zip`), filters: [{ name: 'ZIP archive', extensions: ['zip'] }] });
+    if (save.canceled || !save.filePath) return { ok: true, canceled: true };
+    await fs.writeFile(save.filePath, archive);
+    return { ok: true, path: save.filePath };
+  } catch (error) { return { ok: false, error: error.message || 'Could not create the diagnostics archive.' }; }
+});
+
 app.whenReady().then(() => {
+  protocol.handle('flightdesk-recording', async request => {
+    try {
+      const url = new URL(request.url), match = url.host === 'local' && /^\/([0-9a-f-]{36}\.(?:webm|ogg|m4a))$/i.exec(url.pathname);
+      if (!match) return new Response('Not found', { status: 404 });
+      const file = recordingPath(match[1].slice(0, 36), path.extname(match[1])), stat = await fs.stat(file), range = request.headers.get('range');
+      let start = 0, end = stat.size - 1, status = 200;
+      if (range) {
+        const bytes = /^bytes=(\d*)-(\d*)$/.exec(range);
+        if (!bytes) return new Response('', { status: 416, headers: { 'Content-Range': `bytes */${stat.size}` } });
+        start = bytes[1] ? Number(bytes[1]) : Math.max(0, stat.size - Number(bytes[2] || 0));
+        end = bytes[2] && bytes[1] ? Math.min(stat.size - 1, Number(bytes[2])) : end;
+        if (start > end || start >= stat.size) return new Response('', { status: 416, headers: { 'Content-Range': `bytes */${stat.size}` } });
+        status = 206;
+      }
+      const extension = path.extname(file), mime = extension === '.ogg' ? 'audio/ogg' : extension === '.m4a' ? 'audio/mp4' : 'audio/webm';
+      const headers = { 'Accept-Ranges': 'bytes', 'Content-Type': mime, 'Content-Length': String(end - start + 1), 'Cache-Control': 'no-store' };
+      if (status === 206) headers['Content-Range'] = `bytes ${start}-${end}/${stat.size}`;
+      return new Response(Readable.toWeb(fsSync.createReadStream(file, { start, end })), { status, headers });
+    } catch { return new Response('Not found', { status: 404 }); }
+  });
   Menu.setApplicationMenu(null);
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
     const audioOnly = permission === 'media' && Array.isArray(details?.mediaTypes)
@@ -424,3 +566,4 @@ app.on('window-all-closed', () => {
 
 ipcMain.handle('get-sim-position', async () => ({ ...simPosition, connected: simPosition.connected && Date.now() - simPosition.updatedAt < 5000 }));
 app.on('before-quit', () => positionBridge?.kill());
+app.on('before-quit', () => { for (const active of cvrRecordings.values()) active.handle.close().catch(() => {}); cvrRecordings.clear(); });

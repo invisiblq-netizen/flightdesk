@@ -74,6 +74,7 @@ async function run() {
     assert.equal(started.ok, true);
     voice.setMode('ptt');
     voice.setPeer(peer, 'host');
+    voice.setRemoteReady('joining-pilot', true);
     voice.setConnections([{ open: true, peer: 'joining-pilot' }]);
     const { peer: target, stream, options, call } = peer.outgoing;
     assert.equal(target, 'joining-pilot');
@@ -86,7 +87,7 @@ async function run() {
     assert.equal(voice.getState().transmitting, true);
     assert.equal(voice.release(), true);
     assert.equal(transmitTrack.enabled, true, 'Release keeps the closing tone in the outgoing stream');
-    const release = [...timers.values()][0];
+    const release = [...timers.values()].at(-1);
     assert.equal(typeof release, 'function');
     release();
     assert.equal(transmitTrack.enabled, false, 'PTT closes after its squelch tail');
