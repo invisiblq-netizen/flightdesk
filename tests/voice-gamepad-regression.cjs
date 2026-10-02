@@ -11,18 +11,16 @@ function press(controller, index, value = 1) {
 
 function run() {
   let controllers = [];
-  let active = true;
   let tick = null;
   let intervalStarted = 0;
   let intervalCleared = 0;
-  const held = [];
-  const bindings = [];
+  const actions = [];
+  const savedBindings = [];
   const gamepad = create({
     getGamepads: () => controllers,
-    isActive: () => active,
-    onHeld: value => held.push(value),
-    onBinding: value => bindings.push(value),
-    setIntervalFn: callback => { tick = callback; intervalStarted++; return 7; },
+    onAction: (binding, active) => actions.push([binding.id, binding.action, active]),
+    onBinding: bindings => savedBindings.push(bindings),
+    setIntervalFn: (callback, delay) => { assert.ok(delay >= 16); tick = callback; intervalStarted++; return 7; },
     clearIntervalFn: id => { assert.equal(id, 7); tick = null; intervalCleared++; }
   });
 
@@ -30,65 +28,73 @@ function run() {
   assert.equal(buttonLabel('standard', 0), 'A');
   assert.equal(buttonLabel('standard', 4), 'LB');
   assert.equal(buttonLabel('', 8), 'Button 9');
-  assert.equal(normalizeBinding({ id: 'pad', index: 0, buttonIndex: 0, mapping: 'standard' }).buttonIndex, 0);
-  assert.equal(normalizeBinding({ id: '', index: -1, buttonIndex: 0 }), null);
+  assert.equal(normalizeBinding({ id: 'hold', action: 'hold-to-mute', buttonIndex: -1 }).action, 'hold-to-mute');
+  assert.equal(normalizeBinding({ id: 'bad', action: 'unknown', buttonIndex: 0, padId: 'pad' }), null);
+  assert.equal(normalizeBinding({ id: 'bad', action: 'toggle-mute', buttonIndex: 0 }), null);
 
-  const first = pad({ index: 0 });
-  const second = pad({ index: 1 });
-  controllers = [first, second];
-  gamepad.setBinding({ id: first.id, index: 0, buttonIndex: 0, mapping: 'standard' });
-  assert.equal(gamepad.getState().connected, true);
+  const controller = pad();
+  controllers = [controller];
+  gamepad.setBindings([
+    { id: 'mute-hold', action: 'hold-to-mute', padId: controller.id, padIndex: 0, buttonIndex: 0, mapping: 'standard' },
+    { id: 'mute-toggle', action: 'toggle-mute', padId: controller.id, padIndex: 0, buttonIndex: 1, mapping: 'standard' },
+    { id: 'ptt', action: 'push-to-talk', padId: controller.id, padIndex: 0, buttonIndex: 2, mapping: 'standard' },
+    { id: 'unbound', action: 'hold-to-mute', padId: '', padIndex: -1, buttonIndex: -1, mapping: '' }
+  ]);
+  assert.equal(gamepad.getState().connectedCount, 1);
   assert.equal(intervalStarted, 1);
 
-  press(second, 0);
+  press(controller, 0);
   tick();
-  assert.equal(gamepad.getState().held, false, 'another controller must not affect the selected binding');
-  press(second, 0, 0);
-  press(first, 0);
+  assert.deepEqual(actions.at(-1), ['mute-hold', 'hold-to-mute', true]);
+  press(controller, 0, 0);
   tick();
-  assert.equal(gamepad.getState().held, true, 'the selected held button asserts hold-to-mute');
-  assert.deepEqual(held, [true]);
+  assert.deepEqual(actions.at(-1), ['mute-hold', 'hold-to-mute', false]);
 
-  active = false;
+  press(controller, 1);
   tick();
-  assert.equal(gamepad.getState().held, false, 'losing app focus releases a stale held mute');
-  assert.deepEqual(held, [true, false]);
-  active = true;
+  assert.deepEqual(actions.at(-1), ['mute-toggle', 'toggle-mute', true]);
   tick();
-  assert.equal(gamepad.getState().held, true, 'a still-held button is recognized after focus returns');
+  assert.equal(actions.filter(([id, action, active]) => id === 'mute-toggle' && action === 'toggle-mute' && active).length, 1, 'toggle mute fires once per press, not continuously while held');
+  press(controller, 1, 0);
+  tick();
+  assert.deepEqual(actions.at(-1), ['mute-toggle', 'toggle-mute', false]);
 
+  press(controller, 2);
+  tick();
+  assert.deepEqual(actions.at(-1), ['ptt', 'push-to-talk', true]);
   controllers = [];
   tick();
-  assert.equal(gamepad.getState().connected, false);
-  assert.equal(gamepad.getState().held, false, 'controller disconnect releases hold-to-mute');
-  assert.equal(gamepad.getState().buttonLabel, 'A');
+  assert.equal(gamepad.getState().connectedCount, 0);
+  assert.deepEqual(actions.at(-1), ['ptt', 'push-to-talk', false], 'controller disconnect always releases momentary actions');
 
-  controllers = [first];
-  press(first, 0, 0);
-  gamepad.refresh();
-  gamepad.beginCapture();
-  assert.equal(gamepad.getState().capturing, true);
-  press(first, 2);
+  controllers = [controller];
+  press(controller, 2, 0);
+  gamepad.beginCapture('mute-hold');
+  assert.equal(gamepad.getState().capturingId, 'mute-hold');
+  press(controller, 3);
   tick();
-  assert.equal(gamepad.getState().binding.buttonIndex, 2, 'capture binds the next pressed controller button');
-  assert.equal(gamepad.getState().held, false, 'the button used for binding cannot immediately mute');
-  assert.equal(bindings.at(-1).buttonIndex, 2);
-  press(first, 2, 0);
+  assert.equal(gamepad.getState().bindings.find(item => item.id === 'mute-hold').buttonIndex, 3);
+  assert.equal(gamepad.getState().bindings.find(item => item.id === 'mute-hold').held, false, 'the bind press cannot immediately trigger an action');
+  assert.equal(savedBindings.at(-1).find(item => item.id === 'mute-hold').buttonIndex, 3);
+  press(controller, 3, 0);
   tick();
-  assert.equal(gamepad.getState().holdArmed, true, 'binding arms after the bind press is released');
-  press(first, 2);
+  press(controller, 3);
   tick();
-  assert.equal(gamepad.getState().held, true);
+  assert.deepEqual(actions.at(-1), ['mute-hold', 'hold-to-mute', true]);
 
-  gamepad.clearBinding();
-  assert.equal(gamepad.getState().binding, null);
-  assert.equal(gamepad.getState().held, false);
-  assert.equal(tick, null, 'polling stops when no controller binding remains');
-  assert.ok(intervalCleared >= 1);
+  gamepad.removeBinding('mute-hold');
+  assert.equal(gamepad.getState().bindings.some(item => item.id === 'mute-hold'), false);
+  assert.equal(intervalCleared, 0, 'Polling stays active while other controller actions remain bound');
+  gamepad.removeBinding('mute-toggle');
+  gamepad.removeBinding('ptt');
+  assert.ok(intervalCleared >= 1, 'Polling stops after the last bound action is removed');
 
   const unsupported = create({ getGamepads: null });
   assert.equal(unsupported.getState().supported, false);
-  console.log('PASS: gamepad binding, hold/release, capture, disconnect, focus and unsupported states work.');
+  unsupported.setBindings([{ id: 'waiting', action: 'toggle-mute', buttonIndex: -1 }]);
+  unsupported.beginCapture('waiting');
+  assert.equal(unsupported.getState().capturingId, '', 'unsupported controller input must fail visibly instead of starting a phantom capture');
+  console.log('PASS: controller actions, repeated toggle presses, capture, reconnect, disconnect cleanup and unavailable state work.');
 }
 
 run();

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0-alpha.10 — Alpha 0.5
+
+- Replace the single controller mute shortcut with multiple saved gamepad bindings for hold-to-mute, toggle mute and push-to-talk. Each action is tracked independently, manual mute remains independent, and disconnects release held actions.
+- Move controller mapping into Settings → Keybinds, retain the keyboard PTT shortcut there, and add a direct Keybinds button beside Voice Chat.
+- Reorganize the sidebar into Flight Desk, Crew Notes and Tools; pin Tools with its own compact scroll area and place dynamically added EFB, VATSIM traffic and Flight Analysis pages in the correct group.
+
 ## 0.5.0-alpha.9 — Alpha 0.5
 
 - Bind a joystick or game-controller button for hold-to-mute. The selected button is saved locally, captures only a fresh press after all controls are released, and releases the mute when the button is released or the controller disconnects.

@@ -1,7 +1,8 @@
 (()=>{
-  const nav=document.querySelector('#navScroll')||document.querySelector('.side-nav');
+  const nav=document.querySelector('.side-nav');
   if(!nav)return;
-  nav.insertAdjacentHTML('beforeend','<button class="nav-item" data-page="efb" id="efbNav">EFB</button>');
+  const efbButton='<button class="nav-item" data-page="efb" id="efbNav">EFB</button>',tools=nav.querySelector('#toolsGroup');
+  if(tools){const label=tools.querySelector('.nav-group-label');if(label)label.insertAdjacentHTML('afterend',efbButton);else tools.insertAdjacentHTML('afterbegin',efbButton)}else (nav.querySelector('#navTools')||nav).insertAdjacentHTML('beforeend',efbButton);
   document.querySelector('#page-notes').insertAdjacentHTML('afterend',`<section class="app-page" id="page-efb">
     <article class="card efb-controls"><div class="efb-bar"><h2>EFB</h2><select id="efbProvider" aria-label="Aircraft provider"><option value="auto">Automatic</option><option value="fenix">Fenix</option><option value="pmdg">PMDG</option><option value="inibuilds">iniBuilds</option></select><div id="efbStatus" role="status" aria-live="polite">Ready</div><button id="efbExpand" type="button">Expand</button><button id="efbReload" type="button">Reload</button><button id="efbSettingsButton" type="button" aria-expanded="false" aria-controls="efbSettings">Settings</button></div>
     <details id="efbSettings"><summary class="hidden">Connection settings</summary><p class="muted small" id="efbAircraft">Waiting for simulator aircraft</p><form id="efbForm" class="efb-toolbar"><label class="efb-address">Local EFB address<input id="efbAddress" placeholder="http://localhost:8083" maxlength="2048" autocomplete="off"></label><button type="submit">Save & connect</button></form>

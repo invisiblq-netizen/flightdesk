@@ -23,9 +23,11 @@ async function run() {
   await evaluate(`localStorage.clear();prepareSession('host','Test Pilot','ABC2345','PF');showDesk();data.plan={origin:{icao_code:'ENGM'},destination:{icao_code:'EGLL'},aircraft:{icaocode:'A21N'},general:{callsign:'TEST123',route_distance:'680'}};data.aircraft=aircraftType(data.plan);data.tasks=tasksFor(data.aircraft);applyState(data);`);
   assert.deepEqual(await evaluate("[...document.querySelector('#voiceMode').options].map(option=>option.value)"),['ptt','open']);
   assert.equal(await evaluate("document.querySelector('#voiceMicTest')!==null"),true,'Voice controls must include a real microphone test');
-  assert.equal(await evaluate("document.querySelector('#voiceGamepadBind')!==null&&document.querySelector('#voiceGamepadClear')!==null"),true,'Voice controls must allow a controller hold-to-mute binding');
+  assert.equal(await evaluate("document.querySelector('#voiceKeybindsButton')!==null&&document.querySelector('#voiceGamepadBind')===null"),true,'Voice controls expose one clean route to configurable controller keybinds');
   const muteComposition=await evaluate(`(()=>{const original=voiceLink;let muted=false;voiceLink={getState:()=>({ready:true,muted}),setMuted(value){muted=value}};manualVoiceMuted=true;voiceGamepadMuted=false;applyVoiceMuteState();voiceGamepadMuted=true;applyVoiceMuteState();voiceGamepadMuted=false;applyVoiceMuteState();const staysMuted=muted;manualVoiceMuted=false;applyVoiceMuteState();voiceLink=original;return{staysMuted,cleared:muted}})()`);
   assert.deepEqual(muteComposition,{staysMuted:true,cleared:false},'Controller release must not clear an independent manual mute');
+  const gamepadActions=await evaluate(`(()=>{const saved={voiceLink,manualVoiceMuted,voiceGamepadMuted,voiceGamepadMuteHolds,voiceGamepadPttHolds},sent=[];let muted=false;voiceLink={getState:()=>({ready:true,muted}),setMuted(value){muted=value},press(){sent.push('press')},release(){sent.push('release')}};manualVoiceMuted=false;voiceGamepadMuted=false;voiceGamepadMuteHolds=new Set();voiceGamepadPttHolds=new Set();handleVoiceGamepadAction({id:'hold',action:'hold-to-mute'},true);const heldMute=muted;handleVoiceGamepadAction({id:'hold',action:'hold-to-mute'},false);const releasedMute=muted;handleVoiceGamepadAction({id:'toggle',action:'toggle-mute'},true);handleVoiceGamepadAction({id:'toggle',action:'toggle-mute'},false);const toggledMute=muted;handleVoiceGamepadAction({id:'toggle',action:'toggle-mute'},true);handleVoiceGamepadAction({id:'ptt',action:'push-to-talk'},true);handleVoiceGamepadAction({id:'ptt',action:'push-to-talk'},false);const result={heldMute,releasedMute,toggledMute,untoggledMute:muted,ptt:sent};voiceLink=saved.voiceLink;manualVoiceMuted=saved.manualVoiceMuted;voiceGamepadMuted=saved.voiceGamepadMuted;voiceGamepadMuteHolds=saved.voiceGamepadMuteHolds;voiceGamepadPttHolds=saved.voiceGamepadPttHolds;return result})()`);
+  assert.deepEqual(gamepadActions,{heldMute:true,releasedMute:false,toggledMute:true,untoggledMute:false,ptt:['press','release']},'Each controller action drives mute or transmit state in the actual renderer');
   assert.equal(await evaluate("document.querySelector('#voiceProfile')!==null"),true,'Voice Link should expose selectable local audio profiles');
   await evaluate("document.querySelector('#voiceProfile').value='vhf';document.querySelector('#voiceProfile').onchange()");
   assert.equal(await evaluate("localStorage.getItem('sharedCockpitVoiceProfile')"),'vhf');
@@ -42,9 +44,13 @@ async function run() {
   await evaluate("document.querySelector('#voiceMode').value='open';document.querySelector('#voiceMode').onchange()");
   assert.equal(await evaluate("localStorage.getItem('sharedCockpitVoiceMode')"),'open');
   await evaluate("document.querySelector('#voiceMode').value='ptt';document.querySelector('#voiceMode').onchange()");
-  await evaluate("document.querySelector('#settingsToggle').click()");
-  assert.equal(await evaluate("document.querySelector('#settingsVoiceGamepadBind')!==null"),true,'Controller binding must also be available in voice settings');
+  await evaluate("document.querySelector('#voiceKeybindsButton').click()");
+  assert.equal(await evaluate("document.querySelector('#settingsKeybinds')!==null&&document.querySelector('#settingsKeybinds').getBoundingClientRect().height>0"),true,'The Voice Chat Keybinds button opens Settings at the keybind section');
   assert.equal(await evaluate("document.querySelector('#settingsOverlay').classList.contains('hidden')"),false);
+  await evaluate("document.querySelector('#addVoiceKeybind').click()");
+  await evaluate("(()=>{const select=document.querySelector('[data-voice-binding] [data-binding-action]');select.value='toggle-mute';select.dispatchEvent(new Event('change'))})()");
+  assert.equal(await evaluate("JSON.parse(localStorage.getItem('sharedCockpitVoiceGamepadBindings'))[0].action"),'toggle-mute','Controller actions can be selected and saved independently in Keybinds');
+  assert.equal(await evaluate("document.querySelectorAll('[data-voice-binding] [data-binding-action] option').length"),3,'Keybinds provides hold-to-mute, toggle mute and push-to-talk actions');
   assert.equal(await evaluate("document.querySelectorAll('#notificationSettingList input').length"),11);
   await evaluate("(()=>{const input=document.querySelector('[data-notification=voiceDegraded]');input.checked=false;input.onchange()})()");
   assert.equal(await evaluate("JSON.parse(localStorage.getItem('sharedCockpitNotificationPreferences')).voiceDegraded"),false);
@@ -62,7 +68,7 @@ async function run() {
   assert.equal(flightRecord.airborneMs,681000);
   assert.equal(flightRecord.fuel.actual,null,'Actual fuel must remain unavailable without simulator fuel telemetry');
   assert.equal(JSON.stringify(flightRecord).includes('ABC2345'),false,'Exportable history must not include the private lobby code');
-  report('PASS: PTT/open-mic choice, joystick hold-to-mute and independent manual mute, mic-test controls, approach unavailable states and notification settings render and persist.');
+  report('PASS: PTT/open-mic choice, the Voice Chat Keybinds shortcut, configurable gamepad mute/PTT actions, independent manual mute, mic-test controls, approach unavailable states and notification settings render and persist.');
   assert.deepEqual(await evaluate("[...document.querySelector('#aircraftSelect').options].map(o=>o.textContent)"),['No checklist profile','Airbus A319/A320/A321']);
   assert.deepEqual(await evaluate("[...document.querySelector('#aircraftProfileSelect').options].map(o=>o.value)"),['fenix-a320']);
   assert.deepEqual(await evaluate("[...document.querySelector('#efbProvider').options].map(o=>o.textContent)"),['Automatic','Fenix','PMDG','iniBuilds']);
@@ -141,8 +147,8 @@ async function run() {
     await evaluate("document.querySelector('#briefingNav [data-note-tab=notes]').click();syncSidebarHeight()");
     await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
     const tools=await evaluate(`(()=>{const nav=document.querySelector('.side-nav').getBoundingClientRect();return [...document.querySelectorAll('#navTools .nav-item')].map(item=>{const r=item.getBoundingClientRect();return {page:item.dataset.page,top:r.top,bottom:r.bottom,navTop:nav.top,navBottom:nav.bottom,windowBottom:innerHeight}})})()`);
-    assert.equal(tools.length,2,'Only Charts and Crew Tools belong to the Tools group');
-    assert.equal(await evaluate("document.querySelector('#navScroll #efbNav')!==null"),true,'EFB belongs in the Flight Desk navigation group');
+    assert.deepEqual(tools.map(item=>item.page),['efb','charts','crew-tools','diagnostics','traffic','analysis'],'All tool pages are collected in the dedicated Tools section');
+    assert.equal(await evaluate("document.querySelector('#navTools #efbNav')!==null&&document.querySelector('#navScroll #flightDeskGroup')!==null&&document.querySelector('#navScroll #crewNotesGroup')!==null"),true,'Sidebar groups Flight Desk, Crew Notes and Tools clearly');
     for(const tool of tools)assert.ok(tool.top>=tool.navTop&&tool.bottom<=tool.navBottom&&tool.bottom<=tool.windowBottom,'Tools must remain visible on a short notes page: '+JSON.stringify(tool));
     fs.writeFileSync(path.join(__dirname,`../work/ui-checks/notes-sidebar-${width}.png`),(await win.webContents.capturePage()).toPNG());
     await evaluate("activatePage('overview')");
