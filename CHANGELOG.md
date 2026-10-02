@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0-alpha.7 — Alpha 0.5
+
+- Import a SimBrief plan automatically only when its scheduled or estimated departure is in the future; manual fetch continues to allow older plans.
+- Combine Departure Briefing, Arrival Briefing, Cockpit Notes, Enroute and Debrief under one Briefing sidebar button with five internal tabs. Keep the briefing forms independent from note-template setup so their fields always render.
+- Route dynamically added sidebar pages through a delegated click handler so Route Viewer and Diagnostics respond reliably.
+
+
 ## 0.5.0-alpha.6 — Alpha 0.5
 
 - Attach Create lobby and Join lobby before optional page setup so a secondary UI initialization error cannot leave the core session controls inactive.

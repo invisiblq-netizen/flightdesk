@@ -4,7 +4,7 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.5** · Build `0.5.0-alpha.6` · Windows x64
+**Alpha 0.5** · Build `0.5.0-alpha.7` · Windows x64
 
 ## Features
 
@@ -15,7 +15,7 @@ A Windows companion app for shared cockpit flying: import a SimBrief flight plan
 - Host a lobby and invite other pilots with a seven-character code.
 - Synchronize notes, checklist progress and flight-plan data directly over WebRTC.
 - Choose Pilot Flying (PF) or Pilot Monitoring (PM), and switch roles during flight.
-- Import the latest generated SimBrief OFP and view its PDF inline, fitted to the page width, with zoom controls. While the host has no flight plan, automatic import checks every five seconds; manual fetch is always available. Frequent polling may be subject to SimBrief rate limits.
+- Import a SimBrief OFP and view its PDF inline, fitted to the page width, with zoom controls. Automatic import accepts a plan only when its scheduled or estimated departure is in the future; manual fetch remains available for older plans.
 - Use the Fenix A320 profile with 18 phases, concrete role-based cockpit prompts, separate FLOW and CHECKLIST groups, and side-by-side PF/PM progress. The Airbus A319/A320/A321 selection offers only the Fenix profile; other aircraft have no checklist profile.
 - Review the live crew/session dashboard, checklist readiness and telemetry-based phase suggestions. Fenix **AUTO** items check themselves from stable cockpit readings in the current unlocked phase and assigned PF/PM role; the beacon check can also use FSUIPC7 lighting telemetry. External power requires ON, not AVAIL. Missing data leaves items manual; briefings, reviews and condition-dependent decisions remain manual. Both pilots should use the same build; cockpit telemetry and completed items synchronize across the lobby. After 10 seconds of stable ground data the dashboard shows **On ground / Preflight**, then detects pushback or taxi movement. Flight phases display even without a checklist profile, and polling continues while the app is minimized. Automatic flight tracking requires a stable ground baseline followed by a sustained takeoff; connecting in midair does not create a flight or landing history. Disconnections and position jumps require a new ground baseline.
 - See a compact live Flight Overview with crew roles, simulator/P2P status, current phase, checklist progress, last event and block, taxi, airborne and taxi-in timers. Crew, checklist, simulator, connection and flight-phase events feed one ordered timeline.
@@ -53,7 +53,7 @@ Download the Windows `.exe` installer from this repository's **Releases** sectio
 5. Open **Flight Plan** and enter the SimBrief username or pilot ID for an already generated plan.
 6. To track the aircraft, run the simulator and FSUIPC7 on a connected Windows PC. The helper and its FSUIPC WAPI runtime are bundled with the installer. Fenix cockpit-variable checks also require the FSUIPC WASM module installed and enabled in the simulator; the Checklist page shows connection status.
 
-The SimBrief ID is remembered as you type. While the host lobby has no plan, the app checks every five seconds and imports the latest generated OFP regardless of its scheduled departure time. Automatic checks are serialized, polling stops after a plan is imported, and **Fetch plan** always allows manual import. Frequent polling may exceed SimBrief's intended API usage or trigger service rate limits.
+The SimBrief ID is remembered as you type. While the host lobby has no plan, the app checks every five seconds and automatically imports the latest OFP only when its scheduled or estimated departure is in the future. Plans with a past or missing departure time are skipped and the app keeps checking. Automatic checks are serialized and stop after a plan is imported; **Fetch plan** remains available and can manually import an older plan. Frequent polling may exceed SimBrief's intended API usage or trigger service rate limits.
 
 ## How connections and data work
 
@@ -90,7 +90,7 @@ The helper EXE is larger than GitHub's normal Git file limit. Its source belongs
 pnpm dist
 ```
 
-Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.6.exe`, its `.blockmap`, and `dist/alpha.yml` / `dist/latest.yml` update manifests.
+Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.7.exe`, its `.blockmap`, and `dist/alpha.yml` / `dist/latest.yml` update manifests.
 
 `pnpm dist` expects the helper to exist. It creates the installer and update metadata but does not publish a release. Attach the installer, `alpha.yml`, and matching `.blockmap` to the same published GitHub prerelease. This project currently packages Windows only.
 

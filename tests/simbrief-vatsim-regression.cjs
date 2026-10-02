@@ -17,16 +17,17 @@ async function run() {
   const flight=app();
   await flight.nodes.get('create').onclick();
   flight.eval("Date.now=()=>Date.parse('2026-09-25T23:30:00Z')");
-  for(const [iso,expected] of [['2026-09-25T23:29:59Z',false],['2026-09-25T23:30:00Z',true],['2026-09-26T00:15:00Z',true],['2026-09-26T00:30:00Z',true],['2026-09-26T00:30:01Z',false]]){
+  for(const [iso,expected] of [['2026-09-25T23:29:59Z',false],['2026-09-25T23:30:00Z',false],['2026-09-25T23:30:01Z',true],['2026-09-26T02:00:00Z',true],['2026-09-27T00:00:00Z',true]]){
     flight.context.testPlan={times:{sched_out:String(Date.parse(iso)/1000)}};
-    assert.equal(flight.eval('departureWithinNextHour(testPlan)'),expected,iso);
+    assert.equal(flight.eval('simBriefDepartureIsFuture(testPlan)'),expected,iso);
   }
-  assert.equal(flight.eval('departureWithinNextHour({})'),false);
+  assert.equal(flight.eval('simBriefDepartureIsFuture({})'),false);
+  assert.equal(flight.eval("simBriefDepartureIsFuture({times:{sched_out:'2026-09-26T00:15:00Z'}})"),true,'ISO departure timestamps must be accepted');
   flight.eval("renderClocks(new Date('2026-09-26T00:15:00Z'))");
   assert.equal(flight.nodes.get('zuluClock').textContent,'00:15:00 Z');
   assert.match(flight.nodes.get('zuluClockDate').textContent,/26 Sept 2026/);
   assert.ok(flight.nodes.get('localClockDate').textContent);
-  console.log('PASS: UTC departure window and clocks handle midnight, date rollover and exact one-hour boundaries.');
+  console.log('PASS: SimBrief auto-import accepts any future UTC departure and rejects past or missing times.');
 
   let calls=0;
   const plan={times:{sched_out:String(Date.parse('2026-09-26T00:15:00Z')/1000)},origin:{icao_code:'ENGM',plan_sid:'NEMES5A'},destination:{icao_code:'EGLL',plan_star:'LAM3A'},aircraft:{icaocode:'B738',reg:'OY-KBH'},general:{callsign:'SAS123'},navlog:{fix:[{ident:'MID',name:'MID',pos_lat:'55.5',pos_long:'8.25',stage:'CRZ',via_airway:'UL997',altitude_feet:'35000',ind_airspeed:'280',unused_large_object:{secret:'discard'}}]}};
@@ -49,7 +50,7 @@ async function run() {
   await flight.eval('autoImportSimbrief()');
   assert.equal(calls,1,'Guests must not replace the host flight plan');
   flight.eval("session.role='host'");
-  plan.times.sched_out=String(Date.parse('2026-09-26T02:00:00Z')/1000);
+  plan.times.sched_out=String(Date.parse('2026-09-25T23:29:59Z')/1000);
   await flight.eval('autoImportSimbrief()');
   assert.equal(flight.eval('data.plan'),null);
   await flight.nodes.get('simform').onsubmit({preventDefault(){}});
