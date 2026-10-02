@@ -29,12 +29,12 @@
     if (state === 'checking') {
       message.textContent = 'Checking for updates…';
     } else if (state === 'downloading') {
-      const percent = Number.isFinite(status.percent) ? ` ${Math.max(0, Math.min(100, status.percent))}%` : '';
-      message.textContent = `Flight Desk ${status.version || 'update'} is downloading.${percent}`;
+      const percent = Number.isFinite(status.percent) ? Math.round(Math.max(0, Math.min(100, status.percent))) : null;
+      message.textContent = `Downloading Flight Desk ${status.version || 'update'}${percent === null ? '' : ` · ${percent}%`}`;
       progress.classList.remove('hidden');
       progress.firstElementChild.style.width = `${Math.max(0, Math.min(100, Number(status.percent) || 0))}%`;
     } else if (state === 'downloaded') {
-      message.textContent = `Flight Desk ${status.version || 'update'} is ready. Restart now, or close the app later to install it.`;
+      message.textContent = `Update ready${status.version ? ` · Flight Desk ${status.version}` : ''}. Restart to install.`;
       installButton.classList.remove('hidden');
     } else if (state === 'up-to-date') {
       message.textContent = 'Flight Desk is up to date.';

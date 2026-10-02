@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0-alpha.6 — Alpha 0.5
+
+- Attach Create lobby and Join lobby before optional page setup so a secondary UI initialization error cannot leave the core session controls inactive.
+- Improve update-status wording and layout so download progress and restart instructions remain readable at narrow and wide window sizes.
+- Clarify that Flight History only receives a session after a flight plan is loaded and the flight is landed and parked.
+
 ## 0.5.0-alpha.5 — Alpha 0.5
 
 - Add synchronized Departure Briefing and Arrival Briefing pages with crew-editable fields; keep Cockpit Notes, Enroute notes and Debrief separate.

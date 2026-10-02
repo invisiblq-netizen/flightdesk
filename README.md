@@ -4,7 +4,7 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.5** · Build `0.5.0-alpha.5` · Windows x64
+**Alpha 0.5** · Build `0.5.0-alpha.6` · Windows x64
 
 ## Features
 
@@ -90,7 +90,7 @@ The helper EXE is larger than GitHub's normal Git file limit. Its source belongs
 pnpm dist
 ```
 
-Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.5.exe`, its `.blockmap`, and `dist/alpha.yml` / `dist/latest.yml` update manifests.
+Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.6.exe`, its `.blockmap`, and `dist/alpha.yml` / `dist/latest.yml` update manifests.
 
 `pnpm dist` expects the helper to exist. It creates the installer and update metadata but does not publish a release. Attach the installer, `alpha.yml`, and matching `.blockmap` to the same published GitHub prerelease. This project currently packages Windows only.
 
