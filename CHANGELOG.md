@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0-alpha.8 — Alpha 0.5
+
+- Accept a connected crew voice call even when WebRTC media signalling arrives before the separate lobby-channel voice-ready message.
+- Report voice readiness, ICE negotiation, established transport and measured audio quality separately; do not show Excellent until a selected route and inbound audio traffic are measured.
+- Show the waiting pilot and ICE/NAT failure states directly in Crew Tools and Diagnostics so a blocked route is distinguishable from a microphone that is merely ready.
+
 ## 0.5.0-alpha.7 — Alpha 0.5
 
 - Import a SimBrief plan automatically only when its scheduled or estimated departure is in the future; manual fetch continues to allow older plans.

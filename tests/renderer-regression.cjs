@@ -27,6 +27,12 @@ async function run() {
   await evaluate("document.querySelector('#voiceProfile').value='vhf';document.querySelector('#voiceProfile').onchange()");
   assert.equal(await evaluate("localStorage.getItem('sharedCockpitVoiceProfile')"),'vhf');
   assert.equal(await evaluate("voiceLink.getState().profile"),'vhf');
+  const voiceStates=await evaluate(`(()=>{const original=voiceLink,states=[];let current={ready:false,calls:0,muted:false,mode:'ptt',transmitting:false,connectionState:'new',iceConnectionState:'new',quality:{level:'unavailable',rttMs:null,jitterMs:null,packetLoss:null}};voiceLink={getState:()=>current};const render=()=>{updateVoiceStatus({text:'Voice enabled',level:'ready'});updateVoiceQuality(current.quality);states.push({badge:document.querySelector('#voiceQuality').textContent,label:document.querySelector('#voiceStatus').textContent})};render();current={...current,ready:true,quality:{level:'unavailable'}};render();current={...current,calls:1,connectionState:'connecting',iceConnectionState:'checking',quality:{level:'connecting'}};render();current={...current,connectionState:'connected',iceConnectionState:'connected',quality:{level:'connected'}};render();current={...current,quality:{level:'excellent',rttMs:24,jitterMs:3,packetLoss:0}};render();current={...current,connectionState:'failed',iceConnectionState:'failed',quality:{level:'unavailable'}};render();voiceLink=original;return states})()`);
+  assert.deepEqual(voiceStates.map(state=>state.badge),['● Off','○ Waiting','◌ Connecting','● Connected','● Excellent','⚠ ICE failed']);
+  assert.match(voiceStates[1].label,/waiting for the other pilot/);
+  assert.match(voiceStates[2].label,/negotiating/);
+  assert.match(voiceStates[3].label,/waiting for audio measurements/);
+  assert.match(voiceStates[5].label,/no TURN relay/);
   assert.equal(await evaluate("document.querySelector('#cvrEnabled')!==null"),false,'Cockpit voice recording has been removed from the app');
   assert.equal(await evaluate("document.querySelector('#departureBriefingCard [data-briefing-field]')!==null"),true,'Departure briefing should render editable briefing fields');
   assert.equal(await evaluate("document.querySelector('#arrivalBriefingCard [data-briefing-field]')!==null"),true,'Arrival briefing should render editable briefing fields');

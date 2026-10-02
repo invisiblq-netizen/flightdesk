@@ -4,7 +4,7 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.5** · Build `0.5.0-alpha.7` · Windows x64
+**Alpha 0.5** · Build `0.5.0-alpha.8` · Windows x64
 
 ## Features
 
@@ -23,7 +23,7 @@ A Windows companion app for shared cockpit flying: import a SimBrief flight plan
 - See each pilot’s PF/PM role, shared flight phase, current checklist flow and current Flight Desk activity. **What’s Next?** and **Flight Desk Focus** surface a phase-aware action, while **Flight Readiness** links real missing items to the relevant page.
 - Review completed flights in local Flight History, search reports, inspect flight statistics and export report data as JSON or CSV; use the print dialog to save a polished A4 PDF. Matching crew names sync their shared history directly over the P2P lobby across flights. Each PC keeps its own local archive; a different crew combination does not receive those earlier reports. No cloud-storage login or paid Flight Desk storage service is needed.
 - Fill in synchronized **Departure Briefing** and **Arrival Briefing** forms for airport conditions, clearances, SID/STAR, runway, approach, minima, performance, threats and missed approach. Keep freeform shared **Cockpit Notes**, Enroute notes and Debrief on their own pages. These are crew planning aids; verify operational details against current charts, ATIS, aircraft documentation and simulator SOP.
-- Use the integrated cockpit voice link over the current peer connection in **Push to talk** or **Open mic** mode. Both pilots enable their microphones; the host starts audio after both are ready. Select the microphone and speakers, bind a PTT key, mute or adjust volume, and test the microphone locally. Diagnostics show voice connection and ICE failure states; use **Enable speakers** if playback is blocked.
+- Use the integrated cockpit voice link over the current peer connection in **Push to talk** or **Open mic** mode. Both pilots enable their microphones; the host starts audio after both are ready. Select the microphone and speakers, bind a PTT key, mute or adjust volume, and test the microphone locally. The status distinguishes waiting, ICE negotiation, connected transport and measured audio quality; **Excellent** requires received audio statistics. If ICE fails, this build has no TURN relay, so a restrictive firewall or NAT can still block the voice route. Use **Enable speakers** if playback is blocked.
 - Select a **Clean Headset**, **VHF**, **Slight Degradation** or **Heavy Degradation** voice profile and adjust its strength.
 - Open **ATC & Traffic** for departure, arrival and nearby VATSIM frequencies, active simulator COM1 when available, and nearby traffic sorted by distance or altitude. Select a traffic entry for its filed route and position details; copy a controller frequency with one click.
 - Use **Flight Analysis** to scrub locally recorded flight tracks, compare two completed reports, and inspect airport, aircraft and crew statistics. New replay tracks require connected simulator telemetry during the flight; values the current simulator bridge cannot provide, such as actual fuel used and runway usage, remain marked unavailable.
@@ -90,7 +90,7 @@ The helper EXE is larger than GitHub's normal Git file limit. Its source belongs
 pnpm dist
 ```
 
-Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.7.exe`, its `.blockmap`, and `dist/alpha.yml` / `dist/latest.yml` update manifests.
+Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.8.exe`, its `.blockmap`, and the `dist/alpha.yml` update manifest. The GitHub prerelease also includes the unchanged simulator-helper ZIP and a SHA256SUMS file for the release assets.
 
 `pnpm dist` expects the helper to exist. It creates the installer and update metadata but does not publish a release. Attach the installer, `alpha.yml`, and matching `.blockmap` to the same published GitHub prerelease. This project currently packages Windows only.
 

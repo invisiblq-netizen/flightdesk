@@ -3,7 +3,7 @@
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(root)root.FlightDeskVoiceLink=api;
 })(typeof globalThis==='object'?globalThis:this,function(){
-  function create({audio,onStatus=()=>{},onQuality=()=>{},onInputLevel=()=>{},onError=()=>{},setTimer=setTimeout,clearTimer=clearTimeout}={}){
+  function create({audio,onStatus=()=>{},onQuality=()=>{},onInputLevel=()=>{},onError=()=>{},setTimer=setTimeout,clearTimer=clearTimeout,setIntervalFn=setInterval,clearIntervalFn=clearInterval}={}){
     let peer=null,role='',connections=[],rawStream=null,txStream=null,txContext=null,txTrack=null,txDestination=null,remoteStream=null;
     let mode='ptt',muted=false,transmitting=false,releaseTimer=null,qualityTimer=null;
     const calls=new Map(),remoteReady=new Map();
@@ -137,10 +137,10 @@
         const AudioContextClass=contextConstructor();if(!AudioContextClass)throw new Error('Microphone level monitoring is unavailable.');
         context=new AudioContextClass();await context.resume?.();const source=context.createMediaStreamSource(stream),analyser=context.createAnalyser(),samples=new Uint8Array(512);analyser.fftSize=512;source.connect(analyser);
         let peak=0;const sample=()=>{analyser.getByteTimeDomainData(samples);let sum=0;for(const value of samples){const delta=(value-128)/128;sum+=delta*delta}const level=Math.min(1,Math.sqrt(sum/samples.length)*3.5);peak=Math.max(peak,level);onInputLevel(level)};
-        sample();await new Promise(resolve=>{interval=setInterval(sample,50);timeout=setTimer(resolve,Math.max(1000,Math.min(10000,durationMs)))});
-        clearInterval(interval);interval=null;if(timeout){clearTimer(timeout);timeout=null}onInputLevel(0);return{ok:true,peak};
+        sample();await new Promise(resolve=>{interval=setIntervalFn(sample,50);timeout=setTimer(resolve,Math.max(1000,Math.min(10000,durationMs)))});
+        clearIntervalFn(interval);interval=null;if(timeout){clearTimer(timeout);timeout=null}onInputLevel(0);return{ok:true,peak};
       }catch(error){return{ok:false,error:error?.name==='NotAllowedError'?'Microphone permission was not granted.':error?.message||'Microphone test failed.'}}
-      finally{if(interval)clearInterval(interval);if(timeout)clearTimer(timeout);onInputLevel(0);if(ownsStream&&stream)for(const track of stream.getTracks())track.stop();if(context)await context.close().catch(()=>{})}
+      finally{if(interval)clearIntervalFn(interval);if(timeout)clearTimer(timeout);onInputLevel(0);if(ownsStream&&stream)for(const track of stream.getTracks())track.stop();if(context)await context.close().catch(()=>{})}
     }
     function receiveStream(stream){
       closeRemoteAudio();remoteStream=stream;if(!audio)return;
@@ -162,11 +162,16 @@
     function acceptIncoming(call){
       const id=call?.peer;if(typeof id!=='string'||!id){call?.close?.();return}
       const current=calls.get(id);
-      // The host starts one bidirectional call only after both microphones are ready.
-      // This avoids simultaneous PeerJS calls racing and closing each other's audio.
-      if(role!=='join'||!txStream||remoteReady.get(id)!==true||current){call.close?.();return}
-      calls.set(id,{call,outgoing:false,bidirectional:true});finishCall(id,call);
+      // The host waits for the guest's ready message before calling. Its media
+      // offer uses PeerJS signalling while readiness uses the data channel, so
+      // either can arrive first. The open lobby connection and our local stream
+      // are enough to answer safely; requiring the host-ready message here can
+      // reject the only call and leave both pilots stuck waiting.
+      const knownCrewPeer=connections.some(connection=>connection?.open&&connection.peer===id);
+      if(role!=='join'||!txStream||!knownCrewPeer||current){call?.close?.();return}
+      calls.set(id,{call,outgoing:false,bidirectional:true});
       try{call.answer(txStream||undefined)}catch(error){calls.delete(id);onError(error.message||'Could not answer the incoming voice link.');return}
+      finishCall(id,call);
       say('Connecting voice link','connecting');
     }
     function beginOutgoing(connection){
@@ -190,8 +195,8 @@
         rawStream=await media.getUserMedia(constraints);
         await buildTransmit(rawStream);await txContext?.resume?.();updateTransmit();
         say(mode==='open'&&!muted?'Open mic active':'Voice ready · hold PTT to transmit',mode==='open'&&!muted?'connected':'ready');syncCalls();
-        if(!qualityTimer)qualityTimer=setInterval(sampleQuality,2500);
-        if(!squelchTimer)squelchTimer=setInterval(()=>{if(profileNodes?.analyser?.getByteTimeDomainData)profileNodes.analyser.getByteTimeDomainData(profileNodes.samples);sampleSquelch()},30);
+        if(!qualityTimer)qualityTimer=setIntervalFn(sampleQuality,2500);
+        if(!squelchTimer)squelchTimer=setIntervalFn(()=>{if(profileNodes?.analyser?.getByteTimeDomainData)profileNodes.analyser.getByteTimeDomainData(profileNodes.samples);sampleSquelch()},30);
         return{ok:true,stream:rawStream};
       }catch(error){onError(error?.name==='NotAllowedError'?'Microphone permission was not granted.':error?.message||'Could not start the microphone.');say('Microphone unavailable','unavailable');return{ok:false,error:error?.message||'Could not start the microphone.'}}
     }
@@ -205,19 +210,27 @@
     function setRemoteReady(id,ready){if(!id)return;remoteReady.set(id,!!ready);if(!ready&&role==='host'){const active=calls.get(id);if(active){calls.delete(id);try{active.call.close()}catch{}if(!calls.size)closeRemoteAudio()}}syncCalls()}
     async function sampleQuality(){
       const active=[...calls.values()][0]?.call,pc=active?.peerConnection;
-      if(pc?.connectionState==='failed'||pc?.iceConnectionState==='failed'){quality={level:'unavailable',rttMs:null,jitterMs:null,packetLoss:null};onQuality(quality);return}
-      if(!pc?.getStats){quality={level:calls.size?'connected':'unavailable',rttMs:null,jitterMs:null,packetLoss:null};onQuality(quality);return}
+      const state=pc?.connectionState,iceState=pc?.iceConnectionState;
+      if(!calls.size||!pc||state==='failed'||state==='closed'||iceState==='failed'||iceState==='closed'){
+        quality={level:'unavailable',rttMs:null,jitterMs:null,packetLoss:null};onQuality(quality);return
+      }
+      if(state!=='connected'&&!['connected','completed'].includes(iceState)){
+        quality={level:'connecting',rttMs:null,jitterMs:null,packetLoss:null};onQuality(quality);return
+      }
+      if(!pc.getStats){quality={level:'connected',rttMs:null,jitterMs:null,packetLoss:null};onQuality(quality);return}
       try{
-        const report=await pc.getStats(),rows=[...report.values()],pair=rows.find(item=>item.type==='candidate-pair'&&item.state==='succeeded'&&item.nominated),inbound=rows.find(item=>item.type==='inbound-rtp'&&item.kind==='audio'&&!item.isRemote);
+        const report=await pc.getStats(),rows=[...report.values()],transport=rows.find(item=>item.type==='transport'&&item.selectedCandidatePairId),selectedId=transport?.selectedCandidatePairId,pair=rows.find(item=>item.type==='candidate-pair'&&item.id===selectedId&&item.state==='succeeded')||rows.find(item=>item.type==='candidate-pair'&&item.state==='succeeded'&&(item.selected===true||item.nominated===true)),inbound=rows.find(item=>item.type==='inbound-rtp'&&item.kind==='audio'&&!item.isRemote);
+        if(!pair){quality={level:'connected',rttMs:null,jitterMs:null,packetLoss:null};onQuality(quality);applyProfile();return}
         const rttMs=Number.isFinite(pair?.currentRoundTripTime)?Math.round(pair.currentRoundTripTime*1000):null,jitterMs=Number.isFinite(inbound?.jitter)?Math.round(inbound.jitter*1000):null,received=Number(inbound?.packetsReceived)||0,lost=Math.max(0,Number(inbound?.packetsLost)||0),packetLoss=received+lost>0?lost/(received+lost):null;
-        let level='excellent';if((rttMs??0)>300||(jitterMs??0)>60||(packetLoss??0)>.05)level='degraded';else if((rttMs??0)>150||(jitterMs??0)>30||(packetLoss??0)>.015)level='good';
+        const hasAudioTraffic=received+lost>0,hasMeasurement=rttMs!==null||jitterMs!==null||packetLoss!==null;
+        let level=hasAudioTraffic&&hasMeasurement?'excellent':'connected';if((rttMs!==null&&rttMs>300)||(jitterMs!==null&&jitterMs>60)||(packetLoss!==null&&packetLoss>.05))level='degraded';else if((rttMs!==null&&rttMs>150)||(jitterMs!==null&&jitterMs>30)||(packetLoss!==null&&packetLoss>.015))level='good';
         quality={level:calls.size?level:'unavailable',rttMs,jitterMs,packetLoss};
         applyProfile();
         onQuality(quality);
-      }catch{quality={level:'unavailable',rttMs:null,jitterMs:null,packetLoss:null};onQuality(quality)}
+      }catch{quality={level:'connected',rttMs:null,jitterMs:null,packetLoss:null};onQuality(quality)}
     }
     function close(){
-      if(qualityTimer)clearInterval(qualityTimer);qualityTimer=null;if(squelchTimer)clearInterval(squelchTimer);squelchTimer=null;
+      if(qualityTimer)clearIntervalFn(qualityTimer);qualityTimer=null;if(squelchTimer)clearIntervalFn(squelchTimer);squelchTimer=null;
       for(const {call} of calls.values())try{call.close()}catch{}calls.clear();
       if(peer)peer.off?.('call',onIncoming);peer=null;connections=[];remoteReady.clear();
       if(rawStream)for(const track of rawStream.getTracks())track.stop();rawStream=null;txStream=null;txTrack=null;txDestination=null;

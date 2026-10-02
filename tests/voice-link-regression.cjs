@@ -33,10 +33,11 @@ class VoiceCall extends EventEmitter {
   constructor(peer) {
     super();
     this.peer = peer;
-    this.peerConnection = { getStats: async () => new Map() };
+    this.peerConnection = { connectionState: 'connecting', iceConnectionState: 'checking', getStats: async () => new Map() };
+    this.closed = false;
   }
   answer(stream) { this.answeredStream = stream; }
-  close() { this.emit('close'); }
+  close() { this.closed = true; this.emit('close'); }
 }
 
 class Peer extends EventEmitter {
@@ -58,6 +59,7 @@ async function run() {
   globalThis.AudioContext = AudioContext;
 
   const timers = new Map();
+  const intervals = new Map();
   let timerId = 0;
   const peer = new Peer();
   const statuses = [];
@@ -66,7 +68,9 @@ async function run() {
     audio,
     onStatus: status => statuses.push(status),
     setTimer: callback => { const id = ++timerId; timers.set(id, callback); return id; },
-    clearTimer: id => timers.delete(id)
+    clearTimer: id => timers.delete(id),
+    setIntervalFn: (callback, delay) => { const id = ++timerId; intervals.set(id, { callback, delay }); return id; },
+    clearIntervalFn: id => intervals.delete(id)
   });
 
   try {
@@ -81,6 +85,28 @@ async function run() {
     assert.equal(options.metadata.channel, 'flightdesk-voice');
     const transmitTrack = stream.getAudioTracks()[0];
     assert.equal(transmitTrack.enabled, false, 'PTT must stay silent until the pilot transmits');
+    const sampleQuality = [...intervals.values()].find(interval => interval.delay === 2500).callback;
+    await sampleQuality();
+    assert.equal(voice.getState().quality.level, 'connecting', 'A pending ICE route must not be reported as excellent');
+    call.peerConnection.connectionState = 'connected';
+    call.peerConnection.iceConnectionState = 'connected';
+    await sampleQuality();
+    assert.equal(voice.getState().quality.level, 'connected', 'A connected transport without selected-route/audio stats is not excellent');
+    call.peerConnection.getStats = async () => new Map([
+      ['pair', { type: 'candidate-pair', id: 'pair', state: 'succeeded', nominated: true, currentRoundTripTime: 0.02 }]
+    ]);
+    await sampleQuality();
+    assert.equal(voice.getState().quality.level, 'connected', 'A selected route with no received audio traffic remains merely connected');
+    call.peerConnection.getStats = async () => new Map([
+      ['pair', { type: 'candidate-pair', id: 'pair', state: 'succeeded', nominated: true, currentRoundTripTime: 0.02 }],
+      ['in', { type: 'inbound-rtp', kind: 'audio', packetsReceived: 100, packetsLost: 0, jitter: 0.003 }]
+    ]);
+    await sampleQuality();
+    assert.equal(voice.getState().quality.level, 'excellent', 'Excellent requires a selected route and received audio traffic');
+    call.peerConnection.iceConnectionState = 'failed';
+    await sampleQuality();
+    assert.equal(voice.getState().quality.level, 'unavailable', 'Failed ICE must remain unavailable');
+    call.peerConnection.iceConnectionState = 'connected';
 
     assert.equal(voice.press(), true);
     assert.equal(transmitTrack.enabled, true, 'Pressing PTT opens the processed audio track');
@@ -105,7 +131,25 @@ async function run() {
     voice.close();
     assert.equal(rawTrack.stopped, true, 'Disconnect releases microphone access');
     assert.equal(voice.getState().calls, 0);
-    console.log('PASS: PTT/open-mic gating, real peer-call setup, processed transmit stream, remote audio and mic cleanup work.');
+
+    const joinTrack = { stopped: false, stop() { this.stopped = true; } };
+    const joinStream = { getTracks: () => [joinTrack] };
+    globalThis.navigator.mediaDevices.getUserMedia = async () => joinStream;
+    const joinPeer = new Peer();
+    const joinVoice = create({ audio, setTimer: callback => { const id = ++timerId; timers.set(id, callback); return id; }, clearTimer: id => timers.delete(id), setIntervalFn: (callback, delay) => { const id = ++timerId; intervals.set(id, { callback, delay }); return id; }, clearIntervalFn: id => intervals.delete(id) });
+    await joinVoice.start();
+    joinVoice.setPeer(joinPeer, 'join');
+    joinVoice.setConnections([{ open: true, peer: 'host-peer' }]);
+    const firstCall = new VoiceCall('host-peer');
+    joinPeer.emit('call', firstCall);
+    assert.ok(firstCall.answeredStream, 'The guest answers if the host media offer beats its ready message');
+    assert.equal(joinVoice.getState().calls, 1);
+    const strangerCall = new VoiceCall('unknown-peer');
+    joinPeer.emit('call', strangerCall);
+    assert.equal(strangerCall.closed, true, 'Incoming audio from outside the connected lobby is rejected');
+    joinVoice.close();
+    assert.equal(joinTrack.stopped, true);
+    console.log('PASS: PTT/open-mic gating, peer-call ordering, ICE/audio quality states, remote audio and mic cleanup work.');
   } finally {
     voice.close();
     if (oldNavigator) Object.defineProperty(globalThis, 'navigator', oldNavigator);
