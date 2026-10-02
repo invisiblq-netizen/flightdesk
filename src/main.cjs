@@ -29,6 +29,7 @@ let efbView;
 let startupSplash;
 let appUpdater;
 let vatsimCache = { expiresAt: 0, feed: null, transceivers: null };
+let vatsimAtisCache = { expiresAt: 0, stations: null, available: false };
 const airportCache = new Map();
 let positionBridge;
 let simPosition = { connected: false, updatedAt: 0 };
@@ -161,7 +162,7 @@ async function getAirportInfo(icao, options = {}) {
   const includeTaf = options?.taf !== false;
   const includeAtc = options?.atc !== false;
   async function getJson(url) {
-    const response = await fetch(url, { headers });
+    const response = await fetch(url, { headers, signal: AbortSignal.timeout(10000) });
     if (response.status === 204) return [];
     if (!response.ok) throw new Error(`Aviation weather request failed (${response.status}).`);
     const value = await response.json();
@@ -170,34 +171,55 @@ async function getAirportInfo(icao, options = {}) {
   const root = 'https://aviationweather.gov/api/data/';
   let airport = airportCache.get(code);
   if (!airport) {
-    const airports = await getJson(`${root}airport?ids=${code}&format=json`);
+    const airports = await getJson(`${root}airport?ids=${code}&format=json`).catch(() => []);
     airport = airports[0] || null;
     if (airport) airportCache.set(code, airport);
   }
   const [reports, forecasts] = await Promise.all([
-    includeMetar ? getJson(`${root}metar?ids=${code}&format=json`) : [],
+    includeMetar ? getJson(`${root}metar?ids=${code}&format=json`).catch(() => []) : [],
     includeTaf ? getJson(`${root}taf?ids=${code}&format=json`).catch(() => []) : []
   ]);
   const report = reports.sort((a, b) => Date.parse(b.reportTime || 0) - Date.parse(a.reportTime || 0))[0];
   const forecast = forecasts.sort((a, b) => Date.parse(b.issueTime || b.reportTime || 0) - Date.parse(a.issueTime || a.reportTime || 0))[0];
   let controllers = [];
-  let atis = null;
+  let atis = [];
+  let atisAvailable = false;
   if (includeAtc) {
+    if (Date.now() >= vatsimAtisCache.expiresAt || !Array.isArray(vatsimAtisCache.stations)) {
+      try {
+        const response = await fetch('https://data.vatsim.net/v3/afv-atis-data.json', { headers, signal: AbortSignal.timeout(10000) });
+        if (!response.ok) throw new Error('VATSIM ATIS feed unavailable.');
+        const stations = await response.json();
+        if (!Array.isArray(stations)) throw new Error('Invalid VATSIM ATIS feed.');
+        vatsimAtisCache = { expiresAt: Date.now() + 15_000, stations, available: true };
+      } catch {
+        vatsimAtisCache = { expiresAt: Date.now() + 15_000, stations: [], available: false };
+      }
+    }
+    atisAvailable = vatsimAtisCache.available;
+    const atisCode = code;
+    atis = (vatsimAtisCache.stations || [])
+      .filter(item => {
+        const parts = String(item.callsign || '').toUpperCase().split('_');
+        return parts[0] === atisCode && parts.includes('ATIS');
+      })
+      .sort((a, b) => Date.parse(b.last_updated || 0) - Date.parse(a.last_updated || 0))
+      .map(item => ({ callsign: String(item.callsign || '').slice(0, 24), frequency: String(item.frequency || '').slice(0, 12), identifier: String(item.atis_code || '').slice(0, 4), text: (Array.isArray(item.text_atis) ? item.text_atis : []).map(line => String(line).slice(0, 240)).slice(0, 20), updatedAt: String(item.last_updated || '').slice(0, 40) }));
     try {
       if (Date.now() >= vatsimCache.expiresAt) {
-        const feedResponse = await fetch('https://data.vatsim.net/v3/vatsim-data.json', { headers });
+        const feedResponse = await fetch('https://data.vatsim.net/v3/vatsim-data.json', { headers, signal: AbortSignal.timeout(10000) });
         if (!feedResponse.ok) throw new Error('VATSIM feed unavailable.');
         const feed = await feedResponse.json();
         let transceivers = [];
         try {
-          const transceiverResponse = await fetch('https://data.vatsim.net/v3/transceivers-data.json', { headers });
+          const transceiverResponse = await fetch('https://data.vatsim.net/v3/transceivers-data.json', { headers, signal: AbortSignal.timeout(10000) });
           if (transceiverResponse.ok) transceivers = await transceiverResponse.json();
         } catch {}
         vatsimCache = { expiresAt: Date.now() + 15_000, feed, transceivers };
       }
       const radians = value => value * Math.PI / 180;
-      const airportLat = Number(airport.lat);
-      const airportLon = Number(airport.lon);
+      const airportLat = Number(airport?.lat);
+      const airportLon = Number(airport?.lon);
       const distanceNm = (lat, lon) => {
         const dLat = radians(lat - airportLat);
         const dLon = radians(lon - airportLon);
@@ -225,14 +247,8 @@ async function getAirportInfo(icao, options = {}) {
         if (!current || item.distance < current.distance) nearestByFrequency.set(key, item);
       }
         controllers = [...nearestByFrequency.values()].sort((a, b) => a.distance - b.distance);
-        const escapedCode = code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        atis = (vatsimCache.feed.atis || [])
-          .filter(item => new RegExp('^' + escapedCode + '(?:_[A-Z0-9]+)*_ATIS(?:_[A-Z0-9]+)*$', 'i').test(String(item.callsign || '')))
-          .sort((a, b) => Date.parse(b.last_updated || 0) - Date.parse(a.last_updated || 0))
-          .map(item => ({ callsign: String(item.callsign || '').slice(0, 24), frequency: String(item.frequency || '').slice(0, 12), identifier: String(item.atis_code || '').slice(0, 4), text: (Array.isArray(item.text_atis) ? item.text_atis : []).map(line => String(line).slice(0, 240)).slice(0, 20), updatedAt: String(item.last_updated || '').slice(0, 40) }))[0] || null;
     } catch {
       controllers = [];
-      atis = null;
     }
   }
   return {
@@ -242,7 +258,7 @@ async function getAirportInfo(icao, options = {}) {
     longitude: Number.isFinite(Number(airport?.lon)) ? Number(airport.lon) : null,
     ...(includeMetar ? { metar: report?.rawOb || '', reportTime: report?.reportTime || '' } : {}),
     ...(includeTaf ? { taf: forecast?.rawOb || '', tafIssueTime: forecast?.issueTime || forecast?.reportTime || '' } : {}),
-    ...(includeAtc ? { controllers, atis } : {})
+    ...(includeAtc ? { controllers, atis, atisAvailable } : {})
   };
 }
 
@@ -308,6 +324,11 @@ function startPositionBridge() {
             headingDegrees: Number.isFinite(value.headingDegrees) ? value.headingDegrees : null,
             altitudeFeet: Number.isFinite(value.altitudeFeet) ? value.altitudeFeet : null,
             com1FrequencyMhz: Number.isFinite(value.com1FrequencyMhz) ? value.com1FrequencyMhz : null,
+            engine1Combustion: typeof value.engine1Combustion === 'boolean' ? value.engine1Combustion : null,
+            engine1N2Percent: Number.isFinite(value.engine1N2Percent) ? value.engine1N2Percent : null,
+            engine2Combustion: typeof value.engine2Combustion === 'boolean' ? value.engine2Combustion : null,
+            engine2N2Percent: Number.isFinite(value.engine2N2Percent) ? value.engine2N2Percent : null,
+            beaconLightOn: typeof value.beaconLightOn === 'boolean' ? value.beaconLightOn : null,
             cockpit: sanitizeCockpit(value.cockpit),
             updatedAt: Date.now()
           };
@@ -402,6 +423,8 @@ function createWindow() {
       sandbox: true
     }
   });
+  const appUserAgent = mainWindow.webContents.getUserAgent();
+  mainWindow.webContents.setUserAgent(appUserAgent + ' SharedCockpitFlightDesk/' + app.getVersion());
   // Keep the native title tied to the installed build when the HTML title loads.
   efbView=new EfbView(mainWindow);
   mainWindow.on('page-title-updated', event => event.preventDefault());

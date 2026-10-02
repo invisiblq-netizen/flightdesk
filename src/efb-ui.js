@@ -1,5 +1,5 @@
 (()=>{
-  const nav=document.querySelector('#navTools')||document.querySelector('.side-nav');
+  const nav=document.querySelector('#navScroll')||document.querySelector('.side-nav');
   if(!nav)return;
   nav.insertAdjacentHTML('beforeend','<button class="nav-item" data-page="efb" id="efbNav">EFB</button>');
   document.querySelector('#page-notes').insertAdjacentHTML('afterend',`<section class="app-page" id="page-efb">

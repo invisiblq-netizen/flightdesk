@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0-alpha.5 — Alpha 0.5
+
+- Add synchronized Departure Briefing and Arrival Briefing pages with crew-editable fields; keep Cockpit Notes, Enroute notes and Debrief separate.
+- Add an OpenStreetMap basemap to Route Viewer and keep its attribution visible.
+- Put EFB in the Flight Desk navigation group, and move Connection Diagnostics and Service Availability into a dedicated group below Tools.
+- Improve spacing in stacked page content and the Flight Board action prompts.
+- Set Charts to Work In Progress and remove the Cockpit Voice Recorder interface.
+- Detect engine-start events and expose engine combustion, N2 and beacon-light telemetry when FSUIPC7 provides it.
+- Fix VATSIM ATIS retrieval and keep simulator/flight-phase integration status explicit.
+- Keep SimBrief auto-import polling every five seconds only until the shared plan is loaded; manual fetch remains available.
 ## 0.5.0-alpha.4 — Alpha 0.5
 
 - Add automatic update checks against the public GitHub Releases alpha channel, with background downloads and an in-app restart-to-install prompt.

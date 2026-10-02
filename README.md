@@ -4,39 +4,39 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.5** · Build `0.5.0-alpha.4` · Windows x64
+**Alpha 0.5** · Build `0.5.0-alpha.5` · Windows x64
 
 ## Features
 
 - Open **EFB** inside Flight Desk. Automatic mode uses the current local simulator aircraft title from FSUIPC7 to select Fenix, PMDG or iniBuilds; generic aircraft names remain unrecognized rather than guessing a manufacturer. Manual selection and each provider’s local address stay on this PC. Fenix defaults to `http://localhost:8083/`; use your simulator PC’s private IPv4 address when needed. PMDG and iniBuilds have no bundled web-EFB endpoint: a compatible web-EFB server/address is required. The EFB fills the available width beneath a single compact toolbar, giving the screen more height; **Settings** opens aircraft details and the address field. Internal page navigation keeps the EFB connected. **Reload** reconnects and **Expand** fills more of the same app window. The simulator helper is unchanged from alpha.8.
 
-- Check for new alpha releases automatically at startup and every six hours. Updates download in the background; Flight Desk asks before restarting, and installs a downloaded update when the app closes. **Check for updates** can also start a check manually. Updates come from this public repository’s GitHub Releases, with no account or token required on pilot PCs. The alpha.3 installer has no updater, so install alpha.4 once manually; later versions can update in-app.
+- Check for new alpha releases automatically at startup and every six hours. Updates download in the background; Flight Desk asks before restarting, and installs a downloaded update when the app closes. **Check for updates** can also start a check manually. Updates come from this public repository’s GitHub Releases, with no account or token required on pilot PCs. Alpha.3 and older installers do not have the updater; install alpha.4 or newer once manually. Later versions can update in-app.
 
 - Host a lobby and invite other pilots with a seven-character code.
 - Synchronize notes, checklist progress and flight-plan data directly over WebRTC.
 - Choose Pilot Flying (PF) or Pilot Monitoring (PM), and switch roles during flight.
-- Import the latest generated SimBrief OFP and view its PDF inline, fitted to the page width, with zoom controls. The saved SimBrief ID also supports automatic import during the hour before scheduled departure (UTC).
+- Import the latest generated SimBrief OFP and view its PDF inline, fitted to the page width, with zoom controls. While the host has no flight plan, automatic import checks every five seconds; manual fetch is always available. Frequent polling may be subject to SimBrief rate limits.
 - Use the Fenix A320 profile with 18 phases, concrete role-based cockpit prompts, separate FLOW and CHECKLIST groups, and side-by-side PF/PM progress. The Airbus A319/A320/A321 selection offers only the Fenix profile; other aircraft have no checklist profile.
-- Review the live crew/session dashboard, checklist readiness and telemetry-based phase suggestions. Items marked **AUTO** check themselves from stable Fenix cockpit readings in your current unlocked phase and assigned PF/PM role. External power requires ON, not AVAIL. Missing data leaves items manual; briefings, reviews and condition-dependent decisions remain manual. Both pilots should use the same build; cockpit telemetry and completed items synchronize across the lobby. After 10 seconds of stable ground data the dashboard shows **On ground / Preflight**, then detects pushback or taxi movement. Flight phases display even without a checklist profile, and polling continues while the app is minimized. Automatic flight tracking requires a stable ground baseline followed by a sustained takeoff; connecting in midair does not create a flight or landing history. Disconnections and position jumps require a new ground baseline.
+- Review the live crew/session dashboard, checklist readiness and telemetry-based phase suggestions. Fenix **AUTO** items check themselves from stable cockpit readings in the current unlocked phase and assigned PF/PM role; the beacon check can also use FSUIPC7 lighting telemetry. External power requires ON, not AVAIL. Missing data leaves items manual; briefings, reviews and condition-dependent decisions remain manual. Both pilots should use the same build; cockpit telemetry and completed items synchronize across the lobby. After 10 seconds of stable ground data the dashboard shows **On ground / Preflight**, then detects pushback or taxi movement. Flight phases display even without a checklist profile, and polling continues while the app is minimized. Automatic flight tracking requires a stable ground baseline followed by a sustained takeoff; connecting in midair does not create a flight or landing history. Disconnections and position jumps require a new ground baseline.
 - See a compact live Flight Overview with crew roles, simulator/P2P status, current phase, checklist progress, last event and block, taxi, airborne and taxi-in timers. Crew, checklist, simulator, connection and flight-phase events feed one ordered timeline.
-- Open a dedicated **Route Viewer** with SimBrief navlog waypoints, aircraft position, current/next waypoint, route progress, altitude, ground speed, arrival estimate and available SID/STAR/approach details. Waypoint geometry requires coordinates in the imported navlog; unavailable simulator or route data is shown explicitly.
+- Open a dedicated **Route Viewer** with an OpenStreetMap background, SimBrief navlog waypoints, aircraft position, current/next waypoint, route progress, altitude, ground speed, arrival estimate and available SID/STAR/approach details. Waypoint geometry requires coordinates in the imported navlog; unavailable simulator or route data is shown explicitly.
 - See each pilot’s PF/PM role, shared flight phase, current checklist flow and current Flight Desk activity. **What’s Next?** and **Flight Desk Focus** surface a phase-aware action, while **Flight Readiness** links real missing items to the relevant page.
 - Review completed flights in local Flight History, search reports, inspect flight statistics and export report data as JSON or CSV; use the print dialog to save a polished A4 PDF. Matching crew names sync their shared history directly over the P2P lobby across flights. Each PC keeps its own local archive; a different crew combination does not receive those earlier reports. No cloud-storage login or paid Flight Desk storage service is needed.
-- Use Briefing templates to record the arrival, current ATIS/clearance, approach chart, minima and missed-approach plan. These items must be confirmed by the crew; the SimBrief OFP does not reliably represent the approach or runway ATC will assign. Crew Tools displays VATSIM ATIS and exact-callsign aircraft data when available.
+- Fill in synchronized **Departure Briefing** and **Arrival Briefing** forms for airport conditions, clearances, SID/STAR, runway, approach, minima, performance, threats and missed approach. Keep freeform shared **Cockpit Notes**, Enroute notes and Debrief on their own pages. These are crew planning aids; verify operational details against current charts, ATIS, aircraft documentation and simulator SOP.
 - Use the integrated cockpit voice link over the current peer connection in **Push to talk** or **Open mic** mode. Both pilots enable their microphones; the host starts audio after both are ready. Select the microphone and speakers, bind a PTT key, mute or adjust volume, and test the microphone locally. Diagnostics show voice connection and ICE failure states; use **Enable speakers** if playback is blocked.
-- Select a **Clean Headset**, **VHF**, **Slight Degradation** or **Heavy Degradation** voice profile and adjust its strength. A local, opt-in **Cockpit Voice Recorder** can capture the connected crew audio, save it under this Windows user profile, and play recordings back in Flight Desk. Recording start/stop is added to the flight timeline; recordings are never uploaded.
+- Select a **Clean Headset**, **VHF**, **Slight Degradation** or **Heavy Degradation** voice profile and adjust its strength.
 - Open **ATC & Traffic** for departure, arrival and nearby VATSIM frequencies, active simulator COM1 when available, and nearby traffic sorted by distance or altitude. Select a traffic entry for its filed route and position details; copy a controller frequency with one click.
 - Use **Flight Analysis** to scrub locally recorded flight tracks, compare two completed reports, and inspect airport, aircraft and crew statistics. New replay tracks require connected simulator telemetry during the flight; values the current simulator bridge cannot provide, such as actual fuel used and runway usage, remain marked unavailable.
-- Resume a locally saved unfinished session after restarting Flight Desk, and let a dropped P2P link retry in the background while preserving the local flight state. **Service availability** shows which offline tools and online integrations are currently available. Export a ZIP of sanitized app, simulator, service, connection, event and recent renderer-error diagnostics.
+- Resume a locally saved unfinished session after restarting Flight Desk, and let a dropped P2P link retry in the background while preserving the local flight state. Open the separate **Diagnostics** section below Tools for connection diagnostics, service availability and a sanitized diagnostics export.
 - Open **Settings** from the header for crew preferences, units, timeline time format, display density, voice controls, integration/connection diagnostics and event notification preferences. Simulator and P2P diagnostics show unavailable data explicitly.
 - Track crew handovers and record a shared flight timeline with checklist actions.
-- Search ChartFox airports and browse grouped charts such as taxi, SID, STAR and approach charts, then open a selected chart on ChartFox. A ChartFox API token is encrypted on this PC.
-- Keep Charts, Crew Tools and EFB visible in the sidebar. On short pages, the sidebar can extend below the content; in short windows, primary navigation scrolls separately above the Tools buttons.
+- **Charts** is marked Work In Progress. ChartFox and Navigraph are not shown as active chart integrations.
+- The EFB appears in the Flight Desk sidebar section. Charts and Crew Tools appear under Tools, with Diagnostics in its own section below Tools.
 - Use local crew preferences.
-- Check P2P, simulator-position and VATSIM status in Crew Tools.
+- Check P2P, simulator-position, voice and service status under Diagnostics.
 - View airport names, METAR, TAF, nearby VATSIM controllers and frequencies when available.
 - Review parsed SimBrief route, alternate, cruise level, times, fuel and weight data alongside the original PDF.
-- Show the SimBrief aircraft registration. Track route progress and infer flight phases from FSUIPC7 telemetry. Find a VATSIM aircraft by its exact flight-plan callsign.
+- Show the SimBrief aircraft registration. Track route progress and infer flight phases from FSUIPC7 telemetry, including engine-start detections. Show engine combustion/N2 and beacon-light telemetry when FSUIPC7 provides it. Find a VATSIM aircraft by its exact flight-plan callsign.
 - See local and Zulu clocks and dates in the header on every page; local time uses your computer's time zone.
 - Open pages with Ctrl+1 through Ctrl+8 (shortcuts are ignored while entering text). The app opens in dark mode and remembers a selected light theme.
 
@@ -51,9 +51,9 @@ Download the Windows `.exe` installer from this repository's **Releases** sectio
 3. The other pilot enters their name and joins using the host's code.
 4. Each flight starts with a newly generated lobby code. After an interrupted session, Flight Desk offers the locally saved flight for explicit recovery; it does not silently rejoin a previous lobby.
 5. Open **Flight Plan** and enter the SimBrief username or pilot ID for an already generated plan.
-6. To track the aircraft, run the simulator and FSUIPC7 on a connected Windows PC. The helper and its FSUIPC WAPI runtime are bundled with the installer. Fenix automatic checks also require the FSUIPC WASM module installed and enabled in the simulator; the Checklist page shows connection status.
+6. To track the aircraft, run the simulator and FSUIPC7 on a connected Windows PC. The helper and its FSUIPC WAPI runtime are bundled with the installer. Fenix cockpit-variable checks also require the FSUIPC WASM module installed and enabled in the simulator; the Checklist page shows connection status.
 
-The SimBrief ID is remembered as you type. After a short pause, automatic import checks immediately even while the ID field is still focused. While the host lobby has no plan, the app checks once a minute and imports when scheduled departure is between now and one hour ahead. It uses SimBrief's `times.sched_out` timestamp, so UTC midnight and local time-zone offsets are handled without a local-time conversion. [SimBrief documents its date/time values as Unix timestamps](https://forum.navigraph.com/t/simbrief-api-xml/5929). A missing or past departure time is skipped. **Fetch plan** always allows manual import, and automatic checks never replace an existing shared plan.
+The SimBrief ID is remembered as you type. While the host lobby has no plan, the app checks every five seconds and imports the latest generated OFP regardless of its scheduled departure time. Automatic checks are serialized, polling stops after a plan is imported, and **Fetch plan** always allows manual import. Frequent polling may exceed SimBrief's intended API usage or trigger service rate limits.
 
 ## How connections and data work
 
@@ -80,7 +80,7 @@ The repository uses `pnpm-lock.yaml`. Do not replace it with an npm-generated lo
 
 ### Reuse the prebuilt helper
 
-To skip compiling the helper, download the matching `FlightPositionBridge-0.5.0-alpha.2-win-x64.zip` Release asset and extract it into the project root. The simulator helper source is unchanged in alpha.3. The archive creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
+To skip compiling the helper, download the matching `FlightPositionBridge-0.5.0-alpha.5-win-x64.zip` Release asset and extract it into the project root. The archive creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
 
 The helper EXE is larger than GitHub's normal Git file limit. Its source belongs in this repo; the prebuilt archive belongs in Releases. The `publish` folder is ignored by Git.
 
@@ -90,7 +90,7 @@ The helper EXE is larger than GitHub's normal Git file limit. Its source belongs
 pnpm dist
 ```
 
-Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.4.exe`, its `.blockmap`, and `dist/alpha.yml` / `dist/latest.yml` update manifests.
+Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.5.exe`, its `.blockmap`, and `dist/alpha.yml` / `dist/latest.yml` update manifests.
 
 `pnpm dist` expects the helper to exist. It creates the installer and update metadata but does not publish a release. Attach the installer, `alpha.yml`, and matching `.blockmap` to the same published GitHub prerelease. This project currently packages Windows only.
 
