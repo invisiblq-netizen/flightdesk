@@ -158,8 +158,8 @@ async function run() {
     await evaluate("document.querySelector('#briefingNav [data-note-tab=notes]').click();syncSidebarHeight()");
     await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
     const sidebar=await evaluate(`(()=>{const nav=document.querySelector('.side-nav'),scroll=document.querySelector('#navScroll');return {groups:[...scroll.querySelectorAll(':scope > .nav-group')].map(group=>({id:group.id,pages:[...group.querySelectorAll('.nav-item')].map(item=>item.dataset.page)})),navHeight:nav.clientHeight,scrollHeight:scroll.scrollHeight,clientHeight:scroll.clientHeight,items:[...scroll.querySelectorAll('.nav-item')].map(item=>item.dataset.page)}})()`);
-    assert.deepEqual(sidebar.groups.map(group=>group.id),['flightDeskGroup','trafficGroup','analysisGroup','toolsGroup','diagnosticsGroup'],'Sidebar uses the requested navigation sections in order');
-    assert.deepEqual(sidebar.groups.map(group=>group.pages),[['overview','flight-plan','route','checklist','notes'],['traffic'],['analysis'],['efb','charts','crew-tools'],['diagnostics']]);
+    assert.deepEqual(sidebar.groups.map(group=>group.id),['flightDeskGroup','crewNotesGroup','toolsGroup'],'Sidebar keeps a short, clearly grouped navigation');
+    assert.deepEqual(sidebar.groups.map(group=>group.pages),[['overview','flight-plan','route','checklist'],['notes'],['efb','traffic','analysis','charts','crew-tools','diagnostics']]);
     assert.equal(sidebar.items.filter(page=>page==='notes').length,1,'Briefing subpages share one sidebar entry');
     assert.ok(sidebar.navHeight>0&&sidebar.clientHeight>0&&sidebar.scrollHeight>=sidebar.clientHeight,'The full sidebar remains reachable in one scroll area');
     if(width===920){
@@ -202,11 +202,11 @@ async function run() {
   await evaluate(`activatePage('crew-tools');currentSimPosition={connected:true}`);
   const crewSections=await evaluate(`[...document.querySelectorAll('#crewToolsNavTabs [data-crew-target]')].map(button=>button.textContent)`);
   assert.deepEqual(crewSections,['Voice Link','Flight History','Flight Timeline','VATSIM Match','Crew Handovers','Preferences']);
-  await evaluate(`document.querySelector('[data-crew-target="crew-timeline-panel"]').click();new Promise(resolve=>setTimeout(resolve,450))`);
-  const timelineNavigation=await evaluate(`(()=>{const target=document.querySelector('[data-crew-panel=timeline]'),button=document.querySelector('[data-crew-target="crew-timeline-panel"]'),shell=document.querySelector('.page-shell').getBoundingClientRect();return{active:button.getAttribute('aria-current'),targetTop:target.getBoundingClientRect().top,shellTop:shell.top,shellBottom:shell.bottom}})()`);
-  assert.equal(timelineNavigation.active,'location');
-  assert.ok(timelineNavigation.targetTop>=timelineNavigation.shellTop-1&&timelineNavigation.targetTop<timelineNavigation.shellBottom,JSON.stringify(timelineNavigation));
-  await evaluate(`document.querySelector('[data-crew-target="voiceLinkCard"]').click();document.querySelector('.page-shell').scrollTop=0`);
+  const crewPanels=await evaluate(`(()=>{const buttons=[...document.querySelectorAll('#crewToolsNavTabs [role=tab]')];for(const button of buttons){button.click();if(button.getAttribute('aria-selected')!=='true')throw Error('Crew tab was not selected: '+button.textContent);const panel=document.getElementById(button.getAttribute('aria-controls'));if(!panel||panel.hidden)throw Error('Crew panel did not open: '+button.textContent);if(document.querySelectorAll('#page-crew-tools [role=tabpanel]:not([hidden])').length!==1)throw Error('Crew Tools must show one panel at a time')}return{count:buttons.length,selected:document.querySelectorAll('#crewToolsNavTabs [aria-selected=true]').length,hidden:document.querySelectorAll('#page-crew-tools [role=tabpanel][hidden]').length}})()`);
+  assert.deepEqual(crewPanels,{count:6,selected:1,hidden:5},'Crew Tools uses real accessible tabs and displays one selected panel at a time');
+  const crewKeyboard=await evaluate(`(()=>{const first=document.querySelector('[data-crew-key="voice"]');first.focus();first.dispatchEvent(new KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));return{selected:document.querySelector('#crewToolsNavTabs [aria-selected=true]')?.dataset.crewKey,focused:document.activeElement?.dataset.crewKey}})()`);
+  assert.deepEqual(crewKeyboard,{selected:'preferences',focused:'preferences'},'Crew Tools tabs support Home/End keyboard navigation');
+  await evaluate(`document.querySelector('[data-crew-key="voice"]').click();document.querySelector('.page-shell').scrollTop=0`);
   const crew=await evaluate(`document.querySelector('#page-crew-tools').textContent`);
   assert.doesNotMatch(crew,/ATC route snapshot|Briefing templates/);
   fs.writeFileSync(path.join(__dirname,'../work/ui-checks/crew-tools.png'),(await win.webContents.capturePage()).toPNG());
@@ -214,6 +214,8 @@ async function run() {
   const diagnosticDots=await evaluate(`(()=>{const dot=document.querySelector('#connectionDiagnostics .dot');return {width:dot.getBoundingClientRect().width,height:dot.getBoundingClientRect().height,page:document.querySelector('#page-diagnostics').classList.contains('active')}})()`);
   assert.equal(diagnosticDots.page,true,'Diagnostics navigation must show the diagnostics page');
   assert.equal(diagnosticDots.width,7);assert.equal(diagnosticDots.height,7);
+  assert.equal(await evaluate("document.querySelectorAll('#connectionDiagnostics .diagnostic-health').length"),3,'Diagnostics shows the simulator, P2P and voice health summary');
+  assert.equal(await evaluate("document.querySelector('#connectionDiagnostics .diagnostic-details summary')?.textContent"),'Network route details');
   fs.writeFileSync(path.join(__dirname,'../work/ui-checks/diagnostics.png'),(await win.webContents.capturePage()).toPNG());
   await evaluate("document.querySelector('#chartsNav').click()");
   assert.equal(await evaluate("document.querySelector('#page-charts').classList.contains('active')"),true);
@@ -280,8 +282,18 @@ async function run() {
   assert.match(await evaluate("document.querySelector('#activeComFrequency').textContent"),/118.700/);
   assert.match(await evaluate("document.querySelector('#nearbyAtcList').textContent"),/ENGM_TWR/);
   assert.match(await evaluate("document.querySelector('#trafficList').textContent"),/SAS123/);
+  assert.equal(await evaluate("document.querySelector('#trafficEmptyState').hidden"),true,'The map overlay hides when live nearby traffic exists');
   await evaluate("document.querySelector('[data-traffic-call="+JSON.stringify('SAS123')+"]').click()");
   assert.match(await evaluate("document.querySelector('#trafficDetails').textContent"),/EKCH/);
+  fs.writeFileSync(path.join(__dirname,'../work/ui-checks/traffic-live.png'),(await win.webContents.capturePage()).toPNG());
+  await evaluate(`(()=>{vatsimOperationsCache={checkedAt:Date.now(),positionAvailable:true,traffic:[],nearbyControllers:[]};renderVatsimSituation()})()`);
+  assert.equal(await evaluate("document.querySelector('#trafficEmptyState').hidden"),false,'A real empty VATSIM result receives a map overlay');
+  assert.match(await evaluate("document.querySelector('#trafficEmptyDescription').textContent"),/No VATSIM aircraft/);
+  assert.equal(await evaluate("document.querySelector('#trafficDetails').classList.contains('hidden')"),true,'Aircraft details from a departed target clear when it leaves the current feed');
+  const trafficOverlay=await evaluate(`(()=>{const overlay=document.querySelector('#trafficEmptyState'),map=document.querySelector('#trafficMap').getBoundingClientRect(),bounds=overlay.getBoundingClientRect();return{hidden:overlay.hidden,display:getComputedStyle(overlay).display,width:bounds.width,height:bounds.height,mapWidth:map.width,mapHeight:map.height}})()`);
+  assert.equal(trafficOverlay.hidden,false);assert.equal(trafficOverlay.display,'grid');assert.ok(trafficOverlay.width>=trafficOverlay.mapWidth-2&&trafficOverlay.height>=trafficOverlay.mapHeight-2,JSON.stringify(trafficOverlay));
+  fs.writeFileSync(path.join(__dirname,'../work/ui-checks/traffic-empty.png'),(await win.webContents.capturePage()).toPNG());
+  await evaluate(`(()=>{document.querySelector('[data-note-group="briefing"]').click();return 0})()`);
   await evaluate('new Promise(resolve=>setTimeout(resolve,80))');
   fs.writeFileSync(path.join(__dirname,'../work/ui-checks/traffic.png'),(await win.webContents.capturePage()).toPNG());
   report('PASS: ATC frequencies, active COM1 and nearby VATSIM traffic render with aircraft details.');
@@ -302,8 +314,8 @@ async function run() {
   const savedHistory=await evaluate("localStorage.getItem('sharedCockpitFlightHistoryV1')");
   await evaluate(`(()=>{localStorage.setItem('sharedCockpitFlightHistoryV1','[]');selectedReplayId='';renderFlightAnalysis()})()`);
   assert.match(await evaluate("document.querySelector('#replayStatus').className"),/analysis-empty-state/);
-  assert.match(await evaluate("document.querySelector('#compareResult span').className"),/analysis-empty-state/);
-  assert.match(await evaluate("document.querySelector('#statisticsResult span').className"),/analysis-empty-state/);
+  assert.equal(await evaluate("document.querySelector('#compareResult .analysis-empty-state')!==null"),true);
+  assert.equal(await evaluate("document.querySelector('#statisticsResult .analysis-empty-state')!==null"),true);
   await evaluate(`(()=>{localStorage.setItem('sharedCockpitFlightHistoryV1',${JSON.stringify(savedHistory)});renderFlightAnalysis()})()`);
   await evaluate(`data.aircraft='B738';data.tasks=[];data.ops.currentFlightPhase=null;resetFlightProgress();const at=Date.now();for(let i=0;i<12;i++){const t=at-11000+i*1000;currentSimPosition={connected:true,onGround:true,latitude:60,longitude:10,groundSpeedKnots:0,altitudeFeet:100,verticalSpeedFeetPerMinute:0,updatedAt:t};updateAutomaticFlightPhases(currentSimPosition,t)}renderSessionDashboard()`);
   assert.equal(await evaluate("document.querySelector('#sessionPhase').textContent"),'On ground / Preflight');

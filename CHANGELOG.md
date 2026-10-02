@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.0-alpha.13 — Alpha 0.5
+
+- Simplify the sidebar into three clear groups with flat navigation rows, and give page titles and key flight data a more readable hierarchy.
+- Refine Flight Board and Flight Plan layouts into compact route summaries, grouped SimBrief data, clear unavailable states and less repetitive status rows.
+- Group Departure and Arrival Briefing fields by workflow without changing their synchronized storage or controls.
+- Turn Crew Tools into accessible tabs that show one existing voice, history, timeline, VATSIM, handover or preference panel at a time.
+- Group simulator and P2P diagnostics under a live health strip, with technical connection and aircraft-system details available on demand.
+- Collapse route procedure groups and size the VATSIM map to its workspace; show a centered empty state when traffic is absent and clear details when the selected aircraft leaves the feed.
+- Improve empty states and flatten repeated metric cards across Flight Analysis, statistics, timers and activity rows.
+- Extend UI regression coverage for panel switching, grouped briefings, empty traffic, stale traffic details and compact sidebar reachability; visually verify pages at 920×640 through 3840×2160.
+
 ## 0.5.0-alpha.12 — Alpha 0.5
 
 - Reorganize Route Viewer into a map-first 70/30 layout with a dedicated navigation panel for live route metrics, waypoints and procedures.

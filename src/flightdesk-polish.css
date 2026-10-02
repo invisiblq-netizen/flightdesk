@@ -459,3 +459,215 @@ textarea.notes { background-color: var(--panel2); }
   .card { padding: 13px; }
   .crew-notifications { right: 10px; bottom: 10px; width: min(320px, calc(100vw - 20px)); }
 }
+
+/* Alpha .13: prioritize readable hierarchy and grouped data over nested cards. */
+#desk.desk-layout { grid-template-columns: 228px minmax(0, 1fr); gap: 16px; }
+:root[data-theme="dark"] #desk .nav-scroll .nav-item,
+:root[data-theme="light"] #desk .nav-scroll .nav-item {
+  width: 100%; min-height: 36px; max-height: 38px; padding: 7px 10px;
+  border: 1px solid transparent; border-left: 2px solid transparent;
+  border-radius: 6px; background: transparent; box-shadow: none;
+  color: var(--secondary); text-align: left; font-size: 12px; font-weight: 500;
+}
+:root[data-theme="dark"] #desk .nav-scroll .nav-item:hover,
+:root[data-theme="light"] #desk .nav-scroll .nav-item:hover { border-color: transparent; background: var(--panel2); color: var(--ink); }
+:root[data-theme="dark"] #desk .nav-scroll .nav-item.active,
+:root[data-theme="light"] #desk .nav-scroll .nav-item.active { border-color: transparent; border-left-color: var(--mint); background: var(--accent-soft); color: var(--mint); font-weight: 650; }
+.nav-group + .nav-group { margin-top: 9px; padding-top: 10px; }
+.nav-group-label { margin: 2px 9px 5px; font-size: 10px; letter-spacing: .12em; }
+
+.page-context { min-height: 58px; gap: 10px 18px; margin-bottom: 12px; padding-bottom: 10px; }
+.page-context[data-page="overview"] { grid-template-columns: minmax(0,1fr) auto; }
+.page-context[data-page="overview"] .page-flight-context { display: none; }
+.page-context-title h2 { font-size: 21px; }
+.page-context-title small { font-size: 10px; }
+.page-context-title p { font-size: 12px; }
+.page-flight-context span { font-size: 12px; }
+.page-flight-context b { font-size: 10px; }
+.page-link-status .status-chip { min-height: 26px; padding: 4px 8px; font-size: 10px; }
+.card { padding: 15px; border-radius: 10px; box-shadow: none; }
+.card-head { margin-bottom: 10px; }
+.card-head h2, .readiness-head h2 { font-size: 15px; }
+.eyebrow { font-size: 10px; }
+
+#page-overview .flight-board-layout > .card { padding: 14px 16px; }
+#page-overview .page-flight-context { display: none; }
+#page-overview .route { display: grid; grid-template-columns: minmax(120px,1fr) minmax(100px,.7fr) minmax(120px,1fr); align-items: center; gap: 10px; margin: 7px 0 12px; }
+#page-overview .airport { font-size: 32px; }
+#page-overview .airport-name { margin-top: 2px; font-size: 11px; }
+#page-overview .metar { display: -webkit-box; overflow: hidden; margin-top: 3px; font-size: 11px; line-height: 1.35; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+#page-overview .atc-list { margin: 3px 0 0; font-size: 10px; }
+#page-overview .route-center { min-width: 0; }
+#page-overview .route-progress { padding: 2px 5px; font-size: 10px; }
+#page-overview .stats { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 0; padding-top: 10px; border-top: 1px solid var(--line); }
+#page-overview .stat { min-width: 0; padding: 0 9px; border-left: 1px solid var(--line); }
+#page-overview .stat:first-child { padding-left: 0; border-left: 0; }
+#page-overview .stat small { font-size: 10px; }
+#page-overview .stat b { display: block; margin-top: 2px; font-size: 14px; }
+.readiness-card { padding-top: 13px; padding-bottom: 13px; }
+.readiness-grid { gap: 0 12px; }
+.readiness-item { min-height: 34px; padding: 6px 4px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; font-size: 12px; }
+.readiness-summary { margin: 7px 0; padding: 6px 0; border: 0; border-radius: 0; border-bottom: 1px solid var(--line); background: transparent; font-size: 12px; }
+
+.session-dashboard { padding-top: 13px; padding-bottom: 13px; }
+.session-dashboard-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 0; padding: 2px 0 9px; border-bottom: 1px solid var(--line); }
+.session-dashboard-grid > div { padding: 3px 10px; border: 0; border-left: 1px solid var(--line); border-radius: 0; background: transparent; }
+.session-dashboard-grid > div:first-child { padding-left: 0; border-left: 0; }
+.session-dashboard-grid small, .session-status small, .plan-data-item small { font-size: 11px; }
+.session-dashboard-grid strong { margin-top: 3px; font-size: 15px; }
+.session-last-event { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.session-last-event small { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+.session-last-event strong { color: var(--secondary); font-size: 12px; font-weight: 550; }
+.session-status-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 0; margin-top: 4px; }
+.session-status { padding: 8px 10px; border: 0; border-left: 1px solid var(--line); border-radius: 0; background: transparent; }
+.session-status:first-child { padding-left: 0; border-left: 0; }
+.session-status b { font-size: 12px; }
+.crew-activity-wrap { padding-top: 10px; border-top: 1px solid var(--line); }
+.crew-activity-wrap > .eyebrow { margin-bottom: 5px; }
+.crew-activity-grid { gap: 0 14px; }
+.crew-activity-grid > * { padding: 6px 0; border-bottom: 1px solid var(--line); background: transparent; }
+.session-recent { margin-top: 6px; }
+.session-recent > div { padding: 5px 0; font-size: 12px; }
+
+#page-flight-plan.active { grid-template-columns: minmax(320px,.43fr) minmax(0,.57fr); gap: 12px; }
+#page-flight-plan > .single-article > .card, #page-flight-plan .pdf-card { padding: 13px; }
+#page-flight-plan .pdf-card { min-height: 400px; }
+.plan-data-details { display: grid; grid-template-columns: minmax(0,1fr); gap: 10px; margin: 11px 0 0; }
+.plan-data-group { min-width: 0; }
+.plan-data-group h3 { margin: 0 0 4px; padding-bottom: 4px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 10px; letter-spacing: .1em; }
+.plan-data-group > div { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); column-gap: 14px; }
+.plan-data-item, .plan-data-item:first-child { display: grid; grid-template-columns: minmax(84px,.8fr) minmax(0,1.2fr); align-items: baseline; gap: 8px; grid-column: auto; padding: 5px 0; border: 0; border-bottom: 1px solid color-mix(in srgb,var(--line) 70%,transparent); border-radius: 0; background: transparent; }
+.plan-data-item b { margin: 0; color: var(--secondary); font-size: 12px; font-weight: 550; }
+.plan-data-unavailable { grid-column: 1 / -1; margin: 0; padding: 6px 0; color: var(--muted); font-size: 11px; }
+.data-empty-state { display: grid; justify-items: start; gap: 4px; padding: 12px 0; color: var(--muted); }
+.data-empty-state strong { color: var(--secondary); font-size: 13px; }
+
+.briefing-groups { display: grid; gap: 12px; }
+.briefing-group { min-width: 0; padding-top: 9px; border-top: 1px solid var(--line); }
+.briefing-group h3 { margin: 0 0 8px; color: var(--secondary); font-size: 12px; font-weight: 650; }
+.briefing-group .briefing-fields { margin: 0; gap: 8px 12px; }
+.briefing-fields label { font-size: 12px; }
+.briefing-fields textarea { min-height: 58px; }
+.briefing-safety-note { margin: 0 0 8px; padding: 7px 9px; border-left: 2px solid var(--blue); background: color-mix(in srgb,var(--blue) 6%,var(--panel)); color: var(--muted); font-size: 11px; }
+
+.tool-row, .history-row { border-color: transparent; border-bottom-color: var(--line); border-radius: 0; background: transparent; font-size: 12px; }
+.tool-row:nth-child(even) { background: transparent; }
+.tool-row:hover, .history-row:hover { border-color: transparent; border-bottom-color: var(--line); background: var(--accent-soft); }
+.tool-list { gap: 0; }
+.flight-history-card .personal-flight-stats { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.flight-history-card .personal-flight-stats > div { padding: 8px 10px; border: 0; border-left: 1px solid var(--line); border-radius: 0; background: transparent; }
+.flight-history-card .personal-flight-stats > div:first-child { padding-left: 0; border-left: 0; }
+.flight-history-card .personal-flight-stats small { font-size: 11px; }
+.flight-history-card .personal-flight-stats b { font-size: 17px; }
+.flight-timer-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 0; }
+.flight-timer-grid > div, .report-stats > div { padding: 7px 10px; border: 0; border-left: 1px solid var(--line); border-radius: 0; background: transparent; }
+.flight-timer-grid > div:first-child, .report-stats > div:first-child { padding-left: 0; border-left: 0; }
+.flight-timer-grid small, .report-stats small { font-size: 10px; }
+.flight-timer-grid b, .report-stats b { font-size: 15px; }
+
+.crew-tools-nav { position: static; gap: 3px; margin-bottom: 12px; padding: 0 0 8px; }
+.crew-tools-nav .tab { min-height: 36px; padding: 6px 11px; font-size: 12px; }
+.crew-tools-nav .tab[aria-selected="true"] { border-color: var(--line); background: var(--accent-soft); color: var(--mint); }
+#page-crew-tools [data-crew-panel][hidden] { display: none !important; }
+#page-crew-tools [data-crew-panel] { scroll-margin-top: 0; }
+#page-crew-tools > .card, #page-crew-tools > .single-article { margin-top: 0; }
+#page-crew-tools .flight-history-card .card-head { gap: 12px; }
+
+.diagnostics-card { padding: 14px; }
+.diagnostic-health-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0; margin-bottom: 14px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.diagnostic-health { min-width: 0; padding: 9px 12px; border-left: 1px solid var(--line); }
+.diagnostic-health:first-child { padding-left: 0; border-left: 0; }
+.diagnostic-health > div { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; }
+.diagnostic-health > b { display: block; margin: 4px 0 0 14px; color: var(--ink); font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.diagnostic-health[data-state="warning"] > b { color: var(--amber); }
+.diagnostic-health[data-state="error"] > b { color: var(--muted); }
+.diagnostic-section + .diagnostic-section { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.diagnostic-section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+.diagnostic-section-head h3 { margin: 2px 0 0; color: var(--ink); font-size: 14px; }
+.diagnostic-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 0; }
+.diagnostic-metric { min-width: 0; padding: 7px 10px; border-left: 1px solid var(--line); }
+.diagnostic-metric:first-child, .diagnostic-metric:nth-child(4n + 1) { padding-left: 0; border-left: 0; }
+.diagnostic-metric small { display: block; color: var(--muted); font-size: 10px; }
+.diagnostic-metric b { display: block; margin-top: 3px; color: var(--secondary); font-size: 13px; font-weight: 550; overflow-wrap: anywhere; }
+.diagnostic-rows { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); column-gap: 18px; }
+.diagnostic-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; padding: 6px 0; border-bottom: 1px solid color-mix(in srgb,var(--line) 70%,transparent); font-size: 12px; }
+.diagnostic-row b { color: var(--secondary); font-weight: 550; }
+.diagnostic-row > span { color: var(--muted); text-align: right; overflow-wrap: anywhere; }
+.diagnostic-details { margin-top: 9px; border-top: 1px solid var(--line); }
+.diagnostic-details summary, .route-procedure-group summary { padding: 8px 0; color: var(--secondary); font-size: 12px; cursor: pointer; }
+.diagnostic-details[open] .diagnostic-metrics { border-top: 1px solid var(--line); }
+.aircraft-systems-details { margin-top: 10px; }
+
+.route-viewer-card { grid-template-rows: auto minmax(520px,min(68vh,720px)); }
+.route-navigation-panel .route-procedure-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 6px; }
+.route-procedure-group { min-width: 0; border-bottom: 1px solid var(--line); }
+.route-procedure-group summary { padding: 6px 0; font-weight: 650; }
+.route-procedure-group > div { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; padding: 0 0 7px; }
+.route-navigation-panel .route-procedure-group .route-meta-item { padding: 5px 0; border: 0; border-top: 1px solid color-mix(in srgb,var(--line) 60%,transparent); background: transparent; }
+.route-navigation-panel .route-meta-item small { font-size: 9px; }
+.route-navigation-panel .route-meta-item b { font-size: 11px; }
+
+.traffic-map-shell { position: relative; min-width: 0; }
+.traffic-map-shell .traffic-map { height: clamp(300px,36vh,380px); min-height: 300px; }
+.traffic-map-shell .traffic-map[data-traffic-state="empty"] { background-color: color-mix(in srgb,var(--panel2) 90%,var(--bg)); }
+.traffic-empty-state { position: absolute; inset: 1px; display: grid; align-content: center; justify-items: center; gap: 7px; padding: 18px; border-radius: 8px; background: color-mix(in srgb,var(--panel) 91%,transparent); color: var(--muted); text-align: center; }
+.traffic-empty-state[hidden] { display: none; }
+.traffic-empty-state .empty-mark, .empty-mark { display: grid; width: 28px; height: 28px; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: var(--blue); font-size: 16px; }
+.traffic-empty-state strong { color: var(--secondary); font-size: 14px; }
+.traffic-empty-state > span:not(.empty-mark) { max-width: 390px; font-size: 12px; }
+
+.analysis-metric-grid { gap: 0 12px; }
+.analysis-metric { padding: 8px 6px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; }
+.analysis-metric small { font-size: 10px; }
+.analysis-metric b { margin-top: 3px; font-size: 14px; }
+.analysis-event-list { max-height: 230px; }
+.analysis-empty-state { display: grid; align-content: center; justify-items: center; gap: 5px; min-height: 120px; padding: 14px; border: 1px dashed var(--line); border-radius: 8px; background: var(--panel2); text-align: center; }
+.analysis-empty-state::before { display: none; }
+#replayStatus.analysis-empty-state[data-empty-title]::before { content: attr(data-empty-title); display: block; width: auto; height: auto; border: 0; border-radius: 0; color: var(--secondary); font-size: 13px; font-weight: 650; }
+.analysis-empty-state .empty-mark { margin-bottom: 2px; }
+.analysis-empty-state strong { color: var(--secondary); font-size: 13px; }
+.analysis-empty-state > span { max-width: 480px; font-size: 12px; }
+.analysis-empty-state strong { color: var(--secondary); font-size: 13px; }
+.analysis-empty-state > span { max-width: 480px; font-size: 12px; }
+
+#page-charts .integration-state { width: min(760px,100%); min-height: 190px; margin: clamp(12px,4vh,34px) auto 0; padding: 20px 22px; border-left: 2px solid var(--mint); }
+#page-charts .integration-state > p { max-width: 620px; line-height: 1.55; }
+#page-charts .integration-state .pill { color: var(--amber); }
+
+@media (min-width: 1920px) {
+  #desk.desk-layout { grid-template-columns: 232px minmax(0,1fr); gap: 18px; }
+  .page-context-title h2 { font-size: 22px; }
+}
+@media (min-width: 761px) and (max-height: 700px) {
+  .side-nav { padding: 7px; }
+  .nav-scroll .nav-group { gap: 0; }
+  .nav-scroll .nav-group + .nav-group { margin-top: 3px; padding-top: 4px; }
+  .nav-scroll .nav-group-label { margin: 0 8px 1px; font-size: 8px; line-height: 1.2; }
+  :root[data-theme="dark"] #desk .nav-scroll .nav-item,
+  :root[data-theme="light"] #desk .nav-scroll .nav-item { min-height: 27px; max-height: 28px; padding: 3px 8px; font-size: 11px; }
+}
+@media (max-width: 1100px) {
+  #page-overview .stats { grid-template-columns: repeat(3,minmax(0,1fr)); row-gap: 10px; }
+  #page-overview .stat:nth-child(4) { padding-left: 0; border-left: 0; }
+  .plan-data-group > div { grid-template-columns: minmax(0,1fr); }
+  .diagnostic-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .diagnostic-metric:nth-child(odd) { padding-left: 0; border-left: 0; }
+  .route-viewer-card { grid-template-rows: auto auto auto; }
+}
+@media (max-width: 760px) {
+  #desk.desk-layout { grid-template-columns: minmax(0,1fr); }
+  #page-overview .route { grid-template-columns: minmax(0,1fr) minmax(70px,.6fr) minmax(0,1fr); }
+  #page-overview .airport { font-size: 27px; }
+  #page-overview .stats, .session-dashboard-grid, .session-status-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  #page-overview .stat, .session-dashboard-grid > div, .session-status { padding: 6px 8px; border-left: 0; }
+  #page-overview .stat:nth-child(odd), .session-dashboard-grid > div:nth-child(odd), .session-status:nth-child(odd) { padding-left: 0; }
+  .session-last-event { align-items: flex-start; flex-direction: column; gap: 3px; }
+  .diagnostic-health-grid { grid-template-columns: minmax(0,1fr); }
+  .flight-timer-grid, .report-stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .diagnostic-health { padding: 8px 0; border-left: 0; border-bottom: 1px solid var(--line); }
+  .diagnostic-health:last-child { border-bottom: 0; }
+  .diagnostic-metrics, .diagnostic-rows { grid-template-columns: minmax(0,1fr); }
+  .diagnostic-metric, .diagnostic-metric:nth-child(4n + 1) { padding: 7px 0; border-left: 0; border-bottom: 1px solid var(--line); }
+  .route-navigation-panel .route-procedure-group > div { grid-template-columns: minmax(0,1fr); }
+  .crew-tools-nav { overflow-x: auto; flex-wrap: nowrap; }
+}
