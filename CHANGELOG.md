@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0-alpha.4 — Alpha 0.5
+
+- Add automatic update checks against the public GitHub Releases alpha channel, with background downloads and an in-app restart-to-install prompt.
+- Generate a SHA-512 update manifest and include it with the NSIS installer and blockmap so future alpha releases can update existing installs.
+- The existing alpha.3 installer predates the updater and must be upgraded once by running the alpha.4 installer; later releases can update from inside Flight Desk.
+
 ## 0.5.0-alpha.3 — Alpha 0.5
 
 - Add a SimBrief Route Viewer with navlog waypoint geometry, live aircraft position, waypoint sequencing, route distance/progress, altitude, speed, ETA and available departure/arrival procedures.

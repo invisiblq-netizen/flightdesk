@@ -1,6 +1,6 @@
 {
   "name": "shared-cockpit-flight-desk",
-  "version": "0.5.0-alpha.3",
+  "version": "0.5.0-alpha.4",
   "private": true,
   "description": "Windows companion for shared cockpit flying with SimBrief, shared crew notes, PF/PM flows, VATSIM information and P2P synchronization.",
   "packageManager": "pnpm@11.19.0",
@@ -12,7 +12,7 @@
     "prebuild:helper": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-wapi.ps1",
     "build:helper": "dotnet publish simtracker/FlightPositionBridge.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o simtracker/publish",
     "predist": "node scripts/check-helper.cjs",
-    "dist": "electron-builder --win nsis --publish never"
+    "dist": "electron-builder --win nsis --publish never && node scripts/create-update-manifest.cjs"
   },
   "devDependencies": {
     "electron": "44.4.5",
@@ -44,7 +44,8 @@
         "nsis"
       ],
       "icon": "build/icon.ico",
-      "artifactName": "Shared-Cockpit-Flight-Desk-Setup-${version}.${ext}"
+      "artifactName": "Shared-Cockpit-Flight-Desk-Setup-${version}.${ext}",
+      "verifyUpdateCodeSignature": false
     },
     "nsis": {
       "oneClick": false,
@@ -55,9 +56,18 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Shared Cockpit Flight Desk"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "invisiblq-netizen",
+        "repo": "flightdesk",
+        "releaseType": "prerelease"
+      }
+    ]
   },
   "dependencies": {
+    "electron-updater": "6.8.10",
     "pdfjs-dist": "6.3.289",
     "peerjs": "1.5.5"
   },

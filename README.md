@@ -4,11 +4,13 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.5** · Build `0.5.0-alpha.3` · Windows x64
+**Alpha 0.5** · Build `0.5.0-alpha.4` · Windows x64
 
 ## Features
 
 - Open **EFB** inside Flight Desk. Automatic mode uses the current local simulator aircraft title from FSUIPC7 to select Fenix, PMDG or iniBuilds; generic aircraft names remain unrecognized rather than guessing a manufacturer. Manual selection and each provider’s local address stay on this PC. Fenix defaults to `http://localhost:8083/`; use your simulator PC’s private IPv4 address when needed. PMDG and iniBuilds have no bundled web-EFB endpoint: a compatible web-EFB server/address is required. The EFB fills the available width beneath a single compact toolbar, giving the screen more height; **Settings** opens aircraft details and the address field. Internal page navigation keeps the EFB connected. **Reload** reconnects and **Expand** fills more of the same app window. The simulator helper is unchanged from alpha.8.
+
+- Check for new alpha releases automatically at startup and every six hours. Updates download in the background; Flight Desk asks before restarting, and installs a downloaded update when the app closes. **Check for updates** can also start a check manually. Updates come from this public repository’s GitHub Releases, with no account or token required on pilot PCs. The alpha.3 installer has no updater, so install alpha.4 once manually; later versions can update in-app.
 
 - Host a lobby and invite other pilots with a seven-character code.
 - Synchronize notes, checklist progress and flight-plan data directly over WebRTC.
@@ -88,9 +90,11 @@ The helper EXE is larger than GitHub's normal Git file limit. Its source belongs
 pnpm dist
 ```
 
-Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.3.exe`.
+Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.4.exe`, its `.blockmap`, and `dist/alpha.yml` / `dist/latest.yml` update manifests.
 
-`pnpm dist` expects the helper to exist. It bundles the checked-in renderer assets and never publishes a release automatically. This project currently packages Windows only.
+`pnpm dist` expects the helper to exist. It creates the installer and update metadata but does not publish a release. Attach the installer, `alpha.yml`, and matching `.blockmap` to the same published GitHub prerelease. This project currently packages Windows only.
+
+Alpha installers are not Authenticode-signed. Windows may show an unknown-publisher warning on first install; in-app updates verify the downloaded installer against the SHA-512 value in the release manifest.
 
 ### Checks
 

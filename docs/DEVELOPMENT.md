@@ -2,7 +2,7 @@
 
 ## Current state
 
-The Windows app is in alpha testing. Version `0.4.0-alpha.5` displays as **Alpha 0.4**. Keep `package.json` as the version source. Preserve the package name, app ID and product name when updating so installation and local storage continue using the existing identity.
+The Windows app is in alpha testing. Version `0.5.0-alpha.4` displays as **Alpha 0.5**. Keep `package.json` as the version source. Preserve the package name, app ID and product name when updating so installation and local storage continue using the existing identity.
 
 The earlier installer used version 1.3.0 before alpha numbering was introduced. The current NSIS installer is configured to preserve application data.
 
@@ -28,7 +28,7 @@ Renderer bundles are committed so the app can run without fetching frontend scri
 
 ## GitHub Actions
 
-The Windows workflow installs locked dependencies, runs the lobby checks, builds the helper and creates an installer artifact. It has read-only repository permissions and does not publish a GitHub Release. After a successful run, download its artifact from the Actions run page.
+The Windows workflow installs locked dependencies, runs the lobby checks, builds the helper and creates an installer artifact with its alpha update manifest and blockmap. It has read-only repository permissions and does not publish a GitHub Release. After a successful run, download its artifact from the Actions run page. A published alpha Release must include the matching installer, `alpha.yml`, and `.blockmap` for in-app updates to work. Alpha installers are unsigned; updater checksum verification uses SHA-512 from the HTTPS-hosted release manifest.
 
 The FSUIPC bridge reads position, on-ground state, groundspeed, vertical speed, heading, altitude and COM1 frequency. Timeline phase events are inferred from these telemetry values and synchronized through the lobby. VATSIM pilot matching uses the public VATSIM Data API; registration is shown only when supplied in the flight-plan remarks.
 

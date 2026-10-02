@@ -1,0 +1,9 @@
+.update-check-button{min-height:38px;padding:7px 11px;font-size:12px}
+.update-banner{display:flex;align-items:center;gap:12px;margin:12px 0 0;padding:11px 14px;border:1px solid #367969;border-radius:11px;background:#10251f;color:var(--ink);font-size:13px}
+.update-banner.hidden{display:none}
+.update-banner-message{flex:1;min-width:0}
+.update-banner-progress{flex-basis:100%;width:100%;height:4px;overflow:hidden;margin-top:7px;border-radius:4px;background:#253749}
+.update-banner-progress>span{display:block;height:100%;width:0;background:var(--mint);transition:width .2s ease}
+.update-banner button{white-space:nowrap}
+.update-banner-dismiss{padding:3px 8px;color:var(--muted);background:transparent;border:0;font-size:19px;line-height:1}
+@media(max-width:900px){.update-check-button{min-width:0}.update-banner{align-items:flex-start;flex-wrap:wrap}.update-banner-message{flex-basis:100%}}

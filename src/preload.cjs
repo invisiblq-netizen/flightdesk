@@ -3,6 +3,15 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('cockpitDesktop', {
   updateEfb: (options) => ipcRenderer.invoke('efb-update', options),
   getAppInfo: () => ipcRenderer.invoke('get-app-info'),
+  getAppUpdateStatus: () => ipcRenderer.invoke('app-update-status'),
+  checkForAppUpdates: () => ipcRenderer.invoke('app-update-check'),
+  installAppUpdate: () => ipcRenderer.invoke('app-update-install'),
+  onAppUpdateStatus: (callback) => {
+    if (typeof callback !== 'function') return () => {};
+    const listener = (_event, status) => callback(status);
+    ipcRenderer.on('app-update-status', listener);
+    return () => ipcRenderer.removeListener('app-update-status', listener);
+  },
   fetchSimbrief: (identity) => ipcRenderer.invoke('fetch-simbrief', identity),
   fetchSimbriefPdf: (plan) => ipcRenderer.invoke('fetch-simbrief-pdf', plan),
   getAirportInfo: (icao, options) => ipcRenderer.invoke('get-airport-info', icao, options),

@@ -6,6 +6,7 @@ const os = require('node:os');
 const { exactVatsimFlight } = require('./vatsim-flight.cjs');
 const { nearbyControllers, nearbyTraffic } = require('./vatsim-operations.cjs');
 const { createDiagnosticsArchive } = require('./diagnostics-archive.cjs');
+const { createAutoUpdater } = require('./auto-updater.cjs');
 const fs = require('node:fs/promises');
 const fsSync = require('node:fs');
 const { Readable } = require('node:stream');
@@ -26,6 +27,7 @@ const USER_AGENT = `SharedCockpitFlightDesk/${APP_VERSION}`;
 let mainWindow;
 let efbView;
 let startupSplash;
+let appUpdater;
 let vatsimCache = { expiresAt: 0, feed: null, transceivers: null };
 const airportCache = new Map();
 let positionBridge;
@@ -425,6 +427,18 @@ ipcMain.handle('get-app-info', () => ({
   version: APP_VERSION,
   displayVersion: APP_DISPLAY_VERSION
 }));
+ipcMain.handle('app-update-status', event => {
+  if (!isMainFrame(event)) throw new Error('Invalid update status request.');
+  return appUpdater?.getStatus() || { state: 'idle', version: APP_VERSION };
+});
+ipcMain.handle('app-update-check', event => {
+  if (!isMainFrame(event)) throw new Error('Invalid update check request.');
+  return appUpdater?.checkNow() || { state: 'unavailable', version: APP_VERSION };
+});
+ipcMain.handle('app-update-install', event => {
+  if (!isMainFrame(event)) throw new Error('Invalid update install request.');
+  return appUpdater?.install() || { state: 'unavailable', version: APP_VERSION };
+});
 ipcMain.handle('fetch-simbrief', async (_event, identity) => {
   try { return { ok: true, data: await fetchSimbrief(identity) }; }
   catch (error) { return { ok: false, error: error.message || 'Could not reach SimBrief. Please try again.' }; }
@@ -553,6 +567,12 @@ app.whenReady().then(() => {
   });
   loadChartfoxToken();
   createWindow();
+  appUpdater = createAutoUpdater({
+    app,
+    onStatus: status => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('app-update-status', status);
+    }
+  });
   startPositionBridge();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
