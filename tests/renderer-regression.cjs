@@ -23,6 +23,9 @@ async function run() {
   await evaluate(`localStorage.clear();prepareSession('host','Test Pilot','ABC2345','PF');showDesk();data.plan={origin:{icao_code:'ENGM'},destination:{icao_code:'EGLL'},aircraft:{icaocode:'A21N'},general:{callsign:'TEST123',route_distance:'680'}};data.aircraft=aircraftType(data.plan);data.tasks=tasksFor(data.aircraft);applyState(data);`);
   assert.deepEqual(await evaluate("[...document.querySelector('#voiceMode').options].map(option=>option.value)"),['ptt','open']);
   assert.equal(await evaluate("document.querySelector('#voiceMicTest')!==null"),true,'Voice controls must include a real microphone test');
+  assert.equal(await evaluate("document.querySelector('#voiceGamepadBind')!==null&&document.querySelector('#voiceGamepadClear')!==null"),true,'Voice controls must allow a controller hold-to-mute binding');
+  const muteComposition=await evaluate(`(()=>{const original=voiceLink;let muted=false;voiceLink={getState:()=>({ready:true,muted}),setMuted(value){muted=value}};manualVoiceMuted=true;voiceGamepadMuted=false;applyVoiceMuteState();voiceGamepadMuted=true;applyVoiceMuteState();voiceGamepadMuted=false;applyVoiceMuteState();const staysMuted=muted;manualVoiceMuted=false;applyVoiceMuteState();voiceLink=original;return{staysMuted,cleared:muted}})()`);
+  assert.deepEqual(muteComposition,{staysMuted:true,cleared:false},'Controller release must not clear an independent manual mute');
   assert.equal(await evaluate("document.querySelector('#voiceProfile')!==null"),true,'Voice Link should expose selectable local audio profiles');
   await evaluate("document.querySelector('#voiceProfile').value='vhf';document.querySelector('#voiceProfile').onchange()");
   assert.equal(await evaluate("localStorage.getItem('sharedCockpitVoiceProfile')"),'vhf');
@@ -40,6 +43,7 @@ async function run() {
   assert.equal(await evaluate("localStorage.getItem('sharedCockpitVoiceMode')"),'open');
   await evaluate("document.querySelector('#voiceMode').value='ptt';document.querySelector('#voiceMode').onchange()");
   await evaluate("document.querySelector('#settingsToggle').click()");
+  assert.equal(await evaluate("document.querySelector('#settingsVoiceGamepadBind')!==null"),true,'Controller binding must also be available in voice settings');
   assert.equal(await evaluate("document.querySelector('#settingsOverlay').classList.contains('hidden')"),false);
   assert.equal(await evaluate("document.querySelectorAll('#notificationSettingList input').length"),11);
   await evaluate("(()=>{const input=document.querySelector('[data-notification=voiceDegraded]');input.checked=false;input.onchange()})()");
@@ -58,7 +62,7 @@ async function run() {
   assert.equal(flightRecord.airborneMs,681000);
   assert.equal(flightRecord.fuel.actual,null,'Actual fuel must remain unavailable without simulator fuel telemetry');
   assert.equal(JSON.stringify(flightRecord).includes('ABC2345'),false,'Exportable history must not include the private lobby code');
-  report('PASS: PTT/open-mic choice, local mic-test controls, approach unavailable states and notification settings render and persist.');
+  report('PASS: PTT/open-mic choice, joystick hold-to-mute and independent manual mute, mic-test controls, approach unavailable states and notification settings render and persist.');
   assert.deepEqual(await evaluate("[...document.querySelector('#aircraftSelect').options].map(o=>o.textContent)"),['No checklist profile','Airbus A319/A320/A321']);
   assert.deepEqual(await evaluate("[...document.querySelector('#aircraftProfileSelect').options].map(o=>o.value)"),['fenix-a320']);
   assert.deepEqual(await evaluate("[...document.querySelector('#efbProvider').options].map(o=>o.textContent)"),['Automatic','Fenix','PMDG','iniBuilds']);

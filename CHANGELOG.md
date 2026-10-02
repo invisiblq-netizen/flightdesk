@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0-alpha.9 — Alpha 0.5
+
+- Bind a joystick or game-controller button for hold-to-mute. The selected button is saved locally, captures only a fresh press after all controls are released, and releases the mute when the button is released or the controller disconnects.
+- Keep controller hold-to-mute independent from manual microphone mute, so releasing the controller cannot clear a latched mute. Add the binding and status to Crew Tools and Settings.
+
 ## 0.5.0-alpha.8 — Alpha 0.5
 
 - Accept a connected crew voice call even when WebRTC media signalling arrives before the separate lobby-channel voice-ready message.
