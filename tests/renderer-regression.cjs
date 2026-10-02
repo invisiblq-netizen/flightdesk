@@ -21,6 +21,11 @@ async function run() {
   await win.loadFile(path.join(__dirname,'../src/flightdesk.html'));
   const evaluate = source => win.webContents.executeJavaScript(source);
   await evaluate(`localStorage.clear();prepareSession('host','Test Pilot','ABC2345','PF');showDesk();data.plan={origin:{icao_code:'ENGM'},destination:{icao_code:'EGLL'},aircraft:{icaocode:'A21N'},general:{callsign:'TEST123',route_distance:'680'}};data.aircraft=aircraftType(data.plan);data.tasks=tasksFor(data.aircraft);applyState(data);`);
+  const pageContext=await evaluate("(()=>{renderGlobalPageContext();return {title:document.querySelector('#pageContextTitle').textContent,flight:document.querySelector('#pageFlightContext').textContent}})()");
+  assert.equal(pageContext.title,'Flight Board');
+  assert.match(pageContext.flight,/ENGM → EGLL/);
+  assert.match(pageContext.flight,/TEST123/);
+  assert.match(pageContext.flight,/A21N/);
   assert.deepEqual(await evaluate("[...document.querySelector('#voiceMode').options].map(option=>option.value)"),['ptt','open']);
   assert.equal(await evaluate("document.querySelector('#voiceMicTest')!==null"),true,'Voice controls must include a real microphone test');
   assert.equal(await evaluate("document.querySelector('#voiceKeybindsButton')!==null&&document.querySelector('#voiceGamepadBind')===null"),true,'Voice controls expose one clean route to configurable controller keybinds');
@@ -105,9 +110,8 @@ async function run() {
     assert.ok(layout.bodyWidth<=layout.width,JSON.stringify(layout));
     assert.ok(layout.bodyHeight<=layout.height,JSON.stringify(layout));
     assert.ok(layout.shellHeight>150,JSON.stringify(layout));
-    assert.equal(layout.background,'rgb(0, 0, 0)');
-    assert.match(layout.backgroundImage,/radial-gradient/);
-    assert.match(layout.backgroundImage,/linear-gradient/);
+    assert.equal(layout.background,'rgb(9, 12, 17)');
+    assert.equal(layout.backgroundImage,'none','The operations workspace uses a solid background without decorative imagery.');
     assert.equal(layout.waiting,'rgb(255, 207, 77)');
     assert.equal(layout.atc,'rgb(163, 255, 182)');
     const chrome=await evaluate(`(()=>{const nav=document.querySelector('.side-nav'),shell=document.querySelector('.page-shell'),board=document.querySelector('#page-overview .flight-board-layout > .card'),readiness=document.querySelector('#readiness'),tools=document.querySelector('#headerTools'),theme=document.querySelector('#themeToggle');return {navBottom:nav.getBoundingClientRect().bottom,shellBottom:shell.getBoundingClientRect().bottom,readinessBottom:readiness.getBoundingClientRect().bottom,boardWidth:board.getBoundingClientRect().width,readinessWidth:readiness.getBoundingClientRect().width,themeInHeader:theme.parentElement===tools,clocksInHeader:tools.contains(document.querySelector('#zuluClock')),progressBackground:getComputedStyle(document.querySelector('#routeProgress')).backgroundColor}})()`);
@@ -117,12 +121,12 @@ async function run() {
     assert.equal(chrome.clocksInHeader,true);
     assert.equal(chrome.progressBackground,'rgba(0, 0, 0, 0)');
     fs.writeFileSync(path.join(__dirname,`../work/ui-checks/overview-${width}.png`),(await win.webContents.capturePage()).toPNG());
-    report(`PASS: ${width}×${height} fills the window without page overflow; black background and status colors verified.`);
+    report(`PASS: ${width}×${height} fills the window without page overflow; dark surfaces and status colors verified.`);
     await evaluate("activatePage('efb');FlightDeskEfb.sync()");
     await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
     const efbLayout=await evaluate(`(()=>{const r=document.querySelector('#efbSurface').getBoundingClientRect(),p=document.querySelector('#page-efb').getBoundingClientRect();return {width:r.width,height:r.height,right:r.right,windowWidth:innerWidth,headerHeight:r.top-p.top}})()`);
     assert.ok(efbLayout.width>400&&efbLayout.height>=220&&efbLayout.right<=efbLayout.windowWidth,JSON.stringify(efbLayout));
-    assert.ok(efbLayout.headerHeight<=70,'EFB controls must leave the screen close to the top of the page: '+JSON.stringify(efbLayout));
+    assert.ok(efbLayout.headerHeight<=120,'The shared page header and EFB controls must leave the screen close to the top: '+JSON.stringify(efbLayout));
     fs.writeFileSync(path.join(__dirname,`../work/ui-checks/efb-${width}.png`),(await win.webContents.capturePage()).toPNG());
     await evaluate("document.querySelector('#efbExpand').click()");
     await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
@@ -146,10 +150,18 @@ async function run() {
     assert.equal(await evaluate("document.querySelector('[data-note-group=briefing]').classList.contains('active')"),true,'The sidebar Briefing button stays active across all five tabs');
     await evaluate("document.querySelector('#briefingNav [data-note-tab=notes]').click();syncSidebarHeight()");
     await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
-    const tools=await evaluate(`(()=>{const nav=document.querySelector('.side-nav').getBoundingClientRect();return [...document.querySelectorAll('#navTools .nav-item')].map(item=>{const r=item.getBoundingClientRect();return {page:item.dataset.page,top:r.top,bottom:r.bottom,navTop:nav.top,navBottom:nav.bottom,windowBottom:innerHeight}})})()`);
-    assert.deepEqual(tools.map(item=>item.page),['efb','charts','crew-tools','diagnostics','traffic','analysis'],'All tool pages are collected in the dedicated Tools section');
-    assert.equal(await evaluate("document.querySelector('#navTools #efbNav')!==null&&document.querySelector('#navScroll #flightDeskGroup')!==null&&document.querySelector('#navScroll #crewNotesGroup')!==null"),true,'Sidebar groups Flight Desk, Crew Notes and Tools clearly');
-    for(const tool of tools)assert.ok(tool.top>=tool.navTop&&tool.bottom<=tool.navBottom&&tool.bottom<=tool.windowBottom,'Tools must remain visible on a short notes page: '+JSON.stringify(tool));
+    const sidebar=await evaluate(`(()=>{const nav=document.querySelector('.side-nav'),scroll=document.querySelector('#navScroll');return {groups:[...scroll.querySelectorAll(':scope > .nav-group')].map(group=>({id:group.id,pages:[...group.querySelectorAll('.nav-item')].map(item=>item.dataset.page)})),navHeight:nav.clientHeight,scrollHeight:scroll.scrollHeight,clientHeight:scroll.clientHeight,items:[...scroll.querySelectorAll('.nav-item')].map(item=>item.dataset.page)}})()`);
+    assert.deepEqual(sidebar.groups.map(group=>group.id),['flightDeskGroup','trafficGroup','analysisGroup','toolsGroup','diagnosticsGroup'],'Sidebar uses the requested navigation sections in order');
+    assert.deepEqual(sidebar.groups.map(group=>group.pages),[['overview','flight-plan','route','checklist','notes'],['traffic'],['analysis'],['efb','charts','crew-tools'],['diagnostics']]);
+    assert.equal(sidebar.items.filter(page=>page==='notes').length,1,'Briefing subpages share one sidebar entry');
+    assert.ok(sidebar.navHeight>0&&sidebar.clientHeight>0&&sidebar.scrollHeight>=sidebar.clientHeight,'The full sidebar remains reachable in one scroll area');
+    if(width===920){
+      const allNavVisible=await evaluate(`(()=>{const nav=document.querySelector('.side-nav').getBoundingClientRect();return [...document.querySelectorAll('#navScroll .nav-item')].every(item=>{const r=item.getBoundingClientRect();return r.top>=nav.top&&r.bottom<=nav.bottom})})()`);
+      assert.equal(allNavVisible,true,'At 920×640 the compact sidebar keeps every tool and diagnostics button visible.');
+    }
+    await evaluate("activatePage('diagnostics');syncSidebarHeight()");
+    const selectedNav=await evaluate(`(()=>{const nav=document.querySelector('.side-nav').getBoundingClientRect(),item=document.querySelector('.side-nav .nav-item.active').getBoundingClientRect();return item.top>=nav.top&&item.bottom<=nav.bottom})()`);
+    assert.equal(selectedNav,true,'Navigation scrolls the selected section into view on a short page.');
     fs.writeFileSync(path.join(__dirname,`../work/ui-checks/notes-sidebar-${width}.png`),(await win.webContents.capturePage()).toPNG());
     await evaluate("activatePage('overview')");
   }
@@ -157,11 +169,10 @@ async function run() {
   win.setContentSize(1920,1080);
   await evaluate('new Promise(resolve=>setTimeout(resolve,100))');
   const lightBackground=await evaluate(`({color:getComputedStyle(document.body).backgroundColor,image:getComputedStyle(document.body).backgroundImage})`);
-  assert.equal(lightBackground.color,'rgb(255, 255, 255)');
-  assert.match(lightBackground.image,/radial-gradient/);
-  assert.match(lightBackground.image,/linear-gradient/);
+  assert.equal(lightBackground.color,'rgb(241, 244, 247)');
+  assert.equal(lightBackground.image,'none');
   fs.writeFileSync(path.join(__dirname,'../work/ui-checks/overview-light.png'),(await win.webContents.capturePage()).toPNG());
-  report('PASS: Light and dark themes use a subtle aviation-inspired background gradient and grid.');
+  report('PASS: Light and dark themes use restrained solid workspace surfaces and clear contrast.');
   await evaluate(`document.querySelector('#themeToggle').click()`);
   win.setContentSize(1280,720);
   await evaluate(`activatePage('checklist');renderTasks();document.querySelector('.page-shell').scrollTop=400;document.querySelector('#phaseNav').scrollLeft=300`);
@@ -189,6 +200,14 @@ async function run() {
   const diagnosticDots=await evaluate(`(()=>{const dot=document.querySelector('#connectionDiagnostics .dot');return {width:dot.getBoundingClientRect().width,height:dot.getBoundingClientRect().height,page:document.querySelector('#page-diagnostics').classList.contains('active')}})()`);
   assert.equal(diagnosticDots.page,true,'Diagnostics navigation must show the diagnostics page');
   assert.equal(diagnosticDots.width,7);assert.equal(diagnosticDots.height,7);
+  fs.writeFileSync(path.join(__dirname,'../work/ui-checks/diagnostics.png'),(await win.webContents.capturePage()).toPNG());
+  await evaluate("document.querySelector('#chartsNav').click()");
+  assert.equal(await evaluate("document.querySelector('#page-charts').classList.contains('active')"),true);
+  assert.match(await evaluate("document.querySelector('#page-charts').textContent"),/dedicated charts workspace is not enabled/i);
+  await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
+  fs.writeFileSync(path.join(__dirname,'../work/ui-checks/charts.png'),(await win.webContents.capturePage()).toPNG());
+  await evaluate("document.querySelector('#chartsOpenCrewTools').click()");
+  assert.equal(await evaluate("document.querySelector('#page-crew-tools').classList.contains('active')"),true,'Charts offers a working path to the existing ChartFox tools.');
   report('PASS: Crew Tools removes unused cards; the Diagnostics button opens its page with contained status dots.');
   await evaluate(`data.plan.files={directory:'https://www.simbrief.com/ofp/flightplans/',pdf:{link:'test.pdf'}};activatePage('flight-plan');showFlightPlan()`);
   assert.equal(await evaluate(`document.querySelector('#pdfStatus').textContent`),'');
@@ -218,6 +237,8 @@ async function run() {
   assert.match(await evaluate("document.querySelector('#routeStats').textContent"),/MID/);
   assert.match(await evaluate("document.querySelector('#routeStats').textContent"),/EAST/);
   assert.match(await evaluate("document.querySelector('#routeProcedureGrid').textContent"),/SID1/);
+  await evaluate('new Promise(resolve=>setTimeout(resolve,80))');
+  fs.writeFileSync(path.join(__dirname,'../work/ui-checks/route.png'),(await win.webContents.capturePage()).toPNG());
   await evaluate(`(()=>{data.ops.currentFlightPhase={id:'cruise',at:Date.now(),source:'Simulator telemetry'};renderSessionDashboard()})()`);
   assert.equal(await evaluate("document.querySelector('#nextActionTitle').textContent"),'Descent preparation');
   assert.match(await evaluate("document.querySelector('#focusDescription').textContent"),/MID/);
@@ -233,6 +254,8 @@ async function run() {
   assert.match(await evaluate("document.querySelector('#trafficList').textContent"),/SAS123/);
   await evaluate("document.querySelector('[data-traffic-call="+JSON.stringify('SAS123')+"]').click()");
   assert.match(await evaluate("document.querySelector('#trafficDetails').textContent"),/EKCH/);
+  await evaluate('new Promise(resolve=>setTimeout(resolve,80))');
+  fs.writeFileSync(path.join(__dirname,'../work/ui-checks/traffic.png'),(await win.webContents.capturePage()).toPNG());
   report('PASS: ATC frequencies, active COM1 and nearby VATSIM traffic render with aircraft details.');
   await evaluate(`(()=>{const now=Date.UTC(2026,9,1,10),records=historyRecords();for(const [id,offset,route] of [['flight-replay-a',0,'ENGM DCT EKCH'],['flight-replay-b',86400000,'EKCH DCT ENGM']])records.push({id,sessionId:id,crewKey:'["alex","cesar"]',callsign:'SAS540',flightNumber:'SAS540',departure:id.endsWith('a')?'ENGM':'EKCH',arrival:id.endsWith('a')?'EKCH':'ENGM',route,aircraft:'Fenix A320',date:new Date(now+offset).toISOString(),blockMs:7200000+offset,airborneMs:6600000+offset,taxiOutMs:300000,taxiInMs:300000,takeoffAt:now+offset,landingAt:now+offset+6600000,samples:[{at:now+offset,latitude:60,longitude:10,altitudeFeet:5000,groundSpeedKnots:220,phaseId:'climb'},{at:now+offset+15000,latitude:60.1,longitude:10.1,altitudeFeet:15000,groundSpeedKnots:270,phaseId:'cruise',fuelPounds:null},{at:now+offset+30000,latitude:60.2,longitude:10.2,altitudeFeet:14000,groundSpeedKnots:250,phaseId:'descent'}],events:[{id:id+'-takeoff',at:now+offset,type:'flight.takeoff',text:'Takeoff detected',by:'FSUIPC7',role:'',source:'Simulator telemetry'},{id:id+'-check',at:now+offset+15000,type:'checklist.item-completed',text:'After takeoff checklist complete',by:'Cesar',role:'PM',source:'Crew'}],crew:[{name:'Alex',role:'PF'},{name:'Cesar',role:'PM'}],checklist:{checksDone:12,checksTotal:18},fuel:{actual:null}});localStorage.setItem('sharedCockpitFlightHistoryV1',JSON.stringify(records));activatePage('analysis');renderFlightAnalysis()})()`);
   assert.equal(await evaluate("document.querySelector('#page-analysis').classList.contains('active')"),true);
@@ -245,10 +268,12 @@ async function run() {
   assert.equal(await evaluate("document.querySelector('#statisticsKind').value"),'airport','Flight reports should link directly to airport statistics');
   assert.equal(await evaluate("document.querySelector('#exportDiagnostics')!==null"),true);
   assert.match(await evaluate("document.querySelector('#onlineServiceStatus').textContent"),/LOCAL/);
+  await evaluate('new Promise(resolve=>setTimeout(resolve,80))');
+  fs.writeFileSync(path.join(__dirname,'../work/ui-checks/analysis.png'),(await win.webContents.capturePage()).toPNG());
   report('PASS: Historical replay, two-flight comparison, airport/aircraft/crew statistics and diagnostics/offline states render from local history.');
   await evaluate(`data.aircraft='B738';data.tasks=[];data.ops.currentFlightPhase=null;resetFlightProgress();const at=Date.now();for(let i=0;i<12;i++){const t=at-11000+i*1000;currentSimPosition={connected:true,onGround:true,latitude:60,longitude:10,groundSpeedKnots:0,altitudeFeet:100,verticalSpeedFeetPerMinute:0,updatedAt:t};updateAutomaticFlightPhases(currentSimPosition,t)}renderSessionDashboard()`);
   assert.equal(await evaluate("document.querySelector('#sessionPhase').textContent"),'On ground / Preflight');
-  report('PASS: Dashboard shows a stable ground phase without a checklist profile, and Tools stay visible on short pages at all four resolutions.');
+  report('PASS: Dashboard shows a stable ground phase without a checklist profile, and every navigation section remains reachable at all tested resolutions.');
   const splash=new BrowserWindow({show:false,width:1000,height:555,webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true}});
   await splash.loadFile(path.join(__dirname,'../src/splash.html'));
   const splashLayout=await splash.webContents.executeJavaScript(`new Promise(resolve=>{const image=new Image();image.onload=()=>resolve({width:image.naturalWidth,height:image.naturalHeight,background:getComputedStyle(document.querySelector('.splash')).backgroundImage,animation:getComputedStyle(document.querySelector('.spinner')).animationName,text:document.querySelector('[role=status]').textContent});image.onerror=()=>resolve({error:'Background image failed to load'});image.src='assets/loading-background.png'})`);

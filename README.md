@@ -4,7 +4,7 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.5** · Build `0.5.0-alpha.10` · Windows x64
+**Alpha 0.5** · Build `0.5.0-alpha.11` · Windows x64
 
 ## Features
 
@@ -13,6 +13,7 @@ A Windows companion app for shared cockpit flying: import a SimBrief flight plan
 - Check for new alpha releases automatically at startup and every six hours. Updates download in the background; Flight Desk asks before restarting, and installs a downloaded update when the app closes. **Check for updates** can also start a check manually. Updates come from this public repository’s GitHub Releases, with no account or token required on pilot PCs. Alpha.3 and older installers do not have the updater; install alpha.4 or newer once manually. Later versions can update in-app.
 
 - Host a lobby and invite other pilots with a seven-character code.
+- Use a compact, consistent flight-desk interface with a single-scroll sidebar grouped into Flight Desk, Traffic, Analysis, Tools and Diagnostics; briefing notes remain one entry with five internal tabs.
 - Synchronize notes, checklist progress and flight-plan data directly over WebRTC.
 - Choose Pilot Flying (PF) or Pilot Monitoring (PM), and switch roles during flight.
 - Import a SimBrief OFP and view its PDF inline, fitted to the page width, with zoom controls. Automatic import accepts a plan only when its scheduled or estimated departure is in the future; manual fetch remains available for older plans.
@@ -31,7 +32,7 @@ A Windows companion app for shared cockpit flying: import a SimBrief flight plan
 - Open **Settings** from the header for crew preferences, units, timeline time format, display density, voice controls, integration/connection diagnostics and event notification preferences. Simulator and P2P diagnostics show unavailable data explicitly.
 - Track crew handovers and record a shared flight timeline with checklist actions.
 - **Charts** is marked Work In Progress. ChartFox and Navigraph are not shown as active chart integrations.
-- The sidebar groups Flight Board, Flight Plan, Route and Checklist under **Flight Desk**, and the combined briefing and notes under **Crew Notes**. EFB, Charts, Crew Tools, Diagnostics, ATC & Traffic and Flight Analysis are organized under **Tools**, which stays available on short pages while Flight Desk and Crew Notes scroll independently.
+- The sidebar keeps the primary pages easy to scan: **Flight Desk**, **Traffic**, **Analysis**, **Tools** and **Diagnostics**. Briefing, EFB, ChartFox and existing integrations remain available in their current pages. In short desktop windows, the sidebar tightens its spacing so all tools remain visible when possible and otherwise scrolls the selected destination into view.
 - Use local crew preferences.
 - Check P2P, simulator-position, voice and service status under Diagnostics.
 - View airport names, METAR, TAF, nearby VATSIM controllers and frequencies when available.

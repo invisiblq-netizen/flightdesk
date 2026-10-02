@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0-alpha.11 — Alpha 0.5
+
+- Polish the existing desktop interface with consistent dark-first cards, controls, tabs, spacing, focus states and page context while preserving the current integrations and operational systems.
+- Replace the cramped sidebar layout with Flight Desk, Traffic, Analysis, Tools and Diagnostics sections. Keep Briefing as one entry with its five existing tabs, and make every navigation destination reachable in short windows.
+- Add shared flight context and live simulator, crew, voice and VATSIM status to page headers. Use explicit unavailable states for the dedicated Charts workspace and link to the existing ChartFox tools.
+- Preserve configurable joystick/game-controller hold-to-mute, toggle-mute and push-to-talk bindings from alpha.10.
+
 ## 0.5.0-alpha.10 — Alpha 0.5
 
 - Replace the single controller mute shortcut with multiple saved gamepad bindings for hold-to-mute, toggle mute and push-to-talk. Each action is tracked independently, manual mute remains independent, and disconnects release held actions.
