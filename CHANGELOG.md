@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0-alpha.12 — Alpha 0.5
+
+- Reorganize Route Viewer into a map-first 70/30 layout with a dedicated navigation panel for live route metrics, waypoints and procedures.
+- Add working route-map zoom, live-aircraft centering and planned-route visibility controls, with unavailable simulator position handled explicitly.
+- Add compact Crew Tools navigation across the existing voice, history, timeline, VATSIM match, handover and preference panels without replacing their state or handlers.
+- Give Flight Analysis empty results the same clear, restrained state treatment and add shared semantic design-token aliases and tooltips for labeled controls.
+- Align form surfaces, field labels, card headings, table headers and focus states across the existing pages; cap transient crew notices so bursts leave the active controls reachable.
+- Expand renderer checks to every main page at 1440×900, 1920×1080 and 2560×1440, alongside the existing smaller and 4K window coverage.
+
 ## 0.5.0-alpha.11 — Alpha 0.5
 
 - Polish the existing desktop interface with consistent dark-first cards, controls, tabs, spacing, focus states and page context while preserving the current integrations and operational systems.

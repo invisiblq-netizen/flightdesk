@@ -24,6 +24,19 @@
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
+  --bg-main: var(--bg);
+  --bg-panel: var(--panel);
+  --bg-panel-elevated: var(--panel2);
+  --border-subtle: var(--line);
+  --text-primary: var(--ink);
+  --text-secondary: var(--secondary);
+  --text-muted: var(--muted);
+  --accent: var(--mint);
+  --warning: var(--amber);
+  --danger: var(--red);
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
 }
 
 :root[data-theme="light"] {
@@ -245,6 +258,44 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 .route-map-legend { color: var(--muted); }
 .route-stats, .route-procedure-grid { gap: 8px; }
 .route-waypoint-list { max-height: 190px; overflow: auto; }
+.route-viewer-card { display: grid; grid-template-columns: minmax(0,2.75fr) minmax(300px,1fr); grid-template-rows: auto minmax(420px,min(68vh,720px)); align-items: stretch; gap: 12px; }
+.route-viewer-card > .card-head { grid-column: 1 / -1; min-width: 0; margin: 0; }
+.route-map-column { display: grid; grid-template-rows: auto minmax(0,1fr) auto; gap: 8px; grid-column: 1; min-width: 0; min-height: 0; }
+.route-map-toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-height: 34px; }
+.route-map-toolbar button { min-height: 30px; padding: 4px 9px; font-size: 11px; }
+.route-map-toolbar .route-map-icon-button { width: 32px; min-width: 32px; padding: 3px; font-size: 16px; }
+.route-map-wrap { min-height: 0; height: auto; }
+.route-map { display: block; width: 100%; height: 100%; }
+.route-navigation-panel { display: flex; flex-direction: column; align-items: stretch; gap: 12px; grid-column: 2; grid-row: 2; min-width: 0; min-height: 0; max-height: min(68vh,720px); overflow: auto; scrollbar-gutter: stable; }
+.route-navigation-panel .route-stats { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
+.route-navigation-panel .route-stat { min-width: 0; padding: 8px; }
+.route-navigation-panel .route-stat small { font-size: 9px; }
+.route-navigation-panel .route-stat b { font-size: 11px; }
+.route-navigation-panel .route-stat.route-progress-stat { grid-column: 1 / -1; }
+.route-side-section { min-width: 0; margin: 0; }
+.route-side-heading { margin: 0 0 7px; color: var(--secondary); font-size: 12px; font-weight: 650; }
+.route-navigation-panel .route-waypoint-list { max-height: 136px; grid-template-columns: repeat(2,minmax(0,1fr)); }
+.route-navigation-panel .route-procedure-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
+.route-navigation-panel .route-meta-item { padding: 7px; }
+.route-navigation-panel .route-meta-item small { font-size: 8px; }
+.route-navigation-panel .route-meta-item b { margin-top: 3px; font-size: 10px; }
+.route-navigation-panel .route-empty { min-height: 80px; padding: 10px; font-size: 11px; }
+.route-map-legend { display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; min-width: 0; font-size: 10px; }
+.route-map-legend > span:last-child { margin-left: auto; }
+.route-empty, .analysis-empty-state { min-height: 120px; padding: 18px; border: 1px dashed var(--line); border-radius: 8px; background: var(--panel); color: var(--muted); text-align: center; }
+.analysis-empty-state { display: block; }
+#replayStatus { min-height: 20px; }
+#compareResult, #statisticsResult { min-width: 0; }
+#compareResult { overflow-x: auto; }
+.analysis-table { min-width: 620px; }
+.analysis-metric { min-width: 0; }
+.analysis-metric b { overflow-wrap: anywhere; }
+.crew-tools-nav { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin: 0 0 12px; padding: 7px 0; border-bottom: 1px solid var(--line); background: var(--bg); }
+.crew-tools-nav .tab { min-height: 30px; padding: 4px 9px; font-size: 11px; }
+.crew-tools-nav .tab[aria-current="location"] { border-color: var(--line); background: var(--accent-soft); color: var(--mint); }
+#page-crew-tools [data-crew-panel] { scroll-margin-top: 58px; }
+.crew-tools-nav + .card { margin-top: 0; }
+.crew-tools-nav + .single-article { margin-top: 0; }
 .integration-state { padding: 20px; }
 .integration-state > p { max-width: 760px; color: var(--secondary); }
 
@@ -279,6 +330,13 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
   #page-flight-plan > .single-article, #page-flight-plan .pdf-card { grid-column: 1; grid-row: auto; }
   #page-flight-plan .pdf-card { min-height: 360px; }
 }
+@media (min-width: 761px) and (max-width: 1050px) {
+  .route-viewer-card { grid-template-columns: minmax(0,1fr); grid-template-rows: auto auto auto; }
+  .route-viewer-card > .card-head, .route-map-column, .route-navigation-panel { grid-column: 1; }
+  .route-map-column { grid-template-rows: auto minmax(360px,58vh) auto; }
+  .route-navigation-panel { grid-row: auto; max-height: none; overflow: visible; }
+  .route-navigation-panel .route-waypoint-list { max-height: 180px; }
+}
 @media (min-width: 761px) and (max-height: 760px) {
   .wrap { padding-top: 8px; padding-bottom: 8px; gap: 8px; }
   .top { gap: 3px 12px; padding-bottom: 6px; }
@@ -307,7 +365,97 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
   #page-flight-plan > .single-article, #page-flight-plan .pdf-card { grid-column: 1; grid-row: auto; }
   #page-flight-plan .pdf-card { min-height: 320px; }
   .scan-role-grid, .role-flows { grid-template-columns: minmax(0,1fr); }
+  .route-viewer-card { grid-template-columns: minmax(0,1fr); grid-template-rows: auto auto auto; }
+  .route-viewer-card > .card-head, .route-map-column, .route-navigation-panel { grid-column: 1; }
+  .route-map-column { grid-template-rows: auto minmax(300px,56vh) auto; }
+  .route-navigation-panel { grid-row: auto; max-height: none; overflow: visible; }
+  .route-navigation-panel .route-waypoint-list { max-height: 180px; }
+  .crew-tools-nav { position: static; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
+/* Cross-page consistency pass: keep the existing controls and features, while
+   giving forms, labels, panels and data tables the same visual rhythm. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+select, textarea {
+  background-color: var(--panel2);
+  border-color: var(--line);
+  color: var(--ink);
+  transition: border-color .14s ease, background-color .14s ease, box-shadow .14s ease;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):hover,
+select:hover, textarea:hover { border-color: color-mix(in srgb, var(--mint) 48%, var(--line)); }
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus-visible,
+select:focus-visible, textarea:focus-visible { background-color: var(--panel); }
+textarea.notes { background-color: var(--panel2); }
+.field, .simform input, .select, .notes, .signal-box { background-color: var(--panel2); border-color: var(--line); }
+:root[data-theme="dark"] .field, :root[data-theme="dark"] .simform input,
+:root[data-theme="dark"] .select, :root[data-theme="dark"] .notes,
+:root[data-theme="dark"] .signal-box { background-color: var(--panel2); border-color: var(--line); }
+
+.card-head { min-width: 0; align-items: center; }
+.card-head > div, .card-head > label { min-width: 0; }
+.card-head h2, .card-head h3 { margin-top: 0; margin-bottom: 0; }
+.card-head .muted { line-height: 1.4; }
+.page-context-title p:empty { display: none; }
+.page-flight-context span, .session-dashboard-grid strong { overflow-wrap: anywhere; }
+.page-link-status .status-chip { max-width: 100%; }
+.page-link-status .status-chip b { color: var(--muted); font-weight: 700; }
+
+.briefing-fields, .voice-device-grid, .voice-profile-grid, .analysis-controls,
+.settings-section, .tool-actions { min-width: 0; }
+.briefing-fields label, .voice-device-grid label, .voice-controls label,
+.voice-profile-grid label, .analysis-controls label, .settings-section label,
+.tool-actions label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1.35;
+}
+.briefing-fields input, .briefing-fields select, .briefing-fields textarea,
+.voice-device-grid input:not([type="range"]), .voice-device-grid select,
+.voice-controls select, .voice-profile-grid select, .analysis-controls select,
+.settings-section input:not([type="range"]), .settings-section select,
+.tool-actions input, .tool-actions select { width: 100%; min-width: 0; }
+.briefing-fields textarea, .notes { resize: vertical; }
+
+.tabs, #briefingNav, .analysis-tabs, .crew-tools-nav { scrollbar-width: thin; }
+.tab, #briefingNav .nav-item, [data-analysis-tab], .crew-tools-nav .tab {
+  flex: 0 0 auto;
+  transition: color .14s ease, background-color .14s ease, border-color .14s ease;
+}
+.tab:focus-visible, #briefingNav .nav-item:focus-visible,
+[data-analysis-tab]:focus-visible, .crew-tools-nav .tab:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: 2px;
+}
+
+.analysis-table th { position: sticky; top: 0; z-index: 1; background: var(--panel); }
+.analysis-table tbody tr:hover { background: var(--accent-soft); }
+.analysis-event-list, .route-waypoint-list, .route-navigation-panel { scrollbar-color: var(--line) var(--panel); }
+.route-procedure-grid > *, .route-waypoint-list > *, .analysis-metric,
+.plan-data-item, .session-status, .flight-timer-grid > div,
+.personal-flight-stats > div, .report-stats > div { min-width: 0; }
+
+.settings-overlay { padding: clamp(12px, 3vw, 24px); }
+.settings-dialog { width: min(720px, 100%); padding: clamp(14px, 2vw, 20px); }
+.settings-dialog .card-head { top: calc(-1 * clamp(14px, 2vw, 20px)); }
+.settings-section h3 { margin: 0 0 10px; letter-spacing: .09em; }
+.settings-section > * + * { margin-top: 8px; }
+
+.crew-notifications { right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); gap: 6px; width: min(340px, calc(100vw - 28px)); }
+.crew-notification { padding: 9px 11px; box-shadow: var(--shadow-2); }
+.crew-notification b { line-height: 1.35; }
+.crew-notification small { line-height: 1.3; }
+
+@media (max-width: 1100px) {
+  .briefing-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .page-context { grid-template-columns: minmax(0, 1fr) auto; }
+}
+@media (max-width: 760px) {
+  .briefing-fields, .voice-device-grid, .voice-profile-grid, .analysis-controls { grid-template-columns: minmax(0, 1fr); }
+  .card { padding: 13px; }
+  .crew-notifications { right: 10px; bottom: 10px; width: min(320px, calc(100vw - 20px)); }
 }

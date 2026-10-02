@@ -4,7 +4,7 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.5** · Build `0.5.0-alpha.11` · Windows x64
+**Alpha 0.5** · Build `0.5.0-alpha.12` · Windows x64
 
 ## Features
 
@@ -13,14 +13,15 @@ A Windows companion app for shared cockpit flying: import a SimBrief flight plan
 - Check for new alpha releases automatically at startup and every six hours. Updates download in the background; Flight Desk asks before restarting, and installs a downloaded update when the app closes. **Check for updates** can also start a check manually. Updates come from this public repository’s GitHub Releases, with no account or token required on pilot PCs. Alpha.3 and older installers do not have the updater; install alpha.4 or newer once manually. Later versions can update in-app.
 
 - Host a lobby and invite other pilots with a seven-character code.
-- Use a compact, consistent flight-desk interface with a single-scroll sidebar grouped into Flight Desk, Traffic, Analysis, Tools and Diagnostics; briefing notes remain one entry with five internal tabs.
+- Use a compact, consistent flight-desk interface with shared form, card, table and focus styling; a single-scroll sidebar grouped into Flight Desk, Traffic, Analysis, Tools and Diagnostics; and briefings kept under one entry with five internal tabs. Crew notices remain transient and are capped during event bursts.
 - Synchronize notes, checklist progress and flight-plan data directly over WebRTC.
 - Choose Pilot Flying (PF) or Pilot Monitoring (PM), and switch roles during flight.
 - Import a SimBrief OFP and view its PDF inline, fitted to the page width, with zoom controls. Automatic import accepts a plan only when its scheduled or estimated departure is in the future; manual fetch remains available for older plans.
 - Use the Fenix A320 profile with 18 phases, concrete role-based cockpit prompts, separate FLOW and CHECKLIST groups, and side-by-side PF/PM progress. The Airbus A319/A320/A321 selection offers only the Fenix profile; other aircraft have no checklist profile.
 - Review the live crew/session dashboard, checklist readiness and telemetry-based phase suggestions. Fenix **AUTO** items check themselves from stable cockpit readings in the current unlocked phase and assigned PF/PM role; the beacon check can also use FSUIPC7 lighting telemetry. External power requires ON, not AVAIL. Missing data leaves items manual; briefings, reviews and condition-dependent decisions remain manual. Both pilots should use the same build; cockpit telemetry and completed items synchronize across the lobby. After 10 seconds of stable ground data the dashboard shows **On ground / Preflight**, then detects pushback or taxi movement. Flight phases display even without a checklist profile, and polling continues while the app is minimized. Automatic flight tracking requires a stable ground baseline followed by a sustained takeoff; connecting in midair does not create a flight or landing history. Disconnections and position jumps require a new ground baseline.
 - See a compact live Flight Overview with crew roles, simulator/P2P status, current phase, checklist progress, last event and block, taxi, airborne and taxi-in timers. Crew, checklist, simulator, connection and flight-phase events feed one ordered timeline.
-- Open a dedicated **Route Viewer** with an OpenStreetMap background, SimBrief navlog waypoints, aircraft position, current/next waypoint, route progress, altitude, ground speed, arrival estimate and available SID/STAR/approach details. Waypoint geometry requires coordinates in the imported navlog; unavailable simulator or route data is shown explicitly.
+- Open a dedicated **Route Viewer** with a map-first layout, working zoom, live-aircraft centering and route visibility controls beside a navigation panel for waypoints, progress and procedures. It uses the OpenStreetMap background and SimBrief navlog; unavailable simulator or route data is shown explicitly.
+- Use the compact **Crew Tools** navigation to jump between the existing Voice Link, Flight History, Timeline, VATSIM Match, Crew Handovers and Preferences panels.
 - See each pilot’s PF/PM role, shared flight phase, current checklist flow and current Flight Desk activity. **What’s Next?** and **Flight Desk Focus** surface a phase-aware action, while **Flight Readiness** links real missing items to the relevant page.
 - Review completed flights in local Flight History, search reports, inspect flight statistics and export report data as JSON or CSV; use the print dialog to save a polished A4 PDF. Matching crew names sync their shared history directly over the P2P lobby across flights. Each PC keeps its own local archive; a different crew combination does not receive those earlier reports. No cloud-storage login or paid Flight Desk storage service is needed.
 - Fill in synchronized **Departure Briefing** and **Arrival Briefing** forms for airport conditions, clearances, SID/STAR, runway, approach, minima, performance, threats and missed approach. Keep freeform shared **Cockpit Notes**, Enroute notes and Debrief on their own pages. These are crew planning aids; verify operational details against current charts, ATIS, aircraft documentation and simulator SOP.
@@ -81,7 +82,7 @@ The repository uses `pnpm-lock.yaml`. Do not replace it with an npm-generated lo
 
 ### Reuse the prebuilt helper
 
-To skip compiling the helper, download the matching `FlightPositionBridge-0.5.0-alpha.5-win-x64.zip` Release asset and extract it into the project root. The archive creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
+To skip compiling the helper, download the matching `FlightPositionBridge-0.5.0-alpha.12-win-x64.zip` Release asset and extract it into the project root. The archive creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
 
 The helper EXE is larger than GitHub's normal Git file limit. Its source belongs in this repo; the prebuilt archive belongs in Releases. The `publish` folder is ignored by Git.
 
@@ -91,7 +92,7 @@ The helper EXE is larger than GitHub's normal Git file limit. Its source belongs
 pnpm dist
 ```
 
-Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.10.exe`, its `.blockmap`, and the `dist/alpha.yml` update manifest. The GitHub prerelease also includes the unchanged simulator-helper ZIP and a SHA256SUMS file for the release assets.
+Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.12.exe`, its `.blockmap`, and the `dist/alpha.yml` update manifest. The GitHub prerelease also includes the unchanged simulator-helper ZIP and a `SHA256SUMS.txt` file for the release assets.
 
 `pnpm dist` expects the helper to exist. It creates the installer and update metadata but does not publish a release. Attach the installer, `alpha.yml`, and matching `.blockmap` to the same published GitHub prerelease. This project currently packages Windows only.
 
@@ -104,7 +105,7 @@ pnpm test
 pnpm test:ui
 ```
 
-The regression checks cover route projection, sample replay and statistics, VATSIM controllers/traffic, diagnostics ZIP redaction, lobby recovery invariants, voice setup, flight state, simulator telemetry and automatic checklist behavior. The Electron UI checks exercise route/readiness, crew activity, ATC/traffic, historical analysis, offline status and 4K through 920×640 layouts. Connections and simulator data are simulated; these checks do not verify a live session across two internet connections or record a live microphone session.
+The regression checks cover route projection, sample replay and statistics, VATSIM controllers/traffic, diagnostics ZIP redaction, lobby recovery invariants, voice setup, flight state, simulator telemetry and automatic checklist behavior. The Electron UI checks exercise route controls, Crew Tools navigation, route/readiness, crew activity, ATC/traffic, historical analysis, offline status and every main page at 1440×900, 1920×1080 and 2560×1440, with additional 4K through 920×640 coverage. Connections and simulator data are simulated; these checks do not verify a live session across two internet connections or record a live microphone session.
 
 ## Project layout
 
