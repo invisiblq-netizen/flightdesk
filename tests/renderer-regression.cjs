@@ -26,6 +26,10 @@ async function run() {
   assert.match(pageContext.flight,/ENGM → EGLL/);
   assert.match(pageContext.flight,/TEST123/);
   assert.match(pageContext.flight,/A21N/);
+  assert.equal(await evaluate("document.querySelector('#pageFlightContext').parentElement.classList.contains('top')"),true,'Flight context belongs in the global header');
+  assert.equal(await evaluate("document.querySelectorAll('#pageLinkStatus .status-chip').length"),4,'The system strip keeps the four compact SIM, CREW, VOICE and VATSIM statuses');
+  await evaluate('new Promise(resolve=>setTimeout(resolve,20))');
+  assert.equal(await evaluate("document.querySelector('#settingsAboutVersion').textContent"),'test','Settings shows the actual installed build version');
   assert.deepEqual(await evaluate("[...document.querySelector('#voiceMode').options].map(option=>option.value)"),['ptt','open']);
   assert.equal(await evaluate("document.querySelector('#voiceMicTest')!==null"),true,'Voice controls must include a real microphone test');
   assert.equal(await evaluate("document.querySelector('#voiceKeybindsButton')!==null&&document.querySelector('#voiceGamepadBind')===null"),true,'Voice controls expose one clean route to configurable controller keybinds');
@@ -90,6 +94,20 @@ async function run() {
   await evaluate("activatePage('overview');FlightDeskEfb.sync()");
   await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
   assert.equal(await evaluate('window.lastEfbOptions.visible'),false);
+  await evaluate(`(()=>{window._testEfbUpdate=window.cockpitDesktop.updateEfb;window.cockpitDesktop.updateEfb=async options=>{window.lastEfbOptions=options;return{provider:'pmdg',aircraft:'PMDG 737',status:'EFB connection unavailable. Try Reload.'}};FlightDeskEfb.sync()})()`);
+  await evaluate('new Promise(resolve=>setTimeout(resolve,60))');
+  assert.equal(await evaluate("document.querySelector('#efbEmptyState').hidden"),false,'An unavailable aircraft EFB receives an intentional empty state');
+  assert.equal(await evaluate("document.querySelector('#efbEmptyTitle').textContent"),'Aircraft EFB unavailable');
+  assert.equal(await evaluate("document.querySelector('#efbEmptyState').dataset.state"),'error');
+  await evaluate("document.querySelector('#efbRetry').click()");
+  await evaluate('new Promise(resolve=>setTimeout(resolve,60))');
+  assert.equal(await evaluate('window.lastEfbOptions.reload'),true,'The EFB retry button uses the existing reload integration');
+  await evaluate("activatePage('efb')");
+  await evaluate('new Promise(resolve=>setTimeout(resolve,60))');
+  fs.writeFileSync(path.join(__dirname,'../work/ui-checks/efb-unavailable.png'),(await win.webContents.capturePage()).toPNG());
+  await evaluate("activatePage('overview')");
+  await evaluate('window.cockpitDesktop.updateEfb=window._testEfbUpdate;FlightDeskEfb.sync()');
+  await evaluate('new Promise(resolve=>setTimeout(resolve,60))');
   await evaluate("data.aircraft='B738';applyState(data)");
   assert.equal(await evaluate("data.tasks.length"),0);
   assert.equal(await evaluate("document.querySelector('#phaseCaption').textContent"),'');
@@ -104,6 +122,17 @@ async function run() {
   report('PASS: Real renderer auto-checks external power ON and displays Fenix connection and completion attribution.');
   assert.equal(await evaluate(`document.querySelector('#aircraftPhotoPanel')===null`),true,'Aircraft photos must be removed from the Flight Board');
   await evaluate('Promise.all([...airportRequests.values()])');
+  const routeHero=await evaluate(`(()=>{const hero=document.querySelector('#page-overview .route'),columns=[...hero.children],rects=columns.map(item=>item.getBoundingClientRect()),bounds=hero.getBoundingClientRect(),departure=columns[0],arrival=columns[2],center=rects[1];return{count:columns.length,roles:columns.map(item=>item.dataset.routeColumn),centers:rects.map(rect=>rect.left+rect.width/2),heroCenter:bounds.left+bounds.width/2,badgeColumn:document.querySelector('#aircraftBadge').parentElement.dataset.routeColumn,alignments:[...departure.children,...arrival.children].map(item=>getComputedStyle(item).textAlign),centerText:[document.querySelector('#routeProgress'),document.querySelector('#routeContextStatus')].filter(item=>item&&!item.hidden).map(item=>getComputedStyle(item).textAlign),taf:[document.querySelector('#origTaf').textContent,document.querySelector('#destTaf').textContent],atis:[document.querySelector('#origAtis summary').textContent,document.querySelector('#destAtis summary').textContent],center:{top:center.top,bottom:center.bottom},metar:[document.querySelector('#origMetar').getBoundingClientRect(),document.querySelector('#destMetar').getBoundingClientRect()].map(rect=>({top:rect.top,bottom:rect.bottom}))}})()`);
+  assert.equal(routeHero.count,3,'The Flight Board route stays in three distinct structural columns');
+  assert.deepEqual(routeHero.roles,['departure','progress','arrival']);
+  assert.equal(routeHero.badgeColumn,'departure');
+  assert.ok(routeHero.centers[0]<routeHero.centers[1]&&routeHero.centers[1]<routeHero.centers[2]);
+  assert.ok(Math.abs(routeHero.centers[1]-routeHero.heroCenter)<1,'Flight progress is centered in the route hero');
+  assert.ok(routeHero.alignments.every(value=>value==='center'),'Every departure and arrival item is centered');
+  assert.ok(routeHero.centerText.every(value=>value==='center'),'Flight progress and its contextual status are centered');
+  assert.ok(routeHero.center.top<routeHero.metar[0].bottom&&routeHero.center.bottom>routeHero.metar[0].top&&routeHero.center.top<routeHero.metar[1].bottom&&routeHero.center.bottom>routeHero.metar[1].top,'The progress column remains in the same content row as both METAR areas: '+JSON.stringify(routeHero));
+  assert.deepEqual(routeHero.taf,['No current TAF available','No current TAF available']);
+  assert.match(routeHero.atis[0],/ATIS · (Checking VATSIM|Unavailable)/);assert.match(routeHero.atis[1],/ATIS · (Checking VATSIM|Unavailable)/);
   fs.mkdirSync(path.join(__dirname,'../work/ui-checks'),{recursive:true});
   for(const [width,height] of [[3840,2160],[2560,1440],[1920,1080],[1440,900],[1280,720],[920,640]]) {
     win.setContentSize(width,height);
@@ -158,8 +187,8 @@ async function run() {
     await evaluate("document.querySelector('#briefingNav [data-note-tab=notes]').click();syncSidebarHeight()");
     await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
     const sidebar=await evaluate(`(()=>{const nav=document.querySelector('.side-nav'),scroll=document.querySelector('#navScroll');return {groups:[...scroll.querySelectorAll(':scope > .nav-group')].map(group=>({id:group.id,pages:[...group.querySelectorAll('.nav-item')].map(item=>item.dataset.page)})),navHeight:nav.clientHeight,scrollHeight:scroll.scrollHeight,clientHeight:scroll.clientHeight,items:[...scroll.querySelectorAll('.nav-item')].map(item=>item.dataset.page)}})()`);
-    assert.deepEqual(sidebar.groups.map(group=>group.id),['flightDeskGroup','crewNotesGroup','toolsGroup'],'Sidebar keeps a short, clearly grouped navigation');
-    assert.deepEqual(sidebar.groups.map(group=>group.pages),[['overview','flight-plan','route','checklist'],['notes'],['efb','traffic','analysis','charts','crew-tools','diagnostics']]);
+    assert.deepEqual(sidebar.groups.map(group=>group.id),['flightDeskGroup','crewGroup','trafficGroup','analysisGroup','toolsGroup','systemGroup'],'Sidebar follows the requested semantic work areas');
+    assert.deepEqual(sidebar.groups.map(group=>group.pages),[['overview','flight-plan','route','checklist'],['notes'],['traffic'],['analysis'],['efb','charts','crew-tools'],['diagnostics']]);
     assert.equal(sidebar.items.filter(page=>page==='notes').length,1,'Briefing subpages share one sidebar entry');
     assert.ok(sidebar.navHeight>0&&sidebar.clientHeight>0&&sidebar.scrollHeight>=sidebar.clientHeight,'The full sidebar remains reachable in one scroll area');
     if(width===920){
@@ -200,6 +229,16 @@ async function run() {
   fs.writeFileSync(path.join(__dirname,'../work/ui-checks/checklist.png'),(await win.webContents.capturePage()).toPNG());
   report('PASS: Checkbox and state updates preserve scroll and keyboard focus; completion unlocks the next phase without jumping.');
   await evaluate(`activatePage('crew-tools');currentSimPosition={connected:true}`);
+  const activityStream=await evaluate(`(()=>{const previous=data.ops.events,at=Date.now()-3000;data.ops.events=[{id:'stream-one',at,text:'First event',by:'PF',role:'PF',type:'crew.joined'},{id:'stream-two',at:at+1000,text:'Second event',by:'Simulator',role:'',type:'flight.phase-changed'},{id:'stream-three',at:at+2000,text:'Third event',by:'PM',role:'PM',type:'checklist.flow-completed'}];renderSessionDashboard();renderCrewTools();const overview=[...document.querySelectorAll('#sessionTimeline > .timeline-event > span')].map(item=>item.textContent),timeline=[...document.querySelectorAll('#timelineList > .timeline-event > span')].map(item=>item.textContent),layout=getComputedStyle(document.querySelector('#timelineList .timeline-event')).display;data.ops.events=previous;renderSessionDashboard();renderCrewTools();return{overview,timeline,layout,role:document.querySelector('#timelineList').getAttribute('role')}})()`);
+  assert.deepEqual(activityStream.overview,['First event','Second event','Third event'],'Flight Board activity reads oldest to newest');
+  assert.deepEqual(activityStream.timeline,['First event','Second event','Third event'],'Crew Tools Flight Timeline shares the same chronological order');
+  assert.equal(activityStream.layout,'grid');assert.equal(activityStream.role,'list');
+  const voiceGroups=await evaluate(`(()=>{const groups=[...document.querySelectorAll('#voiceLinkCard [data-voice-group]')];return{titles:groups.map(group=>group.querySelector('h3').textContent),controls:Object.fromEntries(groups.map(group=>[group.dataset.voiceGroup,[...group.querySelectorAll('button,select,input,[role=status]')].map(control=>control.id)]))}})()`);
+  assert.deepEqual(voiceGroups.titles,['CONNECTION','AUDIO','TRANSMIT','VOICE PROFILE']);
+  assert.ok(voiceGroups.controls.connection.includes('voiceEnable')&&voiceGroups.controls.connection.includes('voiceStatus'));
+  assert.ok(['voiceInput','voiceOutput','voiceVolume','voiceMicTest'].every(id=>voiceGroups.controls.audio.includes(id)));
+  assert.ok(['voiceMode','voiceKeybindsButton','voiceMute','voicePtt'].every(id=>voiceGroups.controls.transmit.includes(id)));
+  assert.ok(['voiceProfile','voiceProfileStrength','voiceConnectionInfluence'].every(id=>voiceGroups.controls.profile.includes(id)));
   const crewSections=await evaluate(`[...document.querySelectorAll('#crewToolsNavTabs [data-crew-target]')].map(button=>button.textContent)`);
   assert.deepEqual(crewSections,['Voice Link','Flight History','Flight Timeline','VATSIM Match','Crew Handovers','Preferences']);
   const crewPanels=await evaluate(`(()=>{const buttons=[...document.querySelectorAll('#crewToolsNavTabs [role=tab]')];for(const button of buttons){button.click();if(button.getAttribute('aria-selected')!=='true')throw Error('Crew tab was not selected: '+button.textContent);const panel=document.getElementById(button.getAttribute('aria-controls'));if(!panel||panel.hidden)throw Error('Crew panel did not open: '+button.textContent);if(document.querySelectorAll('#page-crew-tools [role=tabpanel]:not([hidden])').length!==1)throw Error('Crew Tools must show one panel at a time')}return{count:buttons.length,selected:document.querySelectorAll('#crewToolsNavTabs [aria-selected=true]').length,hidden:document.querySelectorAll('#page-crew-tools [role=tabpanel][hidden]').length}})()`);
@@ -215,11 +254,14 @@ async function run() {
   assert.equal(diagnosticDots.page,true,'Diagnostics navigation must show the diagnostics page');
   assert.equal(diagnosticDots.width,7);assert.equal(diagnosticDots.height,7);
   assert.equal(await evaluate("document.querySelectorAll('#connectionDiagnostics .diagnostic-health').length"),3,'Diagnostics shows the simulator, P2P and voice health summary');
+  assert.equal(await evaluate("document.querySelector('#page-diagnostics .diagnostics-card .card-head h2').textContent"),'System health');
   assert.equal(await evaluate("document.querySelector('#connectionDiagnostics .diagnostic-details summary')?.textContent"),'Network route details');
   fs.writeFileSync(path.join(__dirname,'../work/ui-checks/diagnostics.png'),(await win.webContents.capturePage()).toPNG());
   await evaluate("document.querySelector('#chartsNav').click()");
   assert.equal(await evaluate("document.querySelector('#page-charts').classList.contains('active')"),true);
-  assert.match(await evaluate("document.querySelector('#page-charts').textContent"),/dedicated charts workspace is not enabled/i);
+  assert.match(await evaluate("document.querySelector('#page-charts').textContent"),/dedicated charts workspace is not available/i);
+  assert.equal(await evaluate("document.querySelector('#page-charts .charts-empty-state h2').textContent"),'Charts unavailable');
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('#page-charts .charts-empty-state')).textAlign"),'center');
   await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
   fs.writeFileSync(path.join(__dirname,'../work/ui-checks/charts.png'),(await win.webContents.capturePage()).toPNG());
   await evaluate("document.querySelector('#chartsOpenCrewTools').click()");
@@ -253,6 +295,9 @@ async function run() {
   assert.match(await evaluate("document.querySelector('#routeStats').textContent"),/MID/);
   assert.match(await evaluate("document.querySelector('#routeStats').textContent"),/EAST/);
   assert.match(await evaluate("document.querySelector('#routeProcedureGrid').textContent"),/SID1/);
+  const routeHierarchy=await evaluate(`(()=>{const stats=[...document.querySelectorAll('#routeStats .route-stat')],current=document.querySelector('#routeWaypointList .route-waypoint[aria-current=step]'),next=document.querySelector('#routeWaypointList .route-waypoint[data-state=next]');return{current:stats[0]?.classList.contains('route-stat-current'),next:stats[1]?.classList.contains('route-stat-next'),currentFix:current?.textContent,nextFix:next?.textContent}})()`);
+  assert.equal(routeHierarchy.current,true);assert.equal(routeHierarchy.next,true);
+  assert.match(routeHierarchy.currentFix,/MID/);assert.match(routeHierarchy.nextFix,/EAST/);
   const routeLayout=await evaluate(`(()=>{const map=document.querySelector('#routeMapColumn'),panel=document.querySelector('#routeNavigationPanel'),area=document.querySelector('#routeMapArea'),ratio=map.getBoundingClientRect().width/(map.getBoundingClientRect().width+panel.getBoundingClientRect().width);return{ratio,mapHeight:area.getBoundingClientRect().height,panelHeight:panel.getBoundingClientRect().height,controls:[...document.querySelectorAll('#routeMapToolbar button')].map(button=>button.getAttribute('aria-label'))}})()`);
   assert.ok(routeLayout.ratio>=.68&&routeLayout.ratio<=.77,JSON.stringify(routeLayout));
   assert.ok(routeLayout.mapHeight>=380&&routeLayout.panelHeight>=380,JSON.stringify(routeLayout));
@@ -288,6 +333,7 @@ async function run() {
   fs.writeFileSync(path.join(__dirname,'../work/ui-checks/traffic-live.png'),(await win.webContents.capturePage()).toPNG());
   await evaluate(`(()=>{vatsimOperationsCache={checkedAt:Date.now(),positionAvailable:true,traffic:[],nearbyControllers:[]};renderVatsimSituation()})()`);
   assert.equal(await evaluate("document.querySelector('#trafficEmptyState').hidden"),false,'A real empty VATSIM result receives a map overlay');
+  assert.equal(await evaluate("document.querySelector('#trafficEmptyState').classList.contains('workspace-state')"),true,'Map, replay, chart and EFB unavailable states share one visual structure');
   assert.match(await evaluate("document.querySelector('#trafficEmptyDescription').textContent"),/No VATSIM aircraft/);
   assert.equal(await evaluate("document.querySelector('#trafficDetails').classList.contains('hidden')"),true,'Aircraft details from a departed target clear when it leaves the current feed');
   const trafficOverlay=await evaluate(`(()=>{const overlay=document.querySelector('#trafficEmptyState'),map=document.querySelector('#trafficMap').getBoundingClientRect(),bounds=overlay.getBoundingClientRect();return{hidden:overlay.hidden,display:getComputedStyle(overlay).display,width:bounds.width,height:bounds.height,mapWidth:map.width,mapHeight:map.height}})()`);
@@ -312,7 +358,14 @@ async function run() {
   fs.writeFileSync(path.join(__dirname,'../work/ui-checks/analysis.png'),(await win.webContents.capturePage()).toPNG());
   report('PASS: Historical replay, two-flight comparison, airport/aircraft/crew statistics and diagnostics/offline states render from local history.');
   const savedHistory=await evaluate("localStorage.getItem('sharedCockpitFlightHistoryV1')");
-  await evaluate(`(()=>{localStorage.setItem('sharedCockpitFlightHistoryV1','[]');selectedReplayId='';renderFlightAnalysis()})()`);
+  await evaluate(`(()=>{localStorage.setItem('sharedCockpitFlightHistoryV1','[]');selectedReplayId='';document.querySelector('[data-analysis-tab="replay"]').click();renderFlightAnalysis()})()`);
+  assert.equal(await evaluate("document.querySelector('#replayWorkspace').hidden"),true,'Replay controls and map are hidden until a recorded flight is selected');
+  assert.equal(await evaluate("document.querySelector('#replayEmptyState').hidden"),false);
+  assert.equal(await evaluate("document.querySelector('#replayEmptyTitle').textContent"),'No completed flights');
+  assert.equal(await evaluate("document.querySelector('#replayHistoryButton').textContent"),'View Flight History');
+  fs.writeFileSync(path.join(__dirname,'../work/ui-checks/replay-empty.png'),(await win.webContents.capturePage()).toPNG());
+  await evaluate("document.querySelector('#replayHistoryButton').click()");
+  assert.equal(await evaluate("document.querySelector('#page-crew-tools').classList.contains('active')&&document.querySelector('#crewToolsNavTabs [data-crew-key=history]').getAttribute('aria-selected')"),'true','The replay empty state opens the existing Flight History tab');
   assert.match(await evaluate("document.querySelector('#replayStatus').className"),/analysis-empty-state/);
   assert.equal(await evaluate("document.querySelector('#compareResult .analysis-empty-state')!==null"),true);
   assert.equal(await evaluate("document.querySelector('#statisticsResult .analysis-empty-state')!==null"),true);
@@ -344,6 +397,20 @@ async function run() {
     }
     report(`PASS: ${width}×${height} opens every major page without horizontal overflow or content-column misalignment.`);
   }
+  win.setContentSize(1920,1080);
+  for(const factor of [1,1.25,1.5,2]){
+    win.webContents.setZoomFactor(factor);
+    await evaluate('new Promise(resolve=>setTimeout(resolve,60))');
+    for(const page of ['overview','flight-plan','route','checklist','notes','traffic','analysis','charts','crew-tools','diagnostics','efb']){
+      await evaluate(`activatePage(${JSON.stringify(page)})`);
+      const layout=await evaluate(`(()=>({width:innerWidth,body:document.documentElement.scrollWidth,shell:document.querySelector('.page-shell').clientWidth,shellScroll:document.querySelector('.page-shell').scrollWidth}))()`);
+      assert.ok(layout.body<=layout.width&&layout.shellScroll<=layout.shell+2,`${page} has no horizontal overflow at ${factor*100}% desktop zoom: ${JSON.stringify(layout)}`);
+    }
+    const iconTooltips=await evaluate(`(()=>[...document.querySelectorAll('button,[role=button]')].filter(control=>{const text=(control.innerText||control.textContent||'').trim();return text.length<=2&&/^[^\\p{L}\\p{N}]*$/u.test(text)&&!control.title}).map(control=>control.id||control.className||control.outerHTML.slice(0,100)))()`);
+    assert.deepEqual(iconTooltips,[],`${factor*100}% desktop zoom: icon-only controls include tooltips`);
+    report(`PASS: All workspaces remain usable at ${factor*100}% desktop display zoom.`);
+  }
+  win.webContents.setZoomFactor(1);
   report('PASS: Route map zoom, aircraft centering and route visibility controls work; Crew Tools section navigation targets existing live panels.');
   const splash=new BrowserWindow({show:false,width:1000,height:555,webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true}});
   await splash.loadFile(path.join(__dirname,'../src/splash.html'));

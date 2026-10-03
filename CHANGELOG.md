@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0-alpha.14 — Alpha 0.5
+
+- Center Flight Board departure and arrival information in separate route columns, with flight progress and its marker held in the middle column between airport and METAR content.
+- Organize navigation into Flight Desk, Crew, Traffic, Analysis, Tools and System; align the global header around application identity, flight context and session controls, with the live SIM/CREW/VOICE/VATSIM strip below.
+- Present Flight Board activity and Flight Timeline in chronological order, with event time and crew attribution ahead of each description.
+- Group existing Voice Link controls into Connection, Audio, Transmit and Voice Profile; keep accessible Crew Tools tabs and their original controls.
+- Promote current and next waypoint hierarchy, strengthen checklist phase/section/item hierarchy, and align PDF controls with the planning card.
+- Replace the empty Flight Replay map with a useful no-history state and Flight History action; standardize Charts, EFB and traffic empty/loading/error states, including an EFB retry action.
+- Show the installed build number under Settings → About, refine button feedback and status colors, and extend renderer coverage for route alignment, navigation, empty states, keyboard access and desktop zoom levels.
+
 ## 0.5.0-alpha.13 — Alpha 0.5
 
 - Simplify the sidebar into three clear groups with flat navigation rows, and give page titles and key flight data a more readable hierarchy.

@@ -7,15 +7,26 @@
     <article class="card efb-controls"><div class="efb-bar"><h2>EFB</h2><select id="efbProvider" aria-label="Aircraft provider"><option value="auto">Automatic</option><option value="fenix">Fenix</option><option value="pmdg">PMDG</option><option value="inibuilds">iniBuilds</option></select><div id="efbStatus" role="status" aria-live="polite">Ready</div><button id="efbExpand" type="button">Expand</button><button id="efbReload" type="button">Reload</button><button id="efbSettingsButton" type="button" aria-expanded="false" aria-controls="efbSettings">Settings</button></div>
     <details id="efbSettings"><summary class="hidden">Connection settings</summary><p class="muted small" id="efbAircraft">Waiting for simulator aircraft</p><form id="efbForm" class="efb-toolbar"><label class="efb-address">Local EFB address<input id="efbAddress" placeholder="http://localhost:8083" maxlength="2048" autocomplete="off"></label><button type="submit">Save & connect</button></form>
     <p class="muted small" id="efbHelp">Fenix connects on port 8083. PMDG and iniBuilds require a compatible web-EFB server; Flight Desk does not supply one.</p></details></article>
-    <div id="efbSurface"><div id="efbTablet"><span class="muted">Your aircraft EFB appears here when connected.</span></div></div></section>`);
+    <div id="efbSurface"><div id="efbTablet"><div class="workspace-state efb-empty-state" id="efbEmptyState" role="status" aria-live="polite" data-state="loading"><span class="empty-mark" aria-hidden="true">▤</span><strong id="efbEmptyTitle">Aircraft EFB unavailable</strong><span id="efbEmptyDescription">Connect to the simulator to load the aircraft EFB.</span><button type="button" class="small" id="efbRetry">Retry</button></div></div></div></section>`);
   const $=id=>document.getElementById(id),names={fenix:'Fenix',pmdg:'PMDG',inibuilds:'iniBuilds'};
   let settings={provider:'auto',addresses:{fenix:'http://localhost:8083/'}},effective='',busy=false,again=false,reload=false;
   try{const saved=JSON.parse(localStorage.getItem('flightdeskEfb')||'null');if(saved){if(['auto',...Object.keys(names)].includes(saved.provider))settings.provider=saved.provider;for(const key of Object.keys(names))if(typeof saved.addresses?.[key]==='string')settings.addresses[key]=saved.addresses[key].slice(0,2048)}}catch{}
   $('efbProvider').value=settings.provider;
   function save(){localStorage.setItem('flightdeskEfb',JSON.stringify(settings))}
   function address(){const provider=settings.provider==='auto'?effective:settings.provider;$('efbAddress').value=settings.addresses[provider]||'';$('efbAddress').disabled=!provider}
+  function renderEmptyState(status){
+    const state=$('efbEmptyState'),title=$('efbEmptyTitle'),description=$('efbEmptyDescription'),retry=$('efbRetry');
+    if(!state)return;
+    const connected=status==='EFB connected',connecting=/connecting/i.test(status||'');
+    state.hidden=connected;
+    if(connected)return;
+    state.dataset.state=connecting?'loading':/could not|unavailable|stopped|valid local|not configured/i.test(status||'')?'error':'waiting';
+    if(title)title.textContent=connecting?'Connecting to aircraft EFB':'Aircraft EFB unavailable';
+    if(description)description.textContent=status||'Connect to the simulator or choose a compatible local EFB server.';
+    if(retry){retry.hidden=connecting;retry.textContent=state.dataset.state==='error'?'Retry':'Refresh status'}
+  }
   async function sync(){
-    if(!window.cockpitDesktop?.updateEfb){$('efbStatus').textContent='EFB requires the Flight Desk desktop app.';return}
+    if(!window.cockpitDesktop?.updateEfb){$('efbStatus').textContent='EFB requires the Flight Desk desktop app.';renderEmptyState($('efbStatus').textContent);return}
     if(busy){again=true;return}busy=true;
     try{
       const surface=$('efbSurface'),r=surface.getBoundingClientRect(),shell=$('page-efb').classList.contains('efb-expanded')?{top:0,bottom:innerHeight}:document.querySelector('.page-shell').getBoundingClientRect();
@@ -29,11 +40,13 @@
       $('efbProvider').title=$('efbAircraft').textContent;
       $('efbStatus').textContent=response.status;
       $('efbStatus').title=response.status;
-    }catch{$('efbStatus').textContent='EFB connection unavailable. Try Reload.'}finally{busy=false;if(again){again=false;sync()}}
+      renderEmptyState(response.status);
+    }catch{$('efbStatus').textContent='EFB connection unavailable. Try Reload.';renderEmptyState($('efbStatus').textContent)}finally{busy=false;if(again){again=false;sync()}}
   }
   $('efbProvider').onchange=()=>{settings.provider=$('efbProvider').value;address();save();sync()};
   $('efbForm').onsubmit=event=>{event.preventDefault();const provider=settings.provider==='auto'?effective:settings.provider;if(!provider)return;settings.addresses[provider]=$('efbAddress').value.trim();save();reload=true;sync()};
   $('efbReload').onclick=()=>{reload=true;sync()};
+  $('efbRetry').onclick=()=>{reload=true;sync()};
   $('efbSettingsButton').onclick=()=>{$('efbSettings').open=!$('efbSettings').open};
   $('efbSettings').addEventListener('toggle',()=>{$('efbSettingsButton').setAttribute('aria-expanded',String($('efbSettings').open));sync()});
   $('efbExpand').onclick=()=>{const expanded=$('page-efb').classList.toggle('efb-expanded');$('efbExpand').textContent=expanded?'Back to desk':'Expand';sync()};
