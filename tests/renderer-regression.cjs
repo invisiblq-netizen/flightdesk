@@ -20,7 +20,8 @@ async function run() {
   win.webContents.session.webRequest.onBeforeRequest((details,callback)=>callback({cancel:!details.url.startsWith('file:')}));
   await win.loadFile(path.join(__dirname,'../src/flightdesk.html'));
   const evaluate = source => win.webContents.executeJavaScript(source);
-  await evaluate(`localStorage.clear();prepareSession('host','Test Pilot','ABC2345','PF');showDesk();data.plan={origin:{icao_code:'ENGM'},destination:{icao_code:'EGLL'},aircraft:{icaocode:'A21N'},general:{callsign:'TEST123',route_distance:'680'}};data.aircraft=aircraftType(data.plan);data.tasks=tasksFor(data.aircraft);applyState(data);`);
+  await evaluate(`localStorage.clear();prepareSession('host','Test Pilot','ABC2345','PF');showDesk();window.emptyLobbyFlightContext=document.querySelector('#pageFlightContext')?.textContent.trim()||'';data.plan={origin:{icao_code:'ENGM'},destination:{icao_code:'EGLL'},aircraft:{icaocode:'A21N'},general:{callsign:'TEST123',route_distance:'680'}};data.aircraft=aircraftType(data.plan);data.tasks=tasksFor(data.aircraft);applyState(data);`);
+  assert.equal(await evaluate('window.emptyLobbyFlightContext'),'','A new lobby with no imported plan leaves the global flight context clear');
   const pageContext=await evaluate("(()=>{renderGlobalPageContext();return {title:document.querySelector('#pageContextTitle').textContent,flight:document.querySelector('#pageFlightContext').textContent}})()");
   assert.equal(pageContext.title,'Flight Board');
   assert.match(pageContext.flight,/ENGM → EGLL/);
@@ -28,6 +29,7 @@ async function run() {
   assert.match(pageContext.flight,/A21N/);
   assert.equal(await evaluate("document.querySelector('#pageFlightContext').parentElement.classList.contains('top')"),true,'Flight context belongs in the global header');
   assert.equal(await evaluate("document.querySelectorAll('#pageLinkStatus .status-chip').length"),4,'The system strip keeps the four compact SIM, CREW, VOICE and VATSIM statuses');
+  assert.ok(await evaluate("[...document.querySelectorAll('.crew-role-state')].every(item=>parseFloat(getComputedStyle(item).paddingLeft)>=10&&parseFloat(getComputedStyle(item).paddingRight)>=10)"),'Crew-state text has a readable inset from the card borders');
   await evaluate('new Promise(resolve=>setTimeout(resolve,20))');
   assert.equal(await evaluate("document.querySelector('#settingsAboutVersion').textContent"),'test','Settings shows the actual installed build version');
   assert.deepEqual(await evaluate("[...document.querySelector('#voiceMode').options].map(option=>option.value)"),['ptt','open']);
@@ -152,6 +154,8 @@ async function run() {
     assert.equal(layout.waiting,'rgb(255, 207, 77)');
     assert.equal(layout.atc,'rgb(163, 255, 182)');
     const chrome=await evaluate(`(()=>{const nav=document.querySelector('.side-nav'),shell=document.querySelector('.page-shell'),board=document.querySelector('#page-overview .flight-board-layout > .card'),readiness=document.querySelector('#readiness'),tools=document.querySelector('#headerTools'),theme=document.querySelector('#themeToggle');return {navBottom:nav.getBoundingClientRect().bottom,shellBottom:shell.getBoundingClientRect().bottom,readinessBottom:readiness.getBoundingClientRect().bottom,boardWidth:board.getBoundingClientRect().width,readinessWidth:readiness.getBoundingClientRect().width,themeInHeader:theme.parentElement===tools,clocksInHeader:tools.contains(document.querySelector('#zuluClock')),progressBackground:getComputedStyle(document.querySelector('#routeProgress')).backgroundColor}})()`);
+    const flightContextOffset=await evaluate("(()=>{const r=document.querySelector('#pageFlightContext').getBoundingClientRect();return Math.abs(r.left+r.width/2-innerWidth/2)})()");
+    assert.ok(flightContextOffset<=2,'Global flight context stays centered in the window at '+width+'px: '+flightContextOffset+'px');
     assert.ok(chrome.navBottom<=chrome.shellBottom+2&&chrome.navBottom>=Math.min(chrome.readinessBottom,chrome.shellBottom)-2,'Sidebar must fit the viewport and have enough room for its navigation');
     assert.ok(Math.abs(chrome.boardWidth-chrome.readinessWidth)<=1,'Flight Board must be as wide as Flight readiness');
     assert.equal(chrome.themeInHeader,true);

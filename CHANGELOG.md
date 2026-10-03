@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0-alpha.16 — Alpha 0.5
+
+- Add consistent horizontal inset to shared-cockpit PF/PM state cards so crew names and status text do not touch the card edges.
+- Center the global route, callsign and aircraft context across the window at desktop widths, and keep it centered on compact layouts.
+- Clear the global flight-context row for a new lobby until a plan is available instead of displaying “No flight plan loaded”.
+- Add renderer checks for card text insets, centered flight context across window sizes, and the no-plan lobby state.
+
 ## 0.5.0-alpha.15 — Alpha 0.5
 
 - Align the Flight Board route hero vertically: reserve the aircraft-badge row on both sides, keep progress centered between the airport codes, and line up airport, weather, ATC and ATIS rows.
