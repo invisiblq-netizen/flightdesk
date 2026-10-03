@@ -729,28 +729,33 @@ button, .nav-item, .tab, summary, .route-waypoint {
 }
 #page-overview .route-column-departure > *,
 #page-overview .route-column-arrival > * { max-width: 100%; text-align: center; }
-#page-overview .route-aircraft-badge { align-self: center; margin: 0 0 8px; }
-#page-overview .airport { font-size: 34px; }
+#page-overview .route-aircraft-slot { display: flex; flex: 0 0 32px; width: 100%; height: 32px; align-items: flex-start; justify-content: center; }
+#page-overview .route-aircraft-badge { align-self: center; margin: 0; }
+#page-overview .airport { min-height: 39px; font-size: 34px; line-height: 1.15; }
 #page-overview .city { margin-top: 4px; }
-#page-overview .airport-name { min-height: 0; margin-top: 4px; line-height: 1.35; }
-#page-overview .metar { max-width: 100%; margin-top: 8px; text-align: center; }
-#page-overview .taf { width: 100%; margin-top: 4px; text-align: center; }
-#page-overview .atc-list { width: 100%; margin: 6px 0 0; text-align: center; }
+#page-overview .airport-name { display: -webkit-box; min-height: 30px; margin-top: 4px; overflow: hidden; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+#page-overview .metar { display: -webkit-box; min-height: 30px; max-width: 100%; margin-top: 8px; overflow: hidden; text-align: center; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+#page-overview .taf { display: flex; width: 100%; min-height: 18px; align-items: center; justify-content: center; margin-top: 4px; text-align: center; }
+#page-overview .atc-list { flex: 0 0 56px; width: 100%; height: 56px; margin: 6px 0 0; overflow-y: auto; overscroll-behavior: contain; text-align: center; scrollbar-width: thin; }
 #page-overview .atc-list li { text-align: center; }
 #page-overview .route-column-departure details,
 #page-overview .route-column-arrival details,
 #page-overview .route-column-departure summary,
 #page-overview .route-column-arrival summary { width: 100%; text-align: center; }
+#page-overview .route-column-departure details,
+#page-overview .route-column-arrival details { flex: 0 0 auto; min-height: 28px; margin-top: 4px; }
+#page-overview .route-column-departure summary,
+#page-overview .route-column-arrival summary { display: flex; min-height: 28px; align-items: center; justify-content: center; line-height: 1.3; }
 #page-overview .route-center {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   align-self: stretch;
-  gap: 13px;
+  gap: 7px;
   min-width: 0;
-  padding: 8px 6px;
+  padding: 32px 6px 8px;
   text-align: center;
 }
 #page-overview .route-progress {
@@ -771,6 +776,9 @@ button, .nav-item, .tab, summary, .route-waypoint {
   white-space: normal;
 }
 #page-overview .route-track { width: 100%; min-width: 0; }
+#page-overview .stats .stat { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+#page-overview .stats .stat small,
+#page-overview .stats .stat b { width: 100%; text-align: center; }
 .route-context-status { color: var(--muted); font-size: 10px; line-height: 1.35; text-align: center; }
 .route-context-status[data-state="ready"] { color: var(--success); }
 .route-context-status[data-state="waiting"] { color: var(--amber); }
@@ -929,6 +937,10 @@ button, .nav-item, .tab, summary, .route-waypoint {
   #page-overview .metar { font-size: 9px; overflow-wrap: anywhere; }
   #page-overview .route-center { padding-inline: 2px; gap: 8px; }
   #page-overview .route-progress, .route-context-status { font-size: 9px; }
+  #page-overview .airport { min-height: 29px; }
+  #page-overview .route-aircraft-slot { flex-basis: 27px; height: 27px; }
+  #page-overview .airport-name, #page-overview .metar { min-height: 26px; }
+  #page-overview .route-center { padding-top: 27px; }
   .voice-section[data-voice-group="audio"] .voice-device-grid, .voice-section[data-voice-group="profile"] .voice-profile-grid { grid-template-columns: minmax(0,1fr); }
   .voice-section[data-voice-group="profile"] .voice-profile-grid .check-row { grid-column: auto; }
   #page-charts .charts-empty-state { min-height: 240px; }

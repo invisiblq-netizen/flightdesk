@@ -4,7 +4,7 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.5** · Build `0.5.0-alpha.14` · Windows x64
+**Alpha 0.5** · Build `0.5.0-alpha.15` · Windows x64
 
 ## Features
 
@@ -14,7 +14,7 @@ A Windows companion app for shared cockpit flying: import a SimBrief flight plan
 
 - Host a lobby and invite other pilots with a seven-character code.
 - Use a compact, consistent flight-desk interface with shared form, card, table and focus styling; a single-scroll sidebar grouped into Flight Desk, Crew, Traffic, Analysis, Tools and System; and briefings kept under one entry with five internal tabs. Crew notices remain transient and are capped during event bursts.
-- Follow the six semantic navigation groups. The Flight Board keeps departure, flight progress and arrival in a centered three-column route hero; Flight Plan and Briefing data are grouped by purpose, and unavailable values are labeled clearly.
+- Follow the six semantic navigation groups. The Flight Board keeps departure, flight progress and arrival in a centered three-column route hero with level airport headings, aligned weather/ATC/ATIS rows and centered flight metadata; Flight Plan and Briefing data are grouped by purpose, and unavailable values are labeled clearly.
 - Synchronize notes, checklist progress and flight-plan data directly over WebRTC.
 - Choose Pilot Flying (PF) or Pilot Monitoring (PM), and switch roles during flight.
 - Import a SimBrief OFP and view its PDF inline, fitted to the page width, with zoom controls. Automatic import accepts a plan only when its scheduled or estimated departure is in the future; manual fetch remains available for older plans.
@@ -84,7 +84,7 @@ The repository uses `pnpm-lock.yaml`. Do not replace it with an npm-generated lo
 
 ### Reuse the prebuilt helper
 
-To skip compiling the helper, download the matching `FlightPositionBridge-0.5.0-alpha.14-win-x64.zip` Release asset and extract it into the project root. The archive creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
+To skip compiling the helper, download the matching `FlightPositionBridge-0.5.0-alpha.15-win-x64.zip` Release asset and extract it into the project root. The archive creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
 
 The helper EXE is larger than GitHub's normal Git file limit. Its source belongs in this repo; the prebuilt archive belongs in Releases. The `publish` folder is ignored by Git.
 
@@ -94,7 +94,7 @@ The helper EXE is larger than GitHub's normal Git file limit. Its source belongs
 pnpm dist
 ```
 
-Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.14.exe`, its `.blockmap`, and the `dist/alpha.yml` update manifest. The GitHub prerelease also includes the unchanged simulator-helper ZIP and a `SHA256SUMS.txt` file for the release assets.
+Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.15.exe`, its `.blockmap`, and the `dist/alpha.yml` update manifest. The GitHub prerelease also includes the unchanged simulator-helper ZIP and a `SHA256SUMS.txt` file for the release assets.
 
 `pnpm dist` expects the helper to exist. It creates the installer and update metadata but does not publish a release. Attach the installer, `alpha.yml`, and matching `.blockmap` to the same published GitHub prerelease. This project currently packages Windows only.
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0-alpha.15 — Alpha 0.5
+
+- Align the Flight Board route hero vertically: reserve the aircraft-badge row on both sides, keep progress centered between the airport codes, and line up airport, weather, ATC and ATIS rows.
+- Keep long ATC lists available in equal-height scroll areas, and center the Flight Number, Block Time, distance, aircraft and registration metadata.
+- Add renderer assertions for route-row alignment, the progress position, scrollable ATC rows and centered flight metadata.
+
 ## 0.5.0-alpha.14 — Alpha 0.5
 
 - Center Flight Board departure and arrival information in separate route columns, with flight progress and its marker held in the middle column between airport and METAR content.

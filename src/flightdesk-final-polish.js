@@ -101,11 +101,18 @@
     arrival.setAttribute('role', 'group');
     arrival.setAttribute('aria-label', 'Arrival information');
     const badge = $('#aircraftBadge');
+    const departureSlot = document.createElement('div');
+    departureSlot.className = 'route-aircraft-slot';
     if (badge) {
       badge.classList.add('route-aircraft-badge');
       badge.title = 'Aircraft in the imported flight plan';
-      departure.insertBefore(badge, departure.firstChild);
+      departureSlot.append(badge);
     }
+    departure.insertBefore(departureSlot, departure.firstChild);
+    const arrivalSlot = document.createElement('div');
+    arrivalSlot.className = 'route-aircraft-slot route-aircraft-slot-empty';
+    arrivalSlot.setAttribute('aria-hidden', 'true');
+    arrival.insertBefore(arrivalSlot, arrival.firstChild);
     if (!$('#routeContextStatus')) {
       const status = document.createElement('span');
       status.id = 'routeContextStatus';
