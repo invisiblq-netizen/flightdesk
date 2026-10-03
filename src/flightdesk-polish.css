@@ -506,7 +506,7 @@ textarea.notes { background-color: var(--panel2); }
 #page-overview .stat b { display: block; margin-top: 2px; font-size: 14px; }
 .readiness-card { padding-top: 13px; padding-bottom: 13px; }
 .readiness-grid { gap: 0 12px; }
-.readiness-item { min-height: 34px; padding: 6px 4px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; font-size: 12px; }
+.readiness-item { min-height: 34px; padding: 6px 12px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; font-size: 12px; }
 .readiness-summary { margin: 7px 0; padding: 6px 0; border: 0; border-radius: 0; border-bottom: 1px solid var(--line); background: transparent; font-size: 12px; }
 
 .session-dashboard { padding-top: 13px; padding-bottom: 13px; }
@@ -887,7 +887,7 @@ button, .nav-item, .tab, summary, .route-waypoint {
 #timelineList .timeline-event::after, #sessionTimeline > .timeline-event::after {
   position: absolute;
   top: 13px;
-  left: 0;
+  left: 8px;
   width: 7px;
   height: 7px;
   border: 2px solid var(--panel);

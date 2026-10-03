@@ -6,7 +6,8 @@ async function run() {
   await flight.nodes.get('create').onclick();
   flight.nodes.get('simid').value='test-pilot';
   assert.equal(flight.eval('data.aircraft'), 'GENERIC');
-  assert.equal(flight.nodes.get('aircraftBadge').textContent, 'Waiting for flight plan');
+  assert.equal(flight.nodes.get('aircraftBadge').textContent, '');
+  assert.equal(flight.nodes.get('aircraftBadge').hidden, true);
   for (const [code, profile] of [['A21N','A320'], ['B738','B738'], ['B789','B789'], ['A359','A359'], ['AT76','GENERIC'], ['E190','GENERIC']]) {
     flight.context.window.cockpitDesktop.fetchSimbrief = async () => ({ok:true, data:{general:{aircraft:code}}});
     await flight.nodes.get('simform').onsubmit({preventDefault(){}});

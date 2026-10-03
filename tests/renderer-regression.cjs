@@ -20,8 +20,10 @@ async function run() {
   win.webContents.session.webRequest.onBeforeRequest((details,callback)=>callback({cancel:!details.url.startsWith('file:')}));
   await win.loadFile(path.join(__dirname,'../src/flightdesk.html'));
   const evaluate = source => win.webContents.executeJavaScript(source);
-  await evaluate(`localStorage.clear();prepareSession('host','Test Pilot','ABC2345','PF');showDesk();window.emptyLobbyFlightContext=document.querySelector('#pageFlightContext')?.textContent.trim()||'';data.plan={origin:{icao_code:'ENGM'},destination:{icao_code:'EGLL'},aircraft:{icaocode:'A21N'},general:{callsign:'TEST123',route_distance:'680'}};data.aircraft=aircraftType(data.plan);data.tasks=tasksFor(data.aircraft);applyState(data);`);
+  await evaluate(`localStorage.clear();prepareSession('host','Test Pilot','ABC2345','PF');showDesk();window.emptyLobbyFlightContext=document.querySelector('#pageFlightContext')?.textContent.trim()||'';window.emptyLobbyAircraftBadgeHidden=document.querySelector('#aircraftBadge').hidden;window.emptyLobbyAircraftBadgeText=document.querySelector('#aircraftBadge').textContent.trim();data.plan={origin:{icao_code:'ENGM'},destination:{icao_code:'EGLL'},aircraft:{icaocode:'A21N'},general:{callsign:'TEST123',route_distance:'680'}};data.aircraft=aircraftType(data.plan);data.tasks=tasksFor(data.aircraft);applyState(data);`);
   assert.equal(await evaluate('window.emptyLobbyFlightContext'),'','A new lobby with no imported plan leaves the global flight context clear');
+  assert.equal(await evaluate('window.emptyLobbyAircraftBadgeHidden'),true,'An empty lobby does not show a “Waiting for flight plan” badge above the departure airport');
+  assert.equal(await evaluate('window.emptyLobbyAircraftBadgeText'),'','An empty lobby badge does not retain the removed waiting label');
   const pageContext=await evaluate("(()=>{renderGlobalPageContext();return {title:document.querySelector('#pageContextTitle').textContent,flight:document.querySelector('#pageFlightContext').textContent}})()");
   assert.equal(pageContext.title,'Flight Board');
   assert.match(pageContext.flight,/ENGM → EGLL/);
@@ -158,6 +160,8 @@ async function run() {
     assert.ok(flightContextOffset<=2,'Global flight context stays centered in the window at '+width+'px: '+flightContextOffset+'px');
     assert.ok(chrome.navBottom<=chrome.shellBottom+2&&chrome.navBottom>=Math.min(chrome.readinessBottom,chrome.shellBottom)-2,'Sidebar must fit the viewport and have enough room for its navigation');
     assert.ok(Math.abs(chrome.boardWidth-chrome.readinessWidth)<=1,'Flight Board must be as wide as Flight readiness');
+    const readinessInset=await evaluate("parseFloat(getComputedStyle(document.querySelector('#readiness .readiness-item')).paddingLeft)");
+    assert.ok(readinessInset>=12,`Flight Readiness indicators stay inset from the row edge at ${width}px: ${readinessInset}px`);
     assert.equal(chrome.themeInHeader,true);
     assert.equal(chrome.clocksInHeader,true);
     assert.equal(chrome.progressBackground,'rgba(0, 0, 0, 0)');
@@ -238,10 +242,12 @@ async function run() {
   fs.writeFileSync(path.join(__dirname,'../work/ui-checks/checklist.png'),(await win.webContents.capturePage()).toPNG());
   report('PASS: Checkbox and state updates preserve scroll and keyboard focus; completion unlocks the next phase without jumping.');
   await evaluate(`activatePage('crew-tools');currentSimPosition={connected:true}`);
-  const activityStream=await evaluate(`(()=>{const previous=data.ops.events,at=Date.now()-3000;data.ops.events=[{id:'stream-one',at,text:'First event',by:'PF',role:'PF',type:'crew.joined'},{id:'stream-two',at:at+1000,text:'Second event',by:'Simulator',role:'',type:'flight.phase-changed'},{id:'stream-three',at:at+2000,text:'Third event',by:'PM',role:'PM',type:'checklist.flow-completed'}];renderSessionDashboard();renderCrewTools();const overview=[...document.querySelectorAll('#sessionTimeline > .timeline-event > span')].map(item=>item.textContent),timeline=[...document.querySelectorAll('#timelineList > .timeline-event > span')].map(item=>item.textContent),layout=getComputedStyle(document.querySelector('#timelineList .timeline-event')).display;data.ops.events=previous;renderSessionDashboard();renderCrewTools();return{overview,timeline,layout,role:document.querySelector('#timelineList').getAttribute('role')}})()`);
+  const activityStream=await evaluate(`(()=>{const previous=data.ops.events,at=Date.now()-3000;data.ops.events=[{id:'stream-one',at,text:'First event',by:'PF',role:'PF',type:'crew.joined'},{id:'stream-two',at:at+1000,text:'Second event',by:'Simulator',role:'',type:'flight.phase-changed'},{id:'stream-three',at:at+2000,text:'Third event',by:'PM',role:'PM',type:'checklist.flow-completed'}];renderSessionDashboard();renderCrewTools();const overview=[...document.querySelectorAll('#sessionTimeline > .timeline-event > span')].map(item=>item.textContent),timeline=[...document.querySelectorAll('#timelineList > .timeline-event > span')].map(item=>item.textContent),layout=getComputedStyle(document.querySelector('#timelineList .timeline-event')).display,row=document.querySelector('#sessionTimeline > .timeline-event'),rule=getComputedStyle(row,'::before'),dot=getComputedStyle(row,'::after'),ruleEnd=parseFloat(rule.left)+parseFloat(rule.width),dotStart=parseFloat(dot.left),crewPadding=parseFloat(getComputedStyle(document.querySelector('#crewActivityGrid > *')).paddingLeft);data.ops.events=previous;renderSessionDashboard();renderCrewTools();return{overview,timeline,layout,role:document.querySelector('#timelineList').getAttribute('role'),ruleEnd,dotStart,crewPadding}})()`);
   assert.deepEqual(activityStream.overview,['First event','Second event','Third event'],'Flight Board activity reads oldest to newest');
   assert.deepEqual(activityStream.timeline,['First event','Second event','Third event'],'Crew Tools Flight Timeline shares the same chronological order');
   assert.equal(activityStream.layout,'grid');assert.equal(activityStream.role,'list');
+  assert.ok(activityStream.dotStart>activityStream.ruleEnd,'Timeline marker dots sit to the right of their vertical line');
+  assert.ok(activityStream.crewPadding>=12,'Crew activity rows keep comfortable horizontal text inset');
   const voiceGroups=await evaluate(`(()=>{const groups=[...document.querySelectorAll('#voiceLinkCard [data-voice-group]')];return{titles:groups.map(group=>group.querySelector('h3').textContent),controls:Object.fromEntries(groups.map(group=>[group.dataset.voiceGroup,[...group.querySelectorAll('button,select,input,[role=status]')].map(control=>control.id)]))}})()`);
   assert.deepEqual(voiceGroups.titles,['CONNECTION','AUDIO','TRANSMIT','VOICE PROFILE']);
   assert.ok(voiceGroups.controls.connection.includes('voiceEnable')&&voiceGroups.controls.connection.includes('voiceStatus'));
@@ -392,6 +398,7 @@ async function run() {
       assert.equal(layout.active,true,`${page} opens at ${width}×${height}`);
       assert.ok(layout.bodyWidth<=width&&layout.shellScrollWidth<=layout.shellWidth+2,`${page} has no horizontal viewport overflow at ${width}×${height}: ${JSON.stringify(layout)}`);
       assert.ok(layout.left>=layout.hostLeft-2&&layout.right<=layout.hostRight+2,`${page} aligns within the shared content column at ${width}×${height}: ${JSON.stringify(layout)}`);
+      if(width===1440)fs.writeFileSync(path.join(__dirname,`../work/ui-checks/workspace-${page}.png`),(await win.webContents.capturePage()).toPNG());
     }
     if(width===1440){
       await evaluate("activatePage('route')");

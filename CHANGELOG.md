@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0-alpha.17 — Alpha 0.5
+
+- Move Flight Timeline marker dots clear of their vertical guide and add comfortable left inset to Flight Readiness rows.
+- Hide the empty aircraft badge in a new lobby so “Waiting for flight plan” no longer appears above the departure airport.
+- Review every major workspace at desktop sizes for edge spacing and add regression checks for timeline, readiness, activity and lobby states.
+
 ## 0.5.0-alpha.16 — Alpha 0.5
 
 - Add consistent horizontal inset to shared-cockpit PF/PM state cards so crew names and status text do not touch the card edges.
