@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0-alpha.18 — Alpha 0.5
+
+- Hide the aircraft-type context card on Briefing pages so the Departure and Arrival ICAO fields have a cleaner header; keep aircraft details on the Flight Board and checklist settings.
+
 ## 0.5.0-alpha.17 — Alpha 0.5
 
 - Move Flight Timeline marker dots clear of their vertical guide and add comfortable left inset to Flight Readiness rows.
