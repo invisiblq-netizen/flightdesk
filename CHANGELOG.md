@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0-alpha.19 — Alpha 0.5
+
+- Refresh the Windows cockpit workspace with a refined navy and blue visual system, clearer information hierarchy, consistent controls and panels, and improved compact-window navigation.
+- Keep existing simulator, crew synchronization, voice, flight planning and analysis behavior intact while restyling the interface.
+
 ## 0.5.0-alpha.18 — Alpha 0.5
 
 - Hide the aircraft-type context card on Briefing pages so the Departure and Arrival ICAO fields have a cleaner header; keep aircraft details on the Flight Board and checklist settings.
