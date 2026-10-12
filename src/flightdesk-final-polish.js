@@ -1,6 +1,129 @@
 (() => {
   const $ = selector => document.querySelector(selector);
 
+  function installWindowChrome() {
+    const shell = $('.wrap');
+    const header = $('.top');
+    if (!shell || !header || $('#windowTitleBar')) return;
+    const titlebar = document.createElement('div');
+    titlebar.id = 'windowTitleBar';
+    titlebar.className = 'window-titlebar';
+    titlebar.innerHTML = '<div class="window-title-app"><img src="vendor/app-icon.png" alt=""><span>Shared Cockpit Flight Desk</span><span class="window-version-badge" id="windowVersionBadge">Alpha 0.6</span></div><div class="window-title-controls" aria-label="Window controls"><button type="button" data-window-control="minimize" aria-label="Minimize" title="Minimize"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10"/></svg></button><button type="button" data-window-control="toggleMaximize" aria-label="Maximize" title="Maximize"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1"/></svg></button><button type="button" data-window-control="close" aria-label="Close" title="Close"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></div>';
+    shell.insertBefore(titlebar, header);
+
+    const api = window.cockpitDesktop?.windowControls;
+    document.documentElement.dataset.customWindow = String(!!api);
+    const reflectState = state => {
+      const maximized = !!state?.maximized;
+      document.documentElement.dataset.windowMaximized = String(maximized);
+      const button = titlebar.querySelector('[data-window-control="toggleMaximize"]');
+      if (!button) return;
+      button.setAttribute('aria-label', maximized ? 'Restore' : 'Maximize');
+      button.title = maximized ? 'Restore' : 'Maximize';
+      button.innerHTML = maximized
+        ? '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="3.5" width="7.5" height="7.5" rx=".8"/><path d="M4 5.5v6.8c0 .4.3.7.7.7h6.8"/></svg>'
+        : '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1"/></svg>';
+    };
+    titlebar.querySelectorAll('[data-window-control]').forEach(button => {
+      button.addEventListener('click', () => api?.[button.dataset.windowControl]?.().catch?.(() => {}));
+    });
+    api?.getState?.().then(reflectState).catch(() => {});
+    api?.onStateChange?.(reflectState);
+    window.cockpitDesktop?.getAppInfo?.().then(info => {
+      if (info?.displayVersion) $('#windowVersionBadge').textContent = info.displayVersion;
+    }).catch(() => {});
+  }
+
+  function installGlobalSearch() {
+    const header = $('.top');
+    const tools = $('#headerTools');
+    if (!header || !tools || $('#globalSearch')) return;
+    const search = document.createElement('div');
+    search.id = 'globalSearch';
+    search.className = 'global-search';
+    search.innerHTML = '<span class="global-search-icon" aria-hidden="true"></span><input id="globalSearchInput" type="search" autocomplete="off" spellcheck="false" aria-label="Search pages, flights and settings" aria-controls="globalSearchResults" aria-expanded="false" placeholder="Search pages, flights, settings..."><kbd aria-hidden="true">Ctrl + K</kbd><div id="globalSearchResults" class="global-search-results" role="listbox" aria-label="Search results" hidden></div>';
+    header.insertBefore(search, tools);
+    const input = $('#globalSearchInput');
+    const results = $('#globalSearchResults');
+    const destinations = [
+      ['Flight Board', 'Live flight, crew and readiness', 'overview', 'dashboard home cockpit'],
+      ['Flight Plan', 'SimBrief plan and OFP', 'flight-plan', 'simbrief ofp plan route fuel'],
+      ['Route Viewer', 'Map, waypoints and route progress', 'route', 'map navigation waypoints'],
+      ['Checklist', 'Operational scan flow', 'checklist', 'flows tasks pf pm'],
+      ['Briefing', 'Departure, arrival and crew notes', 'notes', 'crew notes departure arrival debrief'],
+      ['ATC & Traffic', 'VATSIM controllers and traffic', 'traffic', 'atc vatsim traffic frequencies'],
+      ['Flight Analysis', 'History, replay and statistics', 'analysis', 'history replay statistics'],
+      ['EFB', 'Aircraft electronic flight bag', 'efb', 'fenix documents'],
+      ['Charts', 'Airport chart workspace', 'charts', 'airport chartfox'],
+      ['Crew Tools', 'Voice, timeline and flight history', 'crew-tools', 'voice ptt timeline history'],
+      ['Diagnostics', 'Simulator and connection status', 'diagnostics', 'simconnect fsuipc logs'],
+      ['Settings', 'Application preferences and integrations', 'settings', 'preferences light mode audio']
+    ];
+    const close = () => { results.hidden = true; input.setAttribute('aria-expanded', 'false'); };
+    const matches = query => {
+      const needle = query.trim().toLocaleLowerCase();
+      const found = destinations.filter(([title, description, , keywords]) => !needle || `${title} ${description} ${keywords}`.toLocaleLowerCase().includes(needle))
+        .map(([title, description, page]) => ({ title, description, action: () => page === 'settings' ? $('#settingsToggle')?.click() : activatePage(page, page === 'notes' ? 'departure' : null) }));
+      if (typeof data !== 'undefined' && data.plan) {
+        const route = `${getPlanAirport(data.plan, 'origin') || '—'} → ${getPlanAirport(data.plan, 'destination') || '—'}`;
+        const flight = `${callsignFor(data.plan) || ''} ${route} ${flightAircraftLabel()}`.trim();
+        if (!needle || flight.toLocaleLowerCase().includes(needle)) found.unshift({ title: flight, description: 'Current flight · open Flight Board', action: () => activatePage('overview') });
+      }
+      if (typeof historyRecords === 'function') {
+        try {
+          historyRecords().filter(record => `${record.callsign || record.flightNumber || ''} ${record.departure || ''} ${record.arrival || ''} ${record.aircraft || ''}`.toLocaleLowerCase().includes(needle) && needle).slice(0, 5).forEach(record => found.push({
+            title: `${record.callsign || record.flightNumber || 'Flight'} · ${record.departure || '—'} → ${record.arrival || '—'}`,
+            description: `${record.aircraft || 'Aircraft unavailable'} · ${new Date(record.date).toLocaleDateString()} · open flight report`,
+            action: () => { activatePage('crew-tools'); renderFlightHistoryReport(record); }
+          }));
+        } catch { }
+      }
+      return found.slice(0, 8);
+    };
+    const render = () => {
+      const items = matches(input.value);
+      results.replaceChildren();
+      items.forEach((item, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'global-search-result';
+        button.role = 'option';
+        button.dataset.searchIndex = String(index);
+        const title = document.createElement('strong');
+        const detail = document.createElement('small');
+        title.textContent = item.title;
+        detail.textContent = item.description;
+        button.append(title, detail);
+        button.addEventListener('click', () => { close(); input.blur(); item.action(); });
+        results.append(button);
+      });
+      if (!items.length) {
+        const empty = document.createElement('div');
+        empty.className = 'global-search-empty';
+        empty.textContent = 'No matching pages or flights.';
+        results.append(empty);
+      }
+      results.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+    };
+    input.addEventListener('focus', render);
+    input.addEventListener('input', render);
+    input.addEventListener('keydown', event => {
+      if (event.key === 'Escape') { close(); input.blur(); }
+      if (event.key === 'Enter') results.querySelector('.global-search-result')?.click();
+      if (event.key === 'ArrowDown') { event.preventDefault(); results.querySelector('.global-search-result')?.focus(); }
+    });
+    document.addEventListener('keydown', event => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        input.focus();
+        input.select();
+      }
+      if (event.key === 'Escape' && !results.hidden) close();
+    });
+    document.addEventListener('pointerdown', event => { if (!search.contains(event.target)) close(); });
+  }
+
   function installSemanticNavigation() {
     const nav = $('.side-nav');
     if (!nav) return;
@@ -64,13 +187,31 @@
 
   function installGlobalFlightContext() {
     const header = $('.top');
-    const context = $('#pageFlightContext');
+    const context = $('#pageContext');
     const tools = $('#headerTools');
+    const status = $('#pageLinkStatus');
+    const sessionbar = $('#sessionbar');
+    const identity = $('.session-identity');
+    const toolbar = $('.session-toolbar');
     if (header && context && tools && context.parentElement !== header) header.insertBefore(context, tools);
-    if (context) {
-      context.classList.add('global-flight-context');
-      context.setAttribute('role', 'group');
-      context.setAttribute('aria-label', 'Current flight context');
+    if (header && status && status.parentElement !== header) header.insertBefore(status, sessionbar || null);
+    if (toolbar && identity && identity.parentElement !== toolbar) toolbar.insertBefore(identity, toolbar.firstChild);
+    const copyButton = $('#copyLobbyCode');
+    if (copyButton) {
+      copyButton.textContent = 'Copy';
+      copyButton.setAttribute('aria-label', 'Copy lobby code');
+      copyButton.title = 'Copy lobby code';
+    }
+    const roleControl = $('.role-control');
+    const roleSelect = roleControl?.querySelector('select');
+    if (roleControl && roleSelect) {
+      roleControl.firstChild.textContent = 'Role ';
+      roleSelect.setAttribute('aria-label', 'Your pilot role');
+    }
+    if (context) context.setAttribute('aria-label', 'Current page');
+    if (status) {
+      status.setAttribute('role', 'group');
+      status.setAttribute('aria-label', 'System status');
     }
     const sections = {
       overview: 'FLIGHT DESK', 'flight-plan': 'FLIGHT DESK', route: 'FLIGHT DESK', checklist: 'FLIGHT DESK',
@@ -190,8 +331,113 @@
     if (lastEvent) sharedState.append(lastEvent);
     if (activity) sharedState.append(activity);
     if (timeline) sharedState.append(timeline);
+
+    const routePreview = document.createElement('article');
+    routePreview.id = 'liveRoutePreview';
+    routePreview.className = 'card live-route-preview';
+    routePreview.innerHTML = '<div class="card-head"><div class="route-preview-heading"><span class="route-preview-icon" aria-hidden="true">⌖</span><div><span class="eyebrow">FLIGHT PATH</span><h2>Live Route Preview</h2></div></div><button type="button" class="small" data-open-route-viewer>Open Route Viewer</button></div><div class="route-preview-body"><div id="boardRouteMap" class="board-route-map" role="img" aria-label="Planned flight route preview"><div class="route-empty">Import a flight plan to preview its route.</div></div><div id="boardRouteMetrics" class="board-route-metrics" aria-label="Route and simulator metrics"></div></div>';
+    dashboard.insertAdjacentElement('afterend', routePreview);
+    routePreview.querySelector('[data-open-route-viewer]').addEventListener('click', () => activatePage('route'));
+
     dashboard.insertAdjacentElement('afterend', sharedState);
+    const next = prompts.querySelector('#whatsNext');
+    const focus = prompts.querySelector('#operationsFocus');
+    if (next && focus) {
+      focus.classList.add('focus-inline');
+      next.append(focus);
+    }
     page.dataset.composed = 'true';
+  }
+
+  function installBoardRoutePreview() {
+    const boardMap = $('#boardRouteMap');
+    const routeArea = $('#routeMapArea');
+    if (!boardMap || !routeArea || boardMap.dataset.previewInstalled === 'true') return;
+    boardMap.dataset.previewInstalled = 'true';
+    let renderingPreview = false;
+    let scheduled = false;
+
+    const updatePreview = () => {
+      if (scheduled || !boardMap.isConnected) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        if (renderingPreview) return;
+        renderingPreview = true;
+        try {
+          if (typeof renderRouteViewer === 'function') renderRouteViewer({ preview: true });
+          const sourceMap = routeArea.querySelector('svg.route-map');
+          if (sourceMap) {
+            const copy = sourceMap.cloneNode(true);
+            copy.removeAttribute('data-interactive-map');
+            copy.style.cursor = 'default';
+            copy.style.pointerEvents = 'none';
+            copy.querySelector('#routeDynamicLayer')?.removeAttribute('id');
+            copy.setAttribute('aria-label', 'Planned route and available live aircraft position');
+            const attribution = routeArea.querySelector('.route-map-attribution')?.cloneNode(true);
+            boardMap.replaceChildren(...(attribution ? [copy, attribution] : [copy]));
+          } else {
+            const empty = routeArea.querySelector('.route-empty');
+            const message = document.createElement('div');
+            message.className = 'route-empty';
+            message.textContent = empty?.textContent || 'Route geometry is not available in the current flight plan.';
+            boardMap.replaceChildren(message);
+          }
+
+          const stats = [...($('#routeStats')?.querySelectorAll('.route-stat') || [])];
+          const wanted = ['DISTANCE REMAINING', 'ESTIMATED ARRIVAL', 'GROUND SPEED', 'ALTITUDE'];
+          const metrics = $('#boardRouteMetrics');
+          metrics.replaceChildren();
+          for (const label of wanted) {
+            const source = stats.find(item => item.querySelector('small')?.textContent.trim() === label);
+            const metric = document.createElement('div');
+            const name = document.createElement('small');
+            const value = document.createElement('strong');
+            name.textContent = label === 'ESTIMATED ARRIVAL' ? 'EST. ARRIVAL' : label;
+            value.textContent = source?.querySelector('b')?.textContent.trim() || 'Unavailable';
+            metric.append(name, value);
+            metrics.append(metric);
+          }
+        } catch {
+          boardMap.innerHTML = '<div class="route-empty">Route preview is unavailable. Open Route Viewer for details.</div>';
+        } finally {
+          renderingPreview = false;
+        }
+      });
+    };
+
+    if (typeof renderRouteViewer === 'function' && !renderRouteViewer.boardPreviewSync) {
+      const previous = renderRouteViewer;
+      const wrapped = function (...args) {
+        const result = previous.apply(this, args);
+        if (!renderingPreview) updatePreview();
+        return result;
+      };
+      wrapped.boardPreviewSync = true;
+      renderRouteViewer = wrapped;
+    }
+    for (const name of ['renderSessionDashboard', 'renderFlightProgress']) {
+      if (typeof window[name] !== 'function' || window[name].boardPreviewSync) continue;
+      const previous = window[name];
+      const wrapped = function (...args) {
+        const result = previous.apply(this, args);
+        updatePreview();
+        return result;
+      };
+      wrapped.boardPreviewSync = true;
+      window[name] = wrapped;
+    }
+    if (typeof activatePage === 'function' && !activatePage.boardPreviewSync) {
+      const previous = activatePage;
+      const wrapped = function (...args) {
+        const result = previous.apply(this, args);
+        if (args[0] === 'overview' || args[0] === 'route') updatePreview();
+        return result;
+      };
+      wrapped.boardPreviewSync = true;
+      activatePage = wrapped;
+    }
+    updatePreview();
   }
 
   function installRouteNavigationHierarchy() {
@@ -606,10 +852,13 @@
     });
   }
 
+  installWindowChrome();
   installSemanticNavigation();
   wrapGlobalContextRenderer();
+  installGlobalSearch();
   installRouteHero();
   installFlightBoardComposition();
+  installBoardRoutePreview();
   installRouteNavigationHierarchy();
   installInteractiveRouteMap();
   removeAircraftSystemsPanel();

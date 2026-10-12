@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0-alpha.1 — Alpha 0.6
+
+- Add a custom frameless Windows window with secure minimize, maximize/restore and close controls.
+- Rework the shared shell, compact header and Flight Board into an inset cockpit frame with a route hero, paired overview and live route preview, and a three-panel operational row.
+- Add working global search and carry the premium visual system across the existing workspaces while preserving their operational data and controls.
+- Keep Light Mode and responsive layouts, and verify desktop views from 920 × 640 through 3840 × 2160.
+
 ## 0.5.0-alpha.22 — Alpha 0.5
 
 - Recompose the Flight Board into a compact centered route presentation, a full-width Flight Overview and a balanced grid for shared crew state, next actions, focus and readiness.

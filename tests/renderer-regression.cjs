@@ -29,8 +29,18 @@ async function run() {
   assert.match(pageContext.flight,/ENGM → EGLL/);
   assert.match(pageContext.flight,/TEST123/);
   assert.match(pageContext.flight,/A21N/);
-  assert.equal(await evaluate("document.querySelector('#pageFlightContext').parentElement.classList.contains('top')"),true,'Flight context belongs in the global header');
+  assert.equal(await evaluate("document.querySelector('#pageContext').parentElement.classList.contains('top')"),true,'The live page title and subtitle belong in the global header');
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('#pageFlightContext')).display"),'none','Flight context remains data-bound without being repeated beside the route hero');
+  assert.equal(await evaluate("document.querySelectorAll('#windowTitleBar [data-window-control]').length"),3,'The frameless title bar provides minimize, maximize and close controls');
+  assert.equal(await evaluate("document.querySelector('#globalSearchInput')!==null"),true,'The global search is a real input rather than decorative chrome');
   assert.equal(await evaluate("document.querySelectorAll('#pageLinkStatus .status-chip').length"),4,'The system strip keeps the four compact SIM, CREW, VOICE and VATSIM statuses');
+  await evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{key:'k',ctrlKey:true,bubbles:true,cancelable:true}))");
+  assert.equal(await evaluate("document.activeElement.id"),'globalSearchInput','Ctrl+K focuses the global search');
+  await evaluate("(()=>{const input=document.querySelector('#globalSearchInput');input.value='Route Viewer';input.dispatchEvent(new Event('input',{bubbles:true}))})()");
+  assert.match(await evaluate("document.querySelector('#globalSearchResults').textContent"),/Route Viewer/,'Global search returns a real application destination');
+  await evaluate("document.querySelector('#globalSearchResults .global-search-result').click()");
+  assert.equal(await evaluate("activePage"),'route','Choosing a global search result navigates to the existing Route Viewer');
+  await evaluate("activatePage('overview')");
   assert.ok(await evaluate("[...document.querySelectorAll('.crew-role-state')].every(item=>parseFloat(getComputedStyle(item).paddingLeft)>=10&&parseFloat(getComputedStyle(item).paddingRight)>=10)"),'Crew-state text has a readable inset from the card borders');
   await evaluate('new Promise(resolve=>setTimeout(resolve,20))');
   assert.equal(await evaluate("document.querySelector('#settingsAboutVersion').textContent"),'test','Settings shows the actual installed build version');
@@ -126,6 +136,14 @@ async function run() {
   report('PASS: Real renderer auto-checks external power ON and displays Fenix connection and completion attribution.');
   assert.equal(await evaluate(`document.querySelector('#aircraftPhotoPanel')===null`),true,'Aircraft photos must be removed from the Flight Board');
   await evaluate('Promise.all([...airportRequests.values()])');
+  const boardStructure=await evaluate(`(()=>{const page=document.querySelector('#page-overview');return [...page.children].filter(node=>node.matches('.flight-board-layout,#flightSessionDashboard,#liveRoutePreview,#sharedCockpitState,#operationsPrompts,#readiness')).map(node=>node.id||(node.classList.contains('flight-board-layout')?'flight-board-layout':''))})()`);
+  assert.deepEqual(boardStructure,['flight-board-layout','flightSessionDashboard','sharedCockpitState','liveRoutePreview','operationsPrompts','readiness'],'The route preview and existing dashboard panels match the runtime Flight Board structure');
+  await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+  assert.match(await evaluate("document.querySelector('#boardRouteMap').innerHTML"),/route-line/,'The Flight Board preview reuses real Route Viewer geometry.');
+  assert.equal(await evaluate("document.querySelector('#boardRouteMap #routeDynamicLayer')===null"),true,'The preview avoids duplicating the Route Viewer live-position DOM id.');
+  assert.match(await evaluate("document.querySelector('#boardRouteMetrics').textContent"),/DISTANCE REMAINING/,'Route preview metrics come from the live Route Viewer data.');
+  assert.equal(await evaluate("document.querySelector('#operationsPrompts').style.display==='contents' || getComputedStyle(document.querySelector('#operationsPrompts')).display==='contents'"),true,'The existing prompt wrapper exposes its cards as Flight Board grid items');
+  assert.equal(await evaluate("document.querySelector('#operationsFocus').parentElement===document.querySelector('#whatsNext')"),true,'Flight Desk Focus remains available within the next-action card');
   const routeHero=await evaluate(`(()=>{const hero=document.querySelector('#page-overview .route'),columns=[...hero.children],rects=columns.map(item=>item.getBoundingClientRect()),bounds=hero.getBoundingClientRect(),departure=columns[0],arrival=columns[2],center=rects[1],box=item=>{const r=(typeof item==='string'?document.querySelector(item):item).getBoundingClientRect();return{top:r.top,bottom:r.bottom,height:r.height}},pair=(left,right)=>[box(left),box(right)],stats=[...document.querySelectorAll('#page-overview .stats .stat')];return{count:columns.length,roles:columns.map(item=>item.dataset.routeColumn),centers:rects.map(rect=>rect.left+rect.width/2),heroCenter:bounds.left+bounds.width/2,badgeColumn:document.querySelector('#aircraftBadge').closest('.route-column').dataset.routeColumn,alignments:[...departure.children,...arrival.children].map(item=>getComputedStyle(item).textAlign),centerText:[document.querySelector('#routeProgress'),document.querySelector('#routeContextStatus')].filter(item=>item&&!item.hidden).map(item=>getComputedStyle(item).textAlign),taf:[document.querySelector('#origTaf').textContent,document.querySelector('#destTaf').textContent],atis:[document.querySelector('#origAtis summary').textContent,document.querySelector('#destAtis summary').textContent],center:{top:center.top,bottom:center.bottom},airportCodes:pair('#orig','#dest'),progress:box('#routeProgress'),rows:{city:pair(departure.querySelector('.city'),arrival.querySelector('.city')),name:pair('#origName','#destName'),metar:pair('#origMetar','#destMetar'),taf:pair('#origTaf','#destTaf'),atc:pair('#origAtc','#destAtc'),atis:pair('#origAtis summary','#destAtis summary')},atcOverflow:[getComputedStyle(document.querySelector('#origAtc')).overflowY,getComputedStyle(document.querySelector('#destAtc')).overflowY],statsAlignments:stats.flatMap(item=>[getComputedStyle(item.querySelector('small')).textAlign,getComputedStyle(item.querySelector('b')).textAlign]),metar:[document.querySelector('#origMetar').getBoundingClientRect(),document.querySelector('#destMetar').getBoundingClientRect()].map(rect=>({top:rect.top,bottom:rect.bottom}))}})()`);
   assert.equal(routeHero.count,3,'The Flight Board route stays in three distinct structural columns');
   assert.deepEqual(routeHero.roles,['departure','progress','arrival']);
@@ -133,7 +151,7 @@ async function run() {
   assert.equal(await evaluate("document.querySelector('#sharedCockpitState #lastCrewAction')!==null"),true,'The latest crew event is grouped with shared cockpit activity');
   assert.equal(await evaluate("document.querySelector('#sharedCockpitState #sessionTimeline')!==null"),true,'The chronological crew timeline stays with shared cockpit activity');
   assert.ok(routeHero.centers[0]<routeHero.centers[1]&&routeHero.centers[1]<routeHero.centers[2]);
-  assert.ok(Math.abs(routeHero.centers[1]-routeHero.heroCenter)<1,'Flight progress is centered in the route hero');
+  assert.ok(Math.abs(routeHero.centers[1]-routeHero.heroCenter)<1,'Flight progress is centered in the route hero: '+JSON.stringify({centers:routeHero.centers,heroCenter:routeHero.heroCenter}));
   assert.ok(Math.abs(routeHero.airportCodes[0].top-routeHero.airportCodes[1].top)<=1,'Departure and arrival airport codes share the same vertical alignment: '+JSON.stringify(routeHero.airportCodes));
   assert.equal(await evaluate("document.querySelector('.route-flight-identity #flightno')!==null"),true,'The flight number and aircraft badge share the central flight identity');
   for(const [row,rects] of Object.entries(routeHero.rows))assert.ok(Math.abs(rects[0].top-rects[1].top)<=1,`Departure and arrival ${row} rows remain aligned: ${JSON.stringify(rects)}`);
@@ -148,29 +166,27 @@ async function run() {
   for(const [width,height] of [[3840,2160],[2560,1440],[1920,1080],[1440,900],[1280,720],[920,640]]) {
     win.setContentSize(width,height);
     await evaluate('new Promise(resolve=>setTimeout(resolve,100))');
-    const layout=await evaluate(`(()=>{activatePage('overview');const shell=document.querySelector('.page-shell'),wrap=document.querySelector('.wrap'),style=getComputedStyle(document.body);return {width:innerWidth,height:innerHeight,wrapWidth:wrap.getBoundingClientRect().width,bodyWidth:document.documentElement.scrollWidth,bodyHeight:document.documentElement.scrollHeight,shellHeight:shell.clientHeight,background:style.backgroundColor,backgroundImage:style.backgroundImage,waiting:getComputedStyle(document.querySelector('#fsuipcLabel')).color,atc:getComputedStyle(document.querySelector('.atc-online')).color}})()`);
-    assert.equal(layout.wrapWidth,layout.width,'The application shell integrates with the available window surface.');
+    await evaluate("document.querySelector('#crewNotifications')?.replaceChildren()");
+    const layout=await evaluate(`(()=>{activatePage('overview');const shell=document.querySelector('.page-shell'),wrap=document.querySelector('.wrap'),r=wrap.getBoundingClientRect(),style=getComputedStyle(document.body),glow=getComputedStyle(document.body,'::before');return {width:innerWidth,height:innerHeight,wrapWidth:r.width,wrapHeight:r.height,wrapLeft:r.left,wrapTop:r.top,bodyWidth:document.documentElement.scrollWidth,bodyHeight:document.documentElement.scrollHeight,shellHeight:shell.clientHeight,background:style.backgroundColor,backgroundImage:style.backgroundImage,outerGlow:glow.backgroundImage,waiting:getComputedStyle(document.querySelector('#fsuipcLabel')).color,atc:getComputedStyle(document.querySelector('.atc-online')).color}})()`);
+    assert.equal(layout.wrapWidth,layout.width-18,'The rounded application frame leaves a measured inset around the window.');
+    assert.equal(layout.wrapLeft,9);assert.equal(layout.wrapTop,9);assert.equal(layout.wrapHeight,layout.height-18);
     assert.ok(layout.bodyWidth<=layout.width,JSON.stringify(layout));
     assert.ok(layout.bodyHeight<=layout.height,JSON.stringify(layout));
     assert.ok(layout.shellHeight>150,JSON.stringify(layout));
-    assert.equal(layout.background,'rgb(8, 13, 37)');
-    assert.equal(layout.backgroundImage,'none','The midnight foundation stays clear behind the app shell.');
+    assert.equal(layout.background,'rgb(3, 11, 43)');
+    assert.equal(layout.backgroundImage,'none','The outer surface uses the dedicated pseudo-element lighting.');
+    assert.match(layout.outerGlow,/radial-gradient/,'The midnight background has restrained radial lighting and no technical grid.');
     assert.equal(layout.waiting,'rgb(255, 207, 77)');
     assert.equal(layout.atc,'rgb(163, 255, 182)');
-    const chrome=await evaluate(`(()=>{const nav=document.querySelector('.side-nav'),shell=document.querySelector('.page-shell'),header=document.querySelector('.top'),board=document.querySelector('#page-overview .flight-board-layout > .card'),overview=document.querySelector('#flightSessionDashboard'),shared=document.querySelector('#sharedCockpitState'),next=document.querySelector('#whatsNext'),focus=document.querySelector('#operationsFocus'),readiness=document.querySelector('#readiness'),tools=document.querySelector('#headerTools'),theme=document.querySelector('#themeToggle'),areas=id=>getComputedStyle(document.querySelector(id)).gridArea;return {navBottom:nav.getBoundingClientRect().bottom,shellBottom:shell.getBoundingClientRect().bottom,headerHeight:header.getBoundingClientRect().height,boardHeight:board.getBoundingClientRect().height,boardWidth:board.getBoundingClientRect().width,overviewWidth:overview.getBoundingClientRect().width,overviewArea:areas('#flightSessionDashboard'),sharedArea:areas('#sharedCockpitState'),nextArea:areas('#whatsNext'),focusArea:areas('#operationsFocus'),readinessArea:areas('#readiness'),readinessWidth:readiness.getBoundingClientRect().width,themeInHeader:theme.parentElement===tools,clocksInHeader:tools.contains(document.querySelector('#zuluClock')),progressBackground:getComputedStyle(document.querySelector('#routeProgress')).backgroundColor}})()`);
-    const flightContext=await evaluate("(()=>{const r=document.querySelector('#pageFlightContext').getBoundingClientRect(),tools=document.querySelector('#headerTools').getBoundingClientRect(),identity=document.querySelector('.session-identity').getBoundingClientRect(),style=getComputedStyle(document.querySelector('#pageFlightContext'));return{position:style.position,transform:style.transform,justifySelf:style.justifySelf,top:r.top,bottom:r.bottom,toolsTop:tools.top,toolsBottom:tools.bottom,identityTop:identity.top}})()");
-    assert.equal(flightContext.position,'static','Global flight context is placed in the header flow at '+width+'px');
-    assert.equal(flightContext.transform,'none');
-    assert.ok(flightContext.bottom<=flightContext.identityTop+1,'Global flight context stays above the crew controls at '+width+'px: '+JSON.stringify(flightContext));
-    if(width>1100)assert.ok(flightContext.top>=flightContext.toolsTop-1&&flightContext.bottom<=flightContext.toolsBottom+1,'Flight context and clocks share the compact header row at '+width+'px: '+JSON.stringify(flightContext));
-    else assert.ok(flightContext.top<flightContext.toolsTop,'Narrow windows stack flight context above clocks at '+width+'px: '+JSON.stringify(flightContext));
-    assert.equal(flightContext.justifySelf,'start','Global flight context aligns with the application content at '+width+'px');
+    const chrome=await evaluate(`(()=>{const nav=document.querySelector('.side-nav'),shell=document.querySelector('.page-shell'),header=document.querySelector('.top'),board=document.querySelector('#page-overview .flight-board-layout > .card'),hero=document.querySelector('#page-overview > .flight-board-layout'),overview=document.querySelector('#flightSessionDashboard'),shared=document.querySelector('#sharedCockpitState'),next=document.querySelector('#whatsNext'),focus=document.querySelector('#operationsFocus'),readiness=document.querySelector('#readiness'),tools=document.querySelector('#headerTools'),theme=document.querySelector('#themeToggle'),areas=id=>getComputedStyle(document.querySelector(id)).gridArea,br=board.getBoundingClientRect(),or=overview.getBoundingClientRect();return {navBottom:nav.getBoundingClientRect().bottom,shellBottom:shell.getBoundingClientRect().bottom,headerHeight:header.getBoundingClientRect().height,boardHeight:br.height,boardWidth:br.width,boardLeft:br.left,heroArea:areas('#page-overview > .flight-board-layout'),overviewWidth:or.width,overviewLeft:or.left,overviewArea:areas('#flightSessionDashboard'),sharedArea:areas('#sharedCockpitState'),nextArea:areas('#whatsNext'),focusArea:areas('#operationsFocus'),readinessArea:areas('#readiness'),readinessWidth:readiness.getBoundingClientRect().width,themeInHeader:theme.parentElement===tools,clocksInHeader:tools.contains(document.querySelector('#zuluClock')),progressBackground:getComputedStyle(document.querySelector('#routeProgress')).backgroundColor}})()`);
+    assert.equal(await evaluate("document.querySelector('#pageContext').parentElement===document.querySelector('.top')"),true,'The page title stays in the integrated shell header at '+width+'px');
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('#pageFlightContext')).display"),'none','The route context is not duplicated in the global header at '+width+'px');
     assert.ok(chrome.navBottom<=chrome.shellBottom+2,'Sidebar must fit the viewport and have enough room for its navigation');
-    if(width>1000)assert.ok(chrome.boardWidth>chrome.readinessWidth,'The route hero spans both columns while readiness occupies one supporting card column.');
+    if(width>1180){assert.ok(chrome.heroArea.startsWith('hero'));assert.ok(chrome.boardWidth>chrome.overviewWidth,'The desktop route hero spans the workspace above the middle row: '+JSON.stringify(chrome));assert.ok(Math.abs(chrome.overviewLeft-chrome.boardLeft)<2,'Flight Overview begins at the left edge of the middle row: '+JSON.stringify(chrome));const preview=await evaluate("(()=>{const a=document.querySelector('#flightSessionDashboard').getBoundingClientRect(),b=document.querySelector('#liveRoutePreview').getBoundingClientRect();return{area:getComputedStyle(document.querySelector('#liveRoutePreview')).gridArea,left:b.left,overviewRight:a.right,width:b.width}})()");assert.equal(preview.area,'preview');assert.ok(preview.left>=preview.overviewRight-2,'The live route preview sits beside Flight Overview at desktop widths: '+JSON.stringify(preview));}
     else assert.ok(Math.abs(chrome.boardWidth-chrome.readinessWidth)<=1,'The narrow-window Flight Board uses one aligned content column.');
-    assert.ok(Math.abs(chrome.boardWidth-chrome.overviewWidth)<=1,'Flight Overview spans the same width as the route hero: '+JSON.stringify(chrome));
-    assert.ok(chrome.overviewArea.startsWith('overview'));assert.equal(chrome.sharedArea,'shared');assert.equal(chrome.nextArea,'next');assert.equal(chrome.focusArea,'focus');assert.equal(chrome.readinessArea,'readiness');
-    if(width>=1440)assert.ok(chrome.boardHeight<=300,'The route hero stays compact at desktop window sizes: '+chrome.boardHeight+'px');
+    assert.ok(chrome.overviewArea.startsWith('overview'));assert.equal(chrome.sharedArea,'shared');assert.equal(chrome.nextArea,'next');assert.equal(chrome.readinessArea,'readiness');
+    assert.equal(await evaluate("document.querySelector('#operationsFocus').parentElement===document.querySelector('#whatsNext')"),true,'Flight Desk Focus remains inside What’s Next at '+width+'px');
+    if(width>=1440)assert.ok(chrome.boardHeight>=270&&chrome.boardHeight<=360,'The route hero remains prominent but compact: '+chrome.boardHeight+'px');
     if(width>=1440)assert.ok(chrome.headerHeight<=112,'The desktop global header stays compact: '+chrome.headerHeight+'px');
     const readinessInset=await evaluate("parseFloat(getComputedStyle(document.querySelector('#readiness .readiness-item')).paddingLeft)");
     assert.ok(readinessInset>=12,`Flight Readiness indicators stay inset from the row edge at ${width}px: ${readinessInset}px`);
@@ -180,10 +196,15 @@ async function run() {
     const controls=await evaluate(`(()=>{const field=document.querySelector('#simid'),select=document.querySelector('#aircraftSelect'),textarea=document.querySelector('#notes');return {field:getComputedStyle(field).backgroundColor,select:getComputedStyle(select).backgroundColor,textarea:getComputedStyle(textarea).backgroundColor,cardRadius:getComputedStyle(document.querySelector('.card')).borderRadius}})()`);
     assert.equal(controls.field,controls.select,'Text fields and selects share one surface across pages');
     assert.equal(controls.field,controls.textarea,'Textareas share the common control surface');
-    assert.equal(controls.cardRadius,'16px','Cards use the shared premium radius.');
+    assert.equal(controls.cardRadius,'18px','Cards use the shared premium radius.');
     assert.equal(await evaluate("document.querySelector('.side-nav-brand #appVersion')!==null"),true,'The app identity and version badge are shown in the sidebar header.');
     assert.match(await evaluate("getComputedStyle(document.querySelector('#flightDeskGroup .nav-item')).getPropertyValue('--nav-icon')"),/data:image\/svg\+xml/,'Navigation uses the shared line-icon treatment.');
-    fs.writeFileSync(path.join(__dirname,`../work/ui-checks/overview-${width}.png`),(await win.webContents.capturePage()).toPNG());
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('#flightDeskGroup .nav-item')).display"),'flex','Navigation icon masks have a flex box to render into.');
+    if(width===920){
+      const titleGeometry=await evaluate(`(()=>{const title=document.querySelector('#pageContextTitle').getBoundingClientRect(),status=document.querySelector('#pageLinkStatus').getBoundingClientRect();return{titleWidth:title.width,titleHeight:title.height,titleGrid:getComputedStyle(document.querySelector('#pageContext')).gridTemplateColumns,statusTop:status.top}})()`);
+      assert.ok(titleGeometry.titleWidth>=300&&titleGeometry.titleHeight<=28,'At 920px the page heading retains a full-width single-line title: '+JSON.stringify(titleGeometry));
+    }
+    if([1920,1440,920].includes(width))fs.writeFileSync(path.join(__dirname,`../work/ui-checks/overview-${width}.png`),(await win.webContents.capturePage()).toPNG());
     report(`PASS: ${width}×${height} fills the window without page overflow; dark surfaces and status colors verified.`);
     await evaluate("activatePage('efb');FlightDeskEfb.sync()");
     await evaluate('new Promise(resolve=>setTimeout(resolve,50))');
@@ -219,8 +240,8 @@ async function run() {
     assert.equal(sidebar.items.filter(page=>page==='notes').length,1,'Briefing subpages share one sidebar entry');
     assert.ok(sidebar.navHeight>0&&sidebar.clientHeight>0&&sidebar.scrollHeight>=sidebar.clientHeight,'The full sidebar remains reachable in one scroll area');
     if(width===920){
-      const allNavVisible=await evaluate(`(()=>{const nav=document.querySelector('.side-nav').getBoundingClientRect();return [...document.querySelectorAll('#navScroll .nav-item')].every(item=>{const r=item.getBoundingClientRect();return r.top>=nav.top&&r.bottom<=nav.bottom})})()`);
-      assert.equal(allNavVisible,true,'At 920×640 the compact sidebar keeps every tool and diagnostics button visible.');
+      const navVisibility=await evaluate(`(()=>{const nav=document.querySelector('.side-nav').getBoundingClientRect();return [...document.querySelectorAll('#navScroll .nav-item')].map(item=>{const r=item.getBoundingClientRect();return{page:item.dataset.page,top:Math.round(r.top-nav.top),bottom:Math.round(r.bottom-nav.top),navHeight:Math.round(nav.height)}})})()`);
+      assert.ok(navVisibility.every(item=>item.top>=0&&item.bottom<=item.navHeight),'At 920×640 the compact sidebar keeps every tool and diagnostics button visible: '+JSON.stringify(navVisibility));
     }
     await evaluate("activatePage('diagnostics');syncSidebarHeight()");
     const selectedNav=await evaluate(`(()=>{const nav=document.querySelector('.side-nav').getBoundingClientRect(),item=document.querySelector('.side-nav .nav-item.active').getBoundingClientRect();return item.top>=nav.top&&item.bottom<=nav.bottom})()`);
@@ -343,7 +364,7 @@ async function run() {
   const centeredRoute=await evaluate(`(()=>{const svg=document.querySelector('#routeMapArea svg'),box=svg.getAttribute('viewBox').split(' ').map(Number),transform=svg.querySelector('#routeDynamicLayer .route-aircraft').parentElement.getAttribute('transform').match(/translate\\(([-\\d.]+)[ ,]+([-\\d.]+)/);return{centerX:box[0]+box[2]/2,centerY:box[1]+box[3]/2,aircraftX:Number(transform[1]),aircraftY:Number(transform[2])}})()`);
   assert.ok(Math.abs(centeredRoute.centerX-centeredRoute.aircraftX)<.2&&Math.abs(centeredRoute.centerY-centeredRoute.aircraftY)<.2,JSON.stringify(centeredRoute));
   await evaluate("document.querySelector('[data-route-command=toggle-route]').click()");
-  assert.equal(await evaluate("document.querySelector('.route-line').style.display"),'none','Route control hides the planned route overlay');
+  assert.equal(await evaluate("document.querySelector('#routeMapArea .route-line').style.display"),'none','Route control hides the planned route overlay in Route Viewer');
   await evaluate("document.querySelector('[data-route-command=toggle-route]').click();routeMapViewState.scale=1;routeMapViewState.center=null;routeMapViewState.centerAircraft=false;renderRouteViewer()");
   await evaluate('new Promise(resolve=>setTimeout(resolve,80))');
   const panStart=await evaluate("document.querySelector('#routeMapArea svg').getAttribute('viewBox')");

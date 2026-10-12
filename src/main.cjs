@@ -1,6 +1,6 @@
 const {sanitizeCockpit}=require('./cockpit-telemetry.cjs');
 const {EfbView}=require('./efb.cjs');
-const { app, BrowserWindow, Menu, ipcMain, clipboard, safeStorage, shell, session, protocol, dialog } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, clipboard, safeStorage, shell, session, protocol, dialog, screen } = require('electron');
 const path = require('node:path');
 const os = require('node:os');
 const { exactVatsimFlight } = require('./vatsim-flight.cjs');
@@ -404,13 +404,21 @@ function createStartupSplash() {
 
 function createWindow() {
   createStartupSplash();
+  const workArea = screen.getPrimaryDisplay().workAreaSize;
   mainWindow = new BrowserWindow({
-    width: 1420,
-    height: 920,
+    width: Math.max(920, Math.min(1660, workArea.width - 72)),
+    height: Math.max(640, Math.min(940, workArea.height - 72)),
     minWidth: 920,
     minHeight: 640,
     title: WINDOW_TITLE,
-    backgroundColor: '#000000',
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
+    hasShadow: true,
+    resizable: true,
+    minimizable: true,
+    maximizable: true,
+    closable: true,
     show: false,
     icon: path.join(__dirname, 'vendor', 'app-icon.png'),
     autoHideMenuBar: false,
@@ -423,6 +431,8 @@ function createWindow() {
       sandbox: true
     }
   });
+  mainWindow.on('maximize', () => mainWindow?.webContents.send('window-state-changed', { maximized: true }));
+  mainWindow.on('unmaximize', () => mainWindow?.webContents.send('window-state-changed', { maximized: false }));
   const appUserAgent = mainWindow.webContents.getUserAgent();
   mainWindow.webContents.setUserAgent(appUserAgent + ' SharedCockpitFlightDesk/' + app.getVersion());
   // Keep the native title tied to the installed build when the HTML title loads.
@@ -433,13 +443,25 @@ function createWindow() {
     return { action: 'deny' };
   });
   mainWindow.once('ready-to-show', () => {
-    mainWindow.maximize();
     mainWindow.show();
     startupSplash?.close();
     startupSplash = null;
   });
   mainWindow.loadFile(path.join(__dirname, 'flightdesk.html'));
 }
+
+ipcMain.handle('window-control', (event, action) => {
+  if (!isMainFrame(event)) throw new Error('Invalid window-control sender');
+  if (!mainWindow || mainWindow.isDestroyed()) return { maximized: false };
+  switch (action) {
+    case 'minimize': mainWindow.minimize(); break;
+    case 'toggle-maximize': mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize(); break;
+    case 'close': mainWindow.close(); break;
+    case 'state': return { maximized: mainWindow.isMaximized() };
+    default: throw new Error('Unsupported window control');
+  }
+  return { maximized: mainWindow.isMaximized() };
+});
 
 ipcMain.handle('efb-update', (event,input) => {
   if(!mainWindow||event.sender!==mainWindow.webContents||event.senderFrame!==mainWindow.webContents.mainFrame)throw new Error('Invalid EFB sender');

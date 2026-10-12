@@ -1,6 +1,18 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('cockpitDesktop', {
+  windowControls: {
+    minimize: () => ipcRenderer.invoke('window-control', 'minimize'),
+    toggleMaximize: () => ipcRenderer.invoke('window-control', 'toggle-maximize'),
+    close: () => ipcRenderer.invoke('window-control', 'close'),
+    getState: () => ipcRenderer.invoke('window-control', 'state'),
+    onStateChange: (callback) => {
+      if (typeof callback !== 'function') return () => {};
+      const listener = (_event, state) => callback(state);
+      ipcRenderer.on('window-state-changed', listener);
+      return () => ipcRenderer.removeListener('window-state-changed', listener);
+    }
+  },
   updateEfb: (options) => ipcRenderer.invoke('efb-update', options),
   getAppInfo: () => ipcRenderer.invoke('get-app-info'),
   getAppUpdateStatus: () => ipcRenderer.invoke('app-update-status'),
