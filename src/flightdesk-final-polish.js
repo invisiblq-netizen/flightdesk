@@ -102,16 +102,16 @@
     arrival.setAttribute('aria-label', 'Arrival information');
     const badge = $('#aircraftBadge');
     const departureSlot = document.createElement('div');
-    departureSlot.className = 'route-aircraft-slot';
+    departureSlot.className = 'route-aircraft-slot route-aircraft-slot-empty';
+    departureSlot.setAttribute('aria-hidden', 'true');
+    departure.insertBefore(departureSlot, departure.firstChild);
+    const arrivalSlot = document.createElement('div');
+    arrivalSlot.className = 'route-aircraft-slot';
     if (badge) {
       badge.classList.add('route-aircraft-badge');
       badge.title = 'Aircraft in the imported flight plan';
-      departureSlot.append(badge);
+      arrivalSlot.append(badge);
     }
-    departure.insertBefore(departureSlot, departure.firstChild);
-    const arrivalSlot = document.createElement('div');
-    arrivalSlot.className = 'route-aircraft-slot route-aircraft-slot-empty';
-    arrivalSlot.setAttribute('aria-hidden', 'true');
     arrival.insertBefore(arrivalSlot, arrival.firstChild);
     if (!$('#routeContextStatus')) {
       const status = document.createElement('span');
@@ -195,6 +195,186 @@
     };
     wrapped.finalNavigationHierarchy = true;
     renderRouteViewer = wrapped;
+  }
+
+  function installInteractiveRouteMap() {
+    if (typeof renderRouteViewer !== 'function' || renderRouteViewer.finalInteractiveMap) return;
+    const previous = renderRouteViewer;
+    const wrapped = function (...args) {
+      const result = previous.apply(this, args);
+      if (activePage !== 'route') return result;
+      const area = $('#routeMapArea');
+      if (!area) return result;
+      if (!$('#routeMapToolbar')) installRouteViewerPolish?.();
+      const procedures = $('#routeProceduresSection');
+      if (procedures) {
+        procedures.hidden = true;
+        procedures.setAttribute('aria-hidden', 'true');
+      }
+      const svg = area.querySelector('.route-map');
+      if (!svg || svg.dataset.interactiveMap === 'true') return result;
+      svg.dataset.interactiveMap = 'true';
+      svg.style.cursor = 'grab';
+      svg.style.touchAction = 'none';
+      svg.setAttribute('aria-label', 'Interactive route map. Drag to pan and scroll to zoom.');
+
+      const readTileAnchor = () => {
+        const image = svg.querySelector('.route-map-tile');
+        const match = image?.getAttribute('href')?.match(/\/([0-9]+)\/([0-9]+)\/([0-9]+)\.png(?:\?|$)/);
+        if (!image || !match) return null;
+        return {
+          zoom: Number(match[1]), tileX: Number(match[2]), tileY: Number(match[3]),
+          x: Number(image.getAttribute('x')), y: Number(image.getAttribute('y')),
+          width: Number(image.getAttribute('width')), height: Number(image.getAttribute('height'))
+        };
+      };
+      const refreshTiles = () => {
+        const layer = svg.querySelector('.route-map-tiles');
+        if (!layer) return;
+        const anchor = svg.__routeTileAnchor || (svg.__routeTileAnchor = readTileAnchor());
+        if (!anchor || !anchor.width || !anchor.height) return;
+        const box = svg.viewBox.baseVal;
+        const scale = Math.max(.6, Number(routeMapViewState.scale) || 1);
+        const zoom = Math.max(0, Math.min(19, Math.round(anchor.zoom + Math.log2(scale))));
+        const factor = 2 ** (zoom - anchor.zoom);
+        const tileWidth = anchor.width / factor;
+        const tileHeight = anchor.height / factor;
+        const minX = Math.floor((anchor.tileX + (box.x - anchor.x) / anchor.width) * factor) - 1;
+        const maxX = Math.floor((anchor.tileX + (box.x + box.width - anchor.x) / anchor.width) * factor) + 1;
+        const minY = Math.max(0, Math.floor((anchor.tileY + (box.y - anchor.y) / anchor.height) * factor) - 1);
+        const maxY = Math.min(2 ** zoom - 1, Math.floor((anchor.tileY + (box.y + box.height - anchor.y) / anchor.height) * factor) + 1);
+        const key = [zoom, minX, maxX, minY, maxY].join(':');
+        if (svg.dataset.routeTileKey === key) return;
+        svg.dataset.routeTileKey = key;
+        const tiles = [];
+        for (let y = minY; y <= maxY; y++) {
+          for (let x = minX; x <= maxX; x++) {
+            const wrappedX = ((x % (2 ** zoom)) + (2 ** zoom)) % (2 ** zoom);
+            const sx = anchor.x + (x / factor - anchor.tileX) * anchor.width;
+            const sy = anchor.y + (y / factor - anchor.tileY) * anchor.height;
+            tiles.push(`<image class="route-map-tile" href="https://tile.openstreetmap.org/${zoom}/${wrappedX}/${y}.png" x="${sx.toFixed(1)}" y="${sy.toFixed(1)}" width="${tileWidth.toFixed(1)}" height="${tileHeight.toFixed(1)}" preserveAspectRatio="none"/>`);
+          }
+        }
+        layer.innerHTML = tiles.join('');
+      };
+      const updateView = () => {
+        const scale = Math.max(.6, Math.min(12, Number(routeMapViewState.scale) || 1));
+        const center = routeMapViewState.centerAircraft && routeMapViewState.aircraft
+          ? routeMapViewState.aircraft
+          : routeMapViewState.center || { x: 480, y: 180 };
+        svg.setAttribute('viewBox', `${center.x - 480 / scale} ${center.y - 180 / scale} ${960 / scale} ${360 / scale}`);
+        svg.querySelectorAll('.route-line,.route-line-shadow').forEach(path => { path.style.display = routeMapViewState.showRoute ? '' : 'none'; });
+        refreshTiles();
+      };
+
+      svg.addEventListener('pointerdown', event => {
+        if (event.button !== 0) return;
+        const box = svg.viewBox.baseVal;
+        const rect = svg.getBoundingClientRect();
+        svg.__routeDrag = { id: event.pointerId, x: event.clientX, y: event.clientY, centerX: box.x + box.width / 2, centerY: box.y + box.height / 2, factorX: box.width / rect.width, factorY: box.height / rect.height };
+        routeMapViewState.centerAircraft = false;
+        svg.style.cursor = 'grabbing';
+        try { svg.setPointerCapture(event.pointerId); } catch {}
+        event.preventDefault();
+      });
+      svg.addEventListener('pointermove', event => {
+        const drag = svg.__routeDrag;
+        if (!drag || drag.id !== event.pointerId) return;
+        routeMapViewState.center = { x: drag.centerX - (event.clientX - drag.x) * drag.factorX, y: drag.centerY - (event.clientY - drag.y) * drag.factorY };
+        updateView();
+      });
+      const endDrag = event => {
+        if (svg.__routeDrag?.id !== event.pointerId) return;
+        svg.__routeDrag = null;
+        svg.style.cursor = 'grab';
+        if (svg.hasPointerCapture(event.pointerId)) svg.releasePointerCapture(event.pointerId);
+      };
+      svg.addEventListener('pointerup', endDrag);
+      svg.addEventListener('pointercancel', endDrag);
+      svg.addEventListener('wheel', event => {
+        event.preventDefault();
+        const box = svg.viewBox.baseVal;
+        const rect = svg.getBoundingClientRect();
+        const anchorX = box.x + (event.clientX - rect.left) / rect.width * box.width;
+        const anchorY = box.y + (event.clientY - rect.top) / rect.height * box.height;
+        const fractionX = (anchorX - box.x) / box.width;
+        const fractionY = (anchorY - box.y) / box.height;
+        const oldScale = Number(routeMapViewState.scale) || 1;
+        const nextScale = Math.max(.6, Math.min(12, oldScale * Math.exp(-event.deltaY * .0012)));
+        const width = 960 / nextScale;
+        const height = 360 / nextScale;
+        routeMapViewState.scale = nextScale;
+        routeMapViewState.centerAircraft = false;
+        routeMapViewState.center = { x: anchorX + width / 2 - fractionX * width, y: anchorY + height / 2 - fractionY * height };
+        updateView();
+      }, { passive: false });
+      updateView();
+      let hint = $('#routeMapHint');
+      if (!hint && $('#routeMapToolbar')) {
+        hint = document.createElement('span');
+        hint.id = 'routeMapHint';
+        hint.className = 'route-map-hint';
+        hint.textContent = 'Drag to pan · Scroll or use + / − to zoom';
+        $('#routeMapToolbar').prepend(hint);
+      }
+      const toolbar = $('#routeMapToolbar');
+      if (toolbar && toolbar.dataset.interactiveControls !== 'true') {
+        toolbar.dataset.interactiveControls = 'true';
+        toolbar.addEventListener('click', event => {
+          const button = event.target.closest('[data-route-command]');
+          if (!button || button.disabled) return;
+          const box = svg.viewBox.baseVal;
+          const center = routeMapViewState.centerAircraft && routeMapViewState.aircraft
+            ? routeMapViewState.aircraft
+            : routeMapViewState.center || { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+          switch (button.dataset.routeCommand) {
+            case 'zoom-in':
+              routeMapViewState.center = center;
+              routeMapViewState.centerAircraft = false;
+              routeMapViewState.scale = Math.min(12, (Number(routeMapViewState.scale) || 1) * 1.25);
+              break;
+            case 'zoom-out':
+              routeMapViewState.center = center;
+              routeMapViewState.centerAircraft = false;
+              routeMapViewState.scale = Math.max(.6, (Number(routeMapViewState.scale) || 1) / 1.25);
+              break;
+            case 'center':
+              if (routeMapViewState.aircraft) {
+                routeMapViewState.centerAircraft = true;
+                routeMapViewState.center = routeMapViewState.aircraft;
+                routeMapViewState.scale = Math.max(1.4, Number(routeMapViewState.scale) || 1);
+              }
+              break;
+            case 'toggle-route':
+              routeMapViewState.showRoute = !routeMapViewState.showRoute;
+              break;
+            default:
+              return;
+          }
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          renderRouteViewer();
+        }, true);
+      }
+      return result;
+    };
+    wrapped.finalInteractiveMap = true;
+    renderRouteViewer = wrapped;
+  }
+
+  function removeAircraftSystemsPanel() {
+    if (typeof renderDiagnostics === 'function' && !renderDiagnostics.finalNoAircraftSystems) {
+      const previous = renderDiagnostics;
+      const wrapped = async function (...args) {
+        const result = await previous.apply(this, args);
+        $('#aircraftSystemsStatus')?.remove();
+        return result;
+      };
+      wrapped.finalNoAircraftSystems = true;
+      renderDiagnostics = wrapped;
+    }
+    $('#aircraftSystemsStatus')?.remove();
+    renderDiagnostics?.();
   }
 
   function installChronologicalActivityStream() {
@@ -399,6 +579,8 @@
   wrapGlobalContextRenderer();
   installRouteHero();
   installRouteNavigationHierarchy();
+  installInteractiveRouteMap();
+  removeAircraftSystemsPanel();
   installChronologicalActivityStream();
   installVoiceGroups();
   installReplayEmptyState();

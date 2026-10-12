@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0-alpha.20 — Alpha 0.5
+
+- Move the route, callsign and aircraft context out of the screen center, and place the Flight Board aircraft badge at the right side of the route.
+- Give imported flight-plan details clearer grouped cards, add drag and scroll interaction to the route map, and remove procedure data and the sparse aircraft-systems panel.
+- Center the Charts unavailable icon in its workspace.
+
 ## 0.5.0-alpha.19 — Alpha 0.5
 
 - Refresh the Windows cockpit workspace with a refined navy and blue visual system, clearer information hierarchy, consistent controls and panels, and improved compact-window navigation.
