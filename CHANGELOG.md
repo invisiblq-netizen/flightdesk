@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0-alpha.22 — Alpha 0.5
+
+- Recompose the Flight Board into a compact centered route presentation, a full-width Flight Overview and a balanced grid for shared crew state, next actions, focus and readiness.
+- Integrate the application shell, tighten the global header, use electric blue for focused controls and reduce nested panel borders while preserving the separate map, planning, checklist and briefing workspaces.
+
 ## 0.5.0-alpha.21 — Alpha 0.5
 
 - Transform the Flight Desk visual system into a midnight-navy aviation workspace with a rounded desktop frame, branded icon sidebar, electric-blue actions, more generous panel spacing and consistent page typography.

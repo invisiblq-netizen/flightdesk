@@ -4,7 +4,7 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.5** · Build `0.5.0-alpha.21` · Windows x64
+**Alpha 0.5** · Build `0.5.0-alpha.22` · Windows x64
 
 ## Features
 
@@ -13,8 +13,8 @@ A Windows companion app for shared cockpit flying: import a SimBrief flight plan
 - Check for new alpha releases automatically at startup and every six hours. Updates download in the background; Flight Desk asks before restarting, and installs a downloaded update when the app closes. **Check for updates** can also start a check manually. Updates come from this public repository’s GitHub Releases, with no account or token required on pilot PCs. Alpha.3 and older installers do not have the updater; install alpha.4 or newer once manually. Later versions can update in-app.
 
 - Host a lobby and invite other pilots with a seven-character code.
-- Use a premium midnight-navy workspace with an inset rounded application frame, electric-blue accents, a branded icon sidebar, refined panels and consistent typography. The sidebar groups Flight Desk, Crew, Traffic, Analysis, Tools and System; briefings stay under one entry with five internal tabs. Flight context stays in a compact header row, while the Flight Board, planning, map and crew workspaces retain their aviation data and controls. Light Mode uses a coordinated light palette.
-- Follow the six semantic navigation groups. The Flight Board keeps departure, flight progress and arrival in a centered three-column route hero with level airport headings, aligned weather/ATC/ATIS rows and centered flight metadata; Flight Plan and Briefing data are grouped by purpose, and unavailable values are labeled clearly.
+- Use an integrated midnight-navy workspace with an electric-blue active sidebar, restrained dark surfaces and consistent typography. The sidebar groups Flight Desk, Crew, Traffic, Analysis, Tools and System; briefings stay under one entry with five internal tabs. Flight context, clocks, session controls and connection status share a compact header. Flight Board, planning, map and crew pages keep layouts suited to their work. Light Mode uses a coordinated light palette.
+- Follow the six semantic navigation groups. The Flight Board presents departure, progress and arrival in a compact centered three-column route view with METAR, TAF, VATSIM and ATIS details, then gives the Flight Overview and operational cards a clear dashboard grid. Flight Plan and Briefing data are grouped by purpose, and unavailable values are labeled clearly.
 - Synchronize notes, checklist progress and flight-plan data directly over WebRTC.
 - Choose Pilot Flying (PF) or Pilot Monitoring (PM), and switch roles during flight.
 - Import a SimBrief OFP and view its PDF inline, fitted to the page width, with zoom controls. Automatic import accepts a plan only when its scheduled or estimated departure is in the future; manual fetch remains available for older plans.
@@ -84,7 +84,7 @@ The repository uses `pnpm-lock.yaml`. Do not replace it with an npm-generated lo
 
 ### Reuse the prebuilt helper
 
-To skip compiling the helper, download the matching `FlightPositionBridge-0.5.0-alpha.21-win-x64.zip` Release asset and extract it into the project root. The archive creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
+To skip compiling the helper, download the matching `FlightPositionBridge-0.5.0-alpha.22-win-x64.zip` Release asset and extract it into the project root. The archive creates `simtracker/publish/` with the executable and its companion libraries. Then use `pnpm start` or `pnpm dist`; the .NET SDK is unnecessary for this route.
 
 The helper EXE is larger than GitHub's normal Git file limit. Its source belongs in this repo; the prebuilt archive belongs in Releases. The `publish` folder is ignored by Git.
 
@@ -94,7 +94,7 @@ The helper EXE is larger than GitHub's normal Git file limit. Its source belongs
 pnpm dist
 ```
 
-Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.21.exe`, its `.blockmap`, and the `dist/alpha.yml` update manifest. The GitHub prerelease also includes the unchanged simulator-helper ZIP and a `SHA256SUMS.txt` file for the release assets.
+Output: `dist/Shared-Cockpit-Flight-Desk-Setup-0.5.0-alpha.22.exe`, its `.blockmap`, and the `dist/alpha.yml` update manifest. The GitHub prerelease also includes the unchanged simulator-helper ZIP and a `SHA256SUMS.txt` file for the release assets.
 
 `pnpm dist` expects the helper to exist. It creates the installer and update metadata but does not publish a release. Attach the installer, `alpha.yml`, and matching `.blockmap` to the same published GitHub prerelease. This project currently packages Windows only.
 

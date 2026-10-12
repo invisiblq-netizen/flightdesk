@@ -112,18 +112,18 @@
     arrival.setAttribute('role', 'group');
     arrival.setAttribute('aria-label', 'Arrival information');
     const badge = $('#aircraftBadge');
-    const departureSlot = document.createElement('div');
-    departureSlot.className = 'route-aircraft-slot route-aircraft-slot-empty';
-    departureSlot.setAttribute('aria-hidden', 'true');
-    departure.insertBefore(departureSlot, departure.firstChild);
-    const arrivalSlot = document.createElement('div');
-    arrivalSlot.className = 'route-aircraft-slot';
+    const stats = $('#page-overview .stats');
+    const flightNumber = stats?.querySelector('#flightno')?.closest('.stat');
+    const identity = document.createElement('div');
+    identity.className = 'route-flight-identity';
+    identity.setAttribute('aria-label', 'Flight identity');
+    if (flightNumber) identity.append(flightNumber);
     if (badge) {
       badge.classList.add('route-aircraft-badge');
       badge.title = 'Aircraft in the imported flight plan';
-      arrivalSlot.append(badge);
+      identity.append(badge);
     }
-    arrival.insertBefore(arrivalSlot, arrival.firstChild);
+    progress.prepend(identity);
     if (!$('#routeContextStatus')) {
       const status = document.createElement('span');
       status.id = 'routeContextStatus';
@@ -172,6 +172,26 @@
       renderVatsimSituation = wrapped;
     }
     renderContext();
+  }
+
+  function installFlightBoardComposition() {
+    const page = $('#page-overview');
+    const dashboard = $('#flightSessionDashboard');
+    const prompts = $('#operationsPrompts');
+    if (!page || !dashboard || !prompts || page.dataset.composed === 'true') return;
+
+    const sharedState = document.createElement('article');
+    sharedState.id = 'sharedCockpitState';
+    sharedState.className = 'card shared-state-card';
+    sharedState.innerHTML = '<div class="card-head"><div><span class="eyebrow">CREW ACTIVITY</span><h2>Shared Cockpit State</h2></div><span class="muted small">Live pilot updates</span></div>';
+    const lastEvent = dashboard.querySelector('.session-last-event');
+    const activity = dashboard.querySelector('.crew-activity-wrap');
+    const timeline = dashboard.querySelector('#sessionTimeline');
+    if (lastEvent) sharedState.append(lastEvent);
+    if (activity) sharedState.append(activity);
+    if (timeline) sharedState.append(timeline);
+    dashboard.insertAdjacentElement('afterend', sharedState);
+    page.dataset.composed = 'true';
   }
 
   function installRouteNavigationHierarchy() {
@@ -589,6 +609,7 @@
   installSemanticNavigation();
   wrapGlobalContextRenderer();
   installRouteHero();
+  installFlightBoardComposition();
   installRouteNavigationHierarchy();
   installInteractiveRouteMap();
   removeAircraftSystemsPanel();
