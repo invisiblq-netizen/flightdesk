@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0-alpha.21 — Alpha 0.5
+
+- Transform the Flight Desk visual system into a midnight-navy aviation workspace with a rounded desktop frame, branded icon sidebar, electric-blue actions, more generous panel spacing and consistent page typography.
+- Rework the Flight Board, Flight Plan, Route Viewer, checklist, briefings, traffic, analysis, EFB, Charts, Crew Tools and Diagnostics styling while preserving their existing data and controls.
+- Bring Light Mode into the shared token system, replace legacy purple emphasis with aviation blue, and update desktop visual regression coverage at the supported window sizes and zoom levels.
+
 ## 0.5.0-alpha.20 — Alpha 0.5
 
 - Move the route, callsign and aircraft context out of the screen center, and place the Flight Board aircraft badge at the right side of the route.

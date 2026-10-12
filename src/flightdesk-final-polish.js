@@ -46,7 +46,18 @@
       }
       if (section.querySelector('.nav-item')) scroll.append(section);
     }
-    nav.replaceChildren(scroll);
+    let sidebarBrand = nav.querySelector('.side-nav-brand');
+    if (!sidebarBrand) {
+      const brand = $('.top > .brand');
+      if (brand) {
+        sidebarBrand = document.createElement('div');
+        sidebarBrand.className = 'side-nav-brand';
+        sidebarBrand.setAttribute('role', 'group');
+        sidebarBrand.setAttribute('aria-label', 'Shared Cockpit Flight Desk');
+        sidebarBrand.append(brand);
+      }
+    }
+    nav.replaceChildren(...(sidebarBrand ? [sidebarBrand, scroll] : [scroll]));
     nav.dataset.grouped = 'true';
     syncSidebarHeight?.();
   }
