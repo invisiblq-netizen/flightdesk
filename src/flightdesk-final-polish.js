@@ -10,6 +10,8 @@
     titlebar.className = 'window-titlebar';
     titlebar.innerHTML = '<div class="window-title-app"><img src="vendor/app-icon.png" alt=""><span>Shared Cockpit Flight Desk</span><span class="window-version-badge" id="windowVersionBadge">Alpha 0.6</span></div><div class="window-title-controls" aria-label="Window controls"><button type="button" data-window-control="minimize" aria-label="Minimize" title="Minimize"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10"/></svg></button><button type="button" data-window-control="toggleMaximize" aria-label="Maximize" title="Maximize"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1"/></svg></button><button type="button" data-window-control="close" aria-label="Close" title="Close"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></div>';
     shell.insertBefore(titlebar, header);
+    const updateBanner = $('#appUpdateBanner');
+    if (updateBanner) header.append(updateBanner);
 
     const api = window.cockpitDesktop?.windowControls;
     document.documentElement.dataset.customWindow = String(!!api);
@@ -74,7 +76,7 @@
           historyRecords().filter(record => `${record.callsign || record.flightNumber || ''} ${record.departure || ''} ${record.arrival || ''} ${record.aircraft || ''}`.toLocaleLowerCase().includes(needle) && needle).slice(0, 5).forEach(record => found.push({
             title: `${record.callsign || record.flightNumber || 'Flight'} · ${record.departure || '—'} → ${record.arrival || '—'}`,
             description: `${record.aircraft || 'Aircraft unavailable'} · ${new Date(record.date).toLocaleDateString()} · open flight report`,
-            action: () => { activatePage('crew-tools'); renderFlightHistoryReport(record); }
+            action: () => { activatePage('crew-tools'); $('#crew-tools-tab-history')?.click(); renderFlightHistoryReport(record); }
           }));
         } catch { }
       }
@@ -112,6 +114,15 @@
       if (event.key === 'Escape') { close(); input.blur(); }
       if (event.key === 'Enter') results.querySelector('.global-search-result')?.click();
       if (event.key === 'ArrowDown') { event.preventDefault(); results.querySelector('.global-search-result')?.focus(); }
+    });
+    results.addEventListener('keydown', event => {
+      const buttons = [...results.querySelectorAll('.global-search-result')];
+      const index = buttons.indexOf(document.activeElement);
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        buttons[(index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length]?.focus();
+      }
+      if (event.key === 'Escape') { event.preventDefault(); close(); input.focus(); close(); }
     });
     document.addEventListener('keydown', event => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
@@ -349,6 +360,31 @@
     page.dataset.composed = 'true';
   }
 
+  function declutterRouteLabels(svg) {
+    const box = svg.viewBox.baseVal;
+    const scale = Math.min((svg.clientWidth || 480) / box.width, (svg.clientHeight || 180) / box.height);
+    const occupied = [];
+    const labels = [...svg.querySelectorAll('text.route-label')];
+    labels.sort((a, b) => Number(a.classList.contains('muted')) - Number(b.classList.contains('muted')));
+    for (const label of labels) {
+      const x = Number(label.getAttribute('x')), y = Number(label.getAttribute('y'));
+      const width = (label.textContent.length * 7 + 8) * scale, height = 18 * scale;
+      const anchor = label.getAttribute('text-anchor');
+      const left = x * scale - (anchor === 'middle' ? width / 2 : anchor === 'end' ? width : 0);
+      const bounds = { left, right: left + width, top: y * scale - height, bottom: y * scale + 4 };
+      const overlaps = occupied.some(other => bounds.left < other.right + 5 && bounds.right > other.left - 5 && bounds.top < other.bottom + 4 && bounds.bottom > other.top - 4);
+      const hidden = label.classList.contains('muted') && overlaps;
+      label.style.display = hidden ? 'none' : '';
+      if (!hidden) occupied.push(bounds);
+      const marker = label.previousElementSibling;
+      if (marker?.tagName === 'circle' && !marker.querySelector('title')) {
+        const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+        title.textContent = label.textContent;
+        marker.append(title);
+      }
+    }
+  }
+
   function installBoardRoutePreview() {
     const boardMap = $('#boardRouteMap');
     const routeArea = $('#routeMapArea');
@@ -370,12 +406,16 @@
           if (sourceMap) {
             const copy = sourceMap.cloneNode(true);
             copy.removeAttribute('data-interactive-map');
+            copy.setAttribute('viewBox', '0 0 960 360');
+            sourceMap.__paintRoutePreviewTiles?.(copy);
+            copy.querySelectorAll('.route-planned-layer,.route-line,.route-line-shadow').forEach(item => item.style.display = '');
             copy.style.cursor = 'default';
             copy.style.pointerEvents = 'none';
             copy.querySelector('#routeDynamicLayer')?.removeAttribute('id');
             copy.setAttribute('aria-label', 'Planned route and available live aircraft position');
             const attribution = routeArea.querySelector('.route-map-attribution')?.cloneNode(true);
             boardMap.replaceChildren(...(attribution ? [copy, attribution] : [copy]));
+            declutterRouteLabels(copy);
           } else {
             const empty = routeArea.querySelector('.route-empty');
             const message = document.createElement('div');
@@ -479,9 +519,11 @@
     const previous = renderRouteViewer;
     const wrapped = function (...args) {
       const result = previous.apply(this, args);
-      if (activePage !== 'route') return result;
       const area = $('#routeMapArea');
       if (!area) return result;
+      const sourceMap = area.querySelector('.route-map');
+      if (sourceMap) declutterRouteLabels(sourceMap);
+      if (activePage !== 'route') return result;
       if (!$('#routeMapToolbar')) installRouteViewerPolish?.();
       const procedures = $('#routeProceduresSection');
       if (procedures) {
@@ -489,7 +531,8 @@
         procedures.setAttribute('aria-hidden', 'true');
       }
       const svg = area.querySelector('.route-map');
-      if (!svg || svg.dataset.interactiveMap === 'true') return result;
+      if (!svg) return result;
+      if (svg.dataset.interactiveMap === 'true') { svg.__updateRouteView?.(); return result; }
       svg.dataset.interactiveMap = 'true';
       svg.style.cursor = 'grab';
       svg.style.touchAction = 'none';
@@ -505,13 +548,13 @@
           width: Number(image.getAttribute('width')), height: Number(image.getAttribute('height'))
         };
       };
-      const refreshTiles = () => {
-        const layer = svg.querySelector('.route-map-tiles');
+      const refreshTiles = (targetSvg = svg, viewScale = routeMapViewState.scale) => {
+        const layer = targetSvg.querySelector('.route-map-tiles');
         if (!layer) return;
         const anchor = svg.__routeTileAnchor || (svg.__routeTileAnchor = readTileAnchor());
         if (!anchor || !anchor.width || !anchor.height) return;
-        const box = svg.viewBox.baseVal;
-        const scale = Math.max(.6, Number(routeMapViewState.scale) || 1);
+        const box = targetSvg.viewBox.baseVal;
+        const scale = Math.max(.6, Number(viewScale) || 1);
         const zoom = Math.max(0, Math.min(19, Math.round(anchor.zoom + Math.log2(scale))));
         const factor = 2 ** (zoom - anchor.zoom);
         const tileWidth = anchor.width / factor;
@@ -521,8 +564,8 @@
         const minY = Math.max(0, Math.floor((anchor.tileY + (box.y - anchor.y) / anchor.height) * factor) - 1);
         const maxY = Math.min(2 ** zoom - 1, Math.floor((anchor.tileY + (box.y + box.height - anchor.y) / anchor.height) * factor) + 1);
         const key = [zoom, minX, maxX, minY, maxY].join(':');
-        if (svg.dataset.routeTileKey === key) return;
-        svg.dataset.routeTileKey = key;
+        if (targetSvg.dataset.routeTileKey === key) return;
+        targetSvg.dataset.routeTileKey = key;
         const tiles = [];
         for (let y = minY; y <= maxY; y++) {
           for (let x = minX; x <= maxX; x++) {
@@ -534,15 +577,13 @@
         }
         layer.innerHTML = tiles.join('');
       };
+      svg.__paintRoutePreviewTiles = targetSvg => refreshTiles(targetSvg, 1);
       const updateView = () => {
-        const scale = Math.max(.6, Math.min(12, Number(routeMapViewState.scale) || 1));
-        const center = routeMapViewState.centerAircraft && routeMapViewState.aircraft
-          ? routeMapViewState.aircraft
-          : routeMapViewState.center || { x: 480, y: 180 };
-        svg.setAttribute('viewBox', `${center.x - 480 / scale} ${center.y - 180 / scale} ${960 / scale} ${360 / scale}`);
-        svg.querySelectorAll('.route-line,.route-line-shadow').forEach(path => { path.style.display = routeMapViewState.showRoute ? '' : 'none'; });
+        syncRouteMapView(area);
         refreshTiles();
+        declutterRouteLabels(svg);
       };
+      svg.__updateRouteView = updateView;
 
       svg.addEventListener('pointerdown', event => {
         if (event.button !== 0) return;
@@ -807,7 +848,9 @@
       const heading = charts.querySelector('h2');
       if (heading) heading.textContent = 'Charts unavailable';
       const copy = charts.querySelector('p');
-      if (copy) copy.textContent = 'The dedicated charts workspace is not available in this build. ChartFox airport search remains available in Crew Tools when configured, and aircraft charts may be available through the EFB.';
+      if (copy) copy.textContent = 'The dedicated charts workspace is not available in this build. Open the aircraft EFB to use its chart provider when supported by your aircraft.';
+      const action = $('#chartsOpenCrewTools');
+      if (action) { action.textContent = 'Open aircraft EFB'; action.onclick = () => activatePage('efb'); }
       const mark = document.createElement('span');
       mark.className = 'empty-mark';
       mark.setAttribute('aria-hidden', 'true');
@@ -852,6 +895,12 @@
     });
   }
 
+  function exposeFlightPlanActions() {
+    const reload = $('#showofp');
+    const heading = $('#page-flight-plan .single-article .card-head');
+    if (reload && heading) heading.append(reload);
+  }
+
   installWindowChrome();
   installSemanticNavigation();
   wrapGlobalContextRenderer();
@@ -866,6 +915,7 @@
   installVoiceGroups();
   installReplayEmptyState();
   polishWorkspaceStates();
+  exposeFlightPlanActions();
   addAboutVersion();
   addTooltips();
 })();

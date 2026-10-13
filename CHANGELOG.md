@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0-alpha.2 — Function and layout audit
+
+- Align the page header with the workspace beside the sidebar; reveal clipped statuses, weather, readiness and supporting-card content, and correct Light Mode empty surfaces and the route-progress aircraft alignment.
+- Fix visible PDF zoom/fit, disable document controls when unavailable, and keep Reload PDF in the plan header. Preserve telemetry samples when an automatic SimBrief import is rejected and prevent manual-import races.
+- Show the Flight Board route preview before opening Route Viewer; keep its extent/tiles independent of the full map, declutter waypoint labels and hide all planned-route markers with the overlay.
+- Fix duplicate Voice Link incoming-call listeners, retain established calls during input replacement, preserve the working input on a failed switch, and cancel late/concurrent voice starts safely. Correct Voice Link health in Diagnostics and the global header.
+- Preserve the other pilot's reminders when resetting your flow, clear the active session on explicit disconnect, open searched flight reports in the visible History tab, and support keyboard search-result navigation.
+- Require weather at both airports for route readiness, keep missing-requirement links accessible, replace the obsolete Charts action, and contain update notices in the toolbar with handled check/install failures.
+- Extend regression coverage and add opt-in secure desktop and real two-client PeerJS/WebRTC audits. Simulator/Fenix hardware, physical audio and separate-PC NAT remain outside the verified environment.
+
 ## 0.6.0-alpha.1 — Alpha 0.6
 
 - Add a custom frameless Windows window with secure minimize, maximize/restore and close controls.

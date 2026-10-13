@@ -5,7 +5,7 @@
 })(typeof globalThis==='object'?globalThis:this,function(){
   function create({audio,onStatus=()=>{},onQuality=()=>{},onInputLevel=()=>{},onError=()=>{},setTimer=setTimeout,clearTimer=clearTimeout,setIntervalFn=setInterval,clearIntervalFn=clearInterval}={}){
     let peer=null,role='',connections=[],rawStream=null,txStream=null,txContext=null,txTrack=null,txDestination=null,remoteStream=null;
-    let mode='ptt',muted=false,transmitting=false,releaseTimer=null,qualityTimer=null;
+    let mode='ptt',muted=false,transmitting=false,releaseTimer=null,qualityTimer=null,startPromise=null,mediaGeneration=0;
     const calls=new Map(),remoteReady=new Map();
     let outputDeviceId='',volume=.8,quality={level:'unavailable',rttMs:null,jitterMs:null,packetLoss:null};
     let profile='clean',strength=.5,connectionInfluence=true,profileNodes=null,squelchTimer=null;
@@ -108,7 +108,7 @@
       else if(muted){transmitting=false;txTrack.enabled=false}
       else if(mode!=='ptt'){transmitting=false;txTrack.enabled=false}
     }
-    function removeCall(id,call){const current=calls.get(id);if(!current||current.call!==call)return;calls.delete(id);if(!calls.size){closeRemoteAudio();say(txStream?'Voice link ready · waiting for crew':'Voice link off',txStream?'ready':'unavailable')}onQuality({...quality,level:calls.size?quality.level:'unavailable'})}
+    function removeCall(id,call){const current=calls.get(id);if(!current||current.call!==call)return;calls.delete(id);if(!calls.size){quality={level:'unavailable',rttMs:null,jitterMs:null,packetLoss:null};closeRemoteAudio();say(txStream?'Voice link ready · waiting for crew':'Voice link off',txStream?'ready':'unavailable')}onQuality(quality)}
     function closeRemoteAudio(){
       if(audio){audio.pause?.();audio.srcObject=null}
       remoteStream=null;
@@ -120,14 +120,31 @@
     async function setInputDevice(id=''){
       if(!rawStream)return{ok:false,error:'Start the voice link before changing the microphone.'};
       const media=rootNavigator()?.mediaDevices;if(!media?.getUserMedia)return{ok:false,error:'Microphone selection is unavailable.'};
+      const previous={rawStream,txStream,txTrack,txContext,txDestination,profileNodes},generation=mediaGeneration;
+      let replacement=null,replacementContext=null;const replaced=[];
       try{
-        const replacement=await media.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:false,...(id?{deviceId:{exact:id}}:{})},video:false});
-        const previousStream=rawStream,previousContext=txContext;rawStream=replacement;txStream=null;txTrack=null;txContext=null;txDestination=null;
-        await buildTransmit(replacement);await txContext?.resume?.();updateTransmit();
-        for(const track of previousStream.getTracks())track.stop();if(previousContext)previousContext.close().catch(()=>{});
-        for(const [peerId,item] of [...calls]){calls.delete(peerId);try{item.call.close()}catch{}}
-        syncCalls();return{ok:true};
-      }catch(error){onError(error?.name==='NotAllowedError'?'Microphone permission was not granted.':error?.message||'Could not switch microphones.');return{ok:false,error:error?.message||'Could not switch microphones.'}}
+        replacement=await media.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:false,...(id?{deviceId:{exact:id}}:{})},video:false});
+        if(generation!==mediaGeneration)throw new Error('Microphone switch cancelled.');
+        const build=buildTransmit(replacement);replacementContext=txContext;await build;await replacementContext?.resume?.();
+        if(generation!==mediaGeneration)throw new Error('Microphone switch cancelled.');
+        updateTransmit();
+        for(const item of calls.values()){
+          const sender=item.call.peerConnection?.getSenders?.().find(item=>item.track?.kind==='audio');
+          if(!sender?.replaceTrack)throw new Error('This voice connection cannot switch microphones. Disable and re-enable voice.');
+          await sender.replaceTrack(txTrack);replaced.push(sender);
+          if(generation!==mediaGeneration)throw new Error('Microphone switch cancelled.');
+        }
+        rawStream=replacement;
+        for(const track of previous.rawStream.getTracks())track.stop();if(previous.txContext)previous.txContext.close().catch(()=>{});
+        return{ok:true};
+      }catch(error){
+        if(generation!==mediaGeneration){if(replacement)for(const track of replacement.getTracks())track.stop();replacementContext?.close().catch(()=>{});return{ok:false,error:'Microphone switch cancelled.'}}
+        for(const sender of replaced)try{await sender.replaceTrack(previous.txTrack)}catch{}
+        if(txContext&&txContext!==previous.txContext)txContext.close().catch(()=>{});
+        if(replacement)for(const track of replacement.getTracks())track.stop();
+        ({rawStream,txStream,txTrack,txContext,txDestination,profileNodes}=previous);updateTransmit();
+        onError(error?.name==='NotAllowedError'?'Microphone permission was not granted.':error?.message||'Could not switch microphones.');return{ok:false,error:error?.message||'Could not switch microphones.'};
+      }
     }
     async function testMicrophone({inputDeviceId='',durationMs=4000}={}){
       const media=rootNavigator()?.mediaDevices;if(!media?.getUserMedia)return{ok:false,error:'Microphone testing is unavailable.'};
@@ -157,7 +174,7 @@
       const pc=call.peerConnection,inspectRoute=()=>{if(calls.get(id)?.call!==call)return;if(pc?.connectionState==='failed'||pc?.iceConnectionState==='failed')say('Voice route failed · check firewall/NAT; this build has no TURN relay.','unavailable')};
       pc?.addEventListener?.('connectionstatechange',inspectRoute);pc?.addEventListener?.('iceconnectionstatechange',inspectRoute);inspectRoute();
       let receivedAudio=false;const streamTimer=setTimer(()=>{if(!receivedAudio&&calls.get(id)?.call===call)say('Voice is still waiting for audio · check both microphones and the firewall/NAT route.','connecting')},12000);
-      call.on('stream',stream=>{receivedAudio=true;clearTimer(streamTimer);receiveStream(stream);say('Voice link connected','connected')});call.on('close',()=>{clearTimer(streamTimer);removeCall(id,call)});call.on('error',error=>{clearTimer(streamTimer);removeCall(id,call);onError('Voice connection failed: '+(error?.message||'unknown error'))});
+      call.on('stream',stream=>{receivedAudio=true;clearTimer(streamTimer);receiveStream(stream);if(['unavailable','connecting'].includes(quality.level)){quality={level:'connected',rttMs:null,jitterMs:null,packetLoss:null};onQuality(quality)}say('Voice link connected','connected')});call.on('close',()=>{clearTimer(streamTimer);removeCall(id,call)});call.on('error',error=>{clearTimer(streamTimer);removeCall(id,call);onError('Voice connection failed: '+(error?.message||'unknown error'))});
     }
     function acceptIncoming(call){
       const id=call?.peer;if(typeof id!=='string'||!id){call?.close?.();return}
@@ -168,6 +185,7 @@
       // are enough to answer safely; requiring the host-ready message here can
       // reject the only call and leave both pilots stuck waiting.
       const knownCrewPeer=connections.some(connection=>connection?.open&&connection.peer===id);
+      if(current?.call===call)return;
       if(role!=='join'||!txStream||!knownCrewPeer||current){call?.close?.();return}
       calls.set(id,{call,outgoing:false,bidirectional:true});
       try{call.answer(txStream||undefined)}catch(error){calls.delete(id);onError(error.message||'Could not answer the incoming voice link.');return}
@@ -187,25 +205,33 @@
       }
     }
     function onIncoming(call){acceptIncoming(call)}
-    async function start({inputDeviceId=''}={}){
-      try{
+    function start({inputDeviceId=''}={}){
+      if(txStream)return Promise.resolve({ok:true,stream:rawStream});
+      if(startPromise)return startPromise;
+      const generation=++mediaGeneration;
+      const request=(async()=>{try{
         const media=rootNavigator()?.mediaDevices;
         if(!media?.getUserMedia)throw new Error('Microphone access is unavailable in this app environment.');
         const constraints={audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:false,...(inputDeviceId?{deviceId:{exact:inputDeviceId}}:{})},video:false};
-        rawStream=await media.getUserMedia(constraints);
-        await buildTransmit(rawStream);await txContext?.resume?.();updateTransmit();
+        const stream=await media.getUserMedia(constraints);
+        if(generation!==mediaGeneration){for(const track of stream.getTracks())track.stop();return{ok:false,error:'Voice start cancelled.'}}
+        rawStream=stream;
+        const build=buildTransmit(stream),context=txContext;await build;await context?.resume?.();
+        if(generation!==mediaGeneration){for(const track of stream.getTracks())track.stop();context?.close().catch(()=>{});return{ok:false,error:'Voice start cancelled.'}}
+        updateTransmit();
         say(mode==='open'&&!muted?'Open mic active':'Voice ready · hold PTT to transmit',mode==='open'&&!muted?'connected':'ready');syncCalls();
         if(!qualityTimer)qualityTimer=setIntervalFn(sampleQuality,2500);
         if(!squelchTimer)squelchTimer=setIntervalFn(()=>{if(profileNodes?.analyser?.getByteTimeDomainData)profileNodes.analyser.getByteTimeDomainData(profileNodes.samples);sampleSquelch()},30);
         return{ok:true,stream:rawStream};
-      }catch(error){onError(error?.name==='NotAllowedError'?'Microphone permission was not granted.':error?.message||'Could not start the microphone.');say('Microphone unavailable','unavailable');return{ok:false,error:error?.message||'Could not start the microphone.'}}
+      }catch(error){if(generation!==mediaGeneration)return{ok:false,error:'Voice start cancelled.'};close();onError(error?.name==='NotAllowedError'?'Microphone permission was not granted.':error?.message||'Could not start the microphone.');say('Microphone unavailable','unavailable');return{ok:false,error:error?.message||'Could not start the microphone.'}}})();
+      startPromise=request;request.finally(()=>{if(startPromise===request)startPromise=null});return request;
     }
     function rootNavigator(){return typeof navigator==='object'?navigator:null}
     function setMode(value){mode=value==='open'?'open':'ptt';if(mode!=='ptt'){transmitting=false;if(releaseTimer)clearTimer(releaseTimer);releaseTimer=null}updateTransmit();say(mode==='open'&&!muted?'Open mic active':mode==='ptt'?'Push to talk ready':'Microphone muted',mode==='open'&&!muted?'connected':'ready')}
     function setProfile(value,options={}){profile=['clean','vhf','slight','heavy'].includes(value)?value:'clean';if(Number.isFinite(Number(options.strength)))strength=Math.max(0,Math.min(1,Number(options.strength)));if(typeof options.connectionInfluence==='boolean')connectionInfluence=options.connectionInfluence;applyProfile();return{profile,strength,connectionInfluence}}
     function setMuted(value){muted=!!value;if(muted){transmitting=false;if(releaseTimer)clearTimer(releaseTimer);releaseTimer=null}updateTransmit();say(muted?'Microphone muted':mode==='open'?'Open mic active':'Push to talk ready',muted?'muted':'ready')}
     function setVolume(value){volume=Math.max(0,Math.min(1,Number(value)||0));if(audio)audio.volume=volume}
-    function setPeer(nextPeer,nextRole){if(peer&&peer!==nextPeer)peer.off?.('call',onIncoming);peer=nextPeer||null;role=nextRole==='host'?'host':'join';if(peer)peer.on('call',onIncoming);syncCalls()}
+    function setPeer(nextPeer,nextRole){if(peer)peer.off?.('call',onIncoming);peer=nextPeer||null;role=nextRole==='host'?'host':'join';if(peer)peer.on('call',onIncoming);syncCalls()}
     function setConnections(list){connections=Array.isArray(list)?list:[];syncCalls()}
     function setRemoteReady(id,ready){if(!id)return;remoteReady.set(id,!!ready);if(!ready&&role==='host'){const active=calls.get(id);if(active){calls.delete(id);try{active.call.close()}catch{}if(!calls.size)closeRemoteAudio()}}syncCalls()}
     async function sampleQuality(){
@@ -230,6 +256,7 @@
       }catch{quality={level:'connected',rttMs:null,jitterMs:null,packetLoss:null};onQuality(quality)}
     }
     function close(){
+      mediaGeneration++;startPromise=null;
       if(qualityTimer)clearIntervalFn(qualityTimer);qualityTimer=null;if(squelchTimer)clearIntervalFn(squelchTimer);squelchTimer=null;
       for(const {call} of calls.values())try{call.close()}catch{}calls.clear();
       if(peer)peer.off?.('call',onIncoming);peer=null;connections=[];remoteReady.clear();

@@ -43,7 +43,7 @@ function createAutoUpdater({ app, onStatus, updater = autoUpdater }) {
     if (status.state === 'downloading' || status.state === 'downloaded') return { ...status };
     if (checkPromise) return checkPromise;
     publish({ state: 'checking', message: '' });
-    checkPromise = updater.checkForUpdates()
+    checkPromise = Promise.resolve().then(() => updater.checkForUpdates())
       .catch(() => {
         publish({ state: 'error', message: 'Could not check for updates. Flight Desk will try again later.' });
         return null;
@@ -55,7 +55,8 @@ function createAutoUpdater({ app, onStatus, updater = autoUpdater }) {
 
   function install() {
     if (status.state !== 'downloaded') return { ...status };
-    updater.quitAndInstall();
+    try { updater.quitAndInstall(); }
+    catch { publish({ state: 'error', message: 'Could not start the update installer. Download the release or try again later.' }); }
     return { ...status };
   }
 

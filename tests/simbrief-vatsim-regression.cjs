@@ -51,8 +51,12 @@ async function run() {
   assert.equal(calls,1,'Guests must not replace the host flight plan');
   flight.eval("session.role='host'");
   plan.times.sched_out=String(Date.parse('2026-09-25T23:29:59Z')/1000);
+  flight.eval("localFlightSamples=[{at:123,latitude:60,longitude:11}];lastFlightSampleAt=123;localStorage.setItem('sharedCockpitSamples:'+currentFlightSessionId,'saved samples')");
   await flight.eval('autoImportSimbrief()');
   assert.equal(flight.eval('data.plan'),null);
+  assert.equal(flight.eval('localFlightSamples.length'),1,'Rejected automatic plans preserve flight samples');
+  assert.equal(flight.eval('lastFlightSampleAt'),123);
+  assert.equal(flight.eval("localStorage.getItem('sharedCockpitSamples:'+currentFlightSessionId)"),'saved samples');
   await flight.nodes.get('simform').onsubmit({preventDefault(){}});
   assert.equal(flight.eval('data.aircraft'),'B738','Manual import ignores the automatic time window');
   assert.equal(flight.storage.get('sharedCockpitSimBriefId'),'saved-pilot');
@@ -88,5 +92,16 @@ async function run() {
   finishOld({ok:true,data:plan});await oldRequest;await Promise.resolve();
   assert.equal(focused.eval('data.plan.general.callsign'),'NEW123','An ID changed during a request must be checked immediately after it finishes');
   console.log('PASS: Typing a SimBrief ID imports after a short pause without blur; changing IDs during a request retries the new ID and rejects the old plan.');
+  const manual=app();await manual.nodes.get('create').onclick();
+  manual.nodes.get('simid').value='manual-pilot';
+  let finishManual,manualCalls=0;
+  manual.context.window.cockpitDesktop.fetchSimbrief=()=>{manualCalls++;return new Promise(resolve=>finishManual=resolve)};
+  const manualPending=manual.eval('importSimbrief()');
+  await manual.eval('autoImportSimbrief()');await manual.eval('importSimbrief()');
+  assert.equal(manualCalls,1,'Automatic polling and repeated submissions cannot supersede a pending manual import');
+  finishManual({ok:true,data:plan});await manualPending;
+  assert.equal(manual.eval('manualSimbriefBusy'),false);
+  assert.equal(manual.eval('data.plan.general.callsign'),'SAS123');
+  console.log('PASS: Rejected automatic imports preserve samples; manual imports cannot be interrupted by automatic polling or duplicate submissions.');
 }
 run().catch(error=>{console.error(error.stack);process.exitCode=1});

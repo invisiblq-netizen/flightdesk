@@ -55,7 +55,12 @@
     finally { checkButton.disabled = false; }
   });
 
-  installButton.addEventListener('click', () => desktop.installAppUpdate());
+  installButton.addEventListener('click', async () => {
+    installButton.disabled = true;
+    try { render(await desktop.installAppUpdate()); }
+    catch { render({ state: 'error', message: 'Could not start the update installer. Try again later.' }); }
+    finally { installButton.disabled = false; }
+  });
   dismissButton.addEventListener('click', () => banner.classList.add('hidden'));
   desktop.onAppUpdateStatus?.(render);
   desktop.getAppUpdateStatus().then(render).catch(() => { checkButton.hidden = true; });

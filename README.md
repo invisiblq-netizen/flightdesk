@@ -4,7 +4,7 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.6** · Build `0.6.0-alpha.1` · Windows x64
+**Alpha 0.6** · Build `0.6.0-alpha.2` · Windows x64
 
 ## Features
 
@@ -107,7 +107,7 @@ pnpm test
 pnpm test:ui
 ```
 
-The regression checks cover route projection, sample replay and statistics, VATSIM controllers/traffic, diagnostics ZIP redaction, lobby recovery invariants, voice setup, flight state, simulator telemetry and automatic checklist behavior. The Electron UI checks exercise route controls, six-group sidebar navigation, accessible Crew Tools tabs, route/readiness, crew activity, ATC/traffic, historical analysis, offline states and every main page at 1440×900, 1920×1080 and 2560×1440, with additional 4K through 920×640 and desktop zoom coverage. Connections and simulator data are simulated; these checks do not verify a live session across two internet connections or record a live microphone session.
+The regression checks cover route projection, sample replay and statistics, VATSIM controllers/traffic, diagnostics ZIP redaction, lobby recovery invariants, voice setup, flight state, simulator telemetry and automatic checklist behavior. The Electron UI checks exercise route controls, six-group sidebar navigation, accessible Crew Tools tabs, route/readiness, crew activity, ATC/traffic, historical analysis, offline states and every main page at 1440×900, 1920×1080 and 2560×1440, with additional 4K through 920×640 and desktop zoom coverage. The default suites use fixtures for connections and simulator data. Optional `pnpm test:p2p:live` starts two isolated clients on one PC using real PeerJS/WebRTC data and synthetic audio; it checks synchronization, input switching, PTT and saved-session recovery without accessing microphones. Optional `pnpm test:desktop:live` launches the actual sandboxed main/preload architecture with a temporary profile; set `FLIGHTDESK_AUDIT_SIMBRIEF` to an authorized SimBrief identity to include an actual plan/PDF import. It checks the window controls, all workspaces, diagnostics save/cancel and local recording storage/range reads. These checks do not certify FSUIPC/Fenix in a running simulator, physical microphone/speaker quality, an aircraft web EFB server, or voice/NAT between separate PCs. Charts remains Work In Progress.
 
 ## Project layout
 
