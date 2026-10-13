@@ -61,6 +61,8 @@ async function run(){
   }
  }
  report('PASS: All 11 workspaces open in the secure source app at 1440×900 and 1920×1080; screenshots captured.');
+ await evaluate("activatePage('notes','notes')");await delay(150);
+ fs.writeFileSync(path.join(out,'note-templates.png'),(await win.webContents.capturePage()).toPNG());
  await evaluate("document.querySelector('#themeToggle').click();activatePage('overview')");await delay(300);
  assert.equal(await evaluate('document.documentElement.dataset.theme'),'light');
  fs.writeFileSync(path.join(out,'overview-light.png'),(await win.webContents.capturePage()).toPNG());

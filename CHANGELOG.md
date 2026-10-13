@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0-alpha.3 — Final workspace corrections
+
+- Open Briefing with a selected, matching tab when entered through search or direct navigation.
+- Replace the remaining black note-template surface with theme tokens, distinguish a waiting P2P status with an amber indicator, and keep an unknown flight phase neutral in Diagnostics.
+- Add renderer assertions for these states and repeat the complete validation/build workflow.
+
 ## 0.6.0-alpha.2 — Function and layout audit
 
 - Align the page header with the workspace beside the sidebar; reveal clipped statuses, weather, readiness and supporting-card content, and correct Light Mode empty surfaces and the route-progress aircraft alignment.

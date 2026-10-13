@@ -558,6 +558,7 @@ body::before {
 .route-map-wrap, .pdf-controls, .pdf-viewport { border-color: color-mix(in srgb, var(--line) 52%, transparent); }
 #pdfCanvas { max-width: none; flex: none; }
 .diagnostic-health[data-state="neutral"] .dot, .diagnostic-row[data-state="unknown"] .dot { background: var(--muted); box-shadow: none; }
+.diagnostic-health[data-state="warning"] .dot { background: var(--amber); box-shadow: none; }
 #page-flight-plan .single-article .card-head { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; }
 #page-flight-plan .single-article .card-head h2 { flex: 1; }
 #page-flight-plan .single-article .card-head #importLabel { flex-basis: 100%; order: 2; }
