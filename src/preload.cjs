@@ -6,6 +6,9 @@ contextBridge.exposeInMainWorld('cockpitDesktop', {
     toggleMaximize: () => ipcRenderer.invoke('window-control', 'toggle-maximize'),
     close: () => ipcRenderer.invoke('window-control', 'close'),
     getState: () => ipcRenderer.invoke('window-control', 'state'),
+    beginResize: (direction) => ipcRenderer.invoke('window-resize-begin', direction),
+    resizeToPointer: () => ipcRenderer.send('window-resize-update'),
+    endResize: () => ipcRenderer.send('window-resize-end'),
     onStateChange: (callback) => {
       if (typeof callback !== 'function') return () => {};
       const listener = (_event, state) => callback(state);

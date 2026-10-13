@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0-alpha.4 — Borderless visual refinement
+
+- Remove the visible Windows frame, shadow, shell border and outline while keeping the desktop fully transparent around the rounded application surface. Restore resizing through constrained edge handles in the secure preload/main-process bridge.
+- Keep the app shell flat and clean at its rounded edge; tighten the global session row and show complete ATC rows without the clipped half-line.
+- Add desktop checks for zero-alpha window corners and margins, opaque app content, secure resize access, and stable rounded geometry when maximized.
+
 ## 0.6.0-alpha.3 — Final workspace corrections
 
 - Open Briefing with a selected, matching tab when entered through search or direct navigation.

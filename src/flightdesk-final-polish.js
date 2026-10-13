@@ -29,6 +29,30 @@
     titlebar.querySelectorAll('[data-window-control]').forEach(button => {
       button.addEventListener('click', () => api?.[button.dataset.windowControl]?.().catch?.(() => {}));
     });
+    const resizeHandles = document.createElement('div');
+    resizeHandles.id = 'windowResizeHandles';
+    resizeHandles.setAttribute('aria-hidden', 'true');
+    resizeHandles.innerHTML = '<span data-resize="north"></span><span data-resize="south"></span><span data-resize="east"></span><span data-resize="west"></span><span data-resize="north-east"></span><span data-resize="north-west"></span><span data-resize="south-east"></span><span data-resize="south-west"></span>';
+    document.body.append(resizeHandles);
+    let resizing = false;
+    resizeHandles.addEventListener('pointerdown', async event => {
+      const handle = event.target.closest('[data-resize]');
+      if (!handle || event.button !== 0 || !api?.beginResize) return;
+      event.preventDefault();
+      resizing = await api.beginResize(handle.dataset.resize).catch(() => false);
+      if (resizing) handle.setPointerCapture(event.pointerId);
+    });
+    resizeHandles.addEventListener('pointermove', event => {
+      if (resizing && event.buttons) api?.resizeToPointer?.();
+    });
+    const stopResize = () => {
+      if (!resizing) return;
+      resizing = false;
+      api?.endResize?.();
+    };
+    resizeHandles.addEventListener('pointerup', stopResize);
+    resizeHandles.addEventListener('pointercancel', stopResize);
+    window.addEventListener('blur', stopResize);
     api?.getState?.().then(reflectState).catch(() => {});
     api?.onStateChange?.(reflectState);
     window.cockpitDesktop?.getAppInfo?.().then(info => {

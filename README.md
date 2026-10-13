@@ -4,7 +4,7 @@
 
 A Windows companion app for shared cockpit flying: import a SimBrief flight plan, share crew notes, work through PF/PM flows and follow your flight together.
 
-**Alpha 0.6** · Build `0.6.0-alpha.3` · Windows x64
+**Alpha 0.6** · Build `0.6.0-alpha.4` · Windows x64
 
 ## Features
 

@@ -34,6 +34,7 @@ async function run() {
   assert.equal(await evaluate("document.querySelector('#pageContext').parentElement.classList.contains('top')"),true,'The live page title and subtitle belong in the global header');
   assert.equal(await evaluate("getComputedStyle(document.querySelector('#pageFlightContext')).display"),'none','Flight context remains data-bound without being repeated beside the route hero');
   assert.equal(await evaluate("document.querySelectorAll('#windowTitleBar [data-window-control]').length"),3,'The frameless title bar provides minimize, maximize and close controls');
+  assert.equal(await evaluate("document.querySelectorAll('#windowResizeHandles [data-resize]').length"),8,'Borderless window keeps all eight resize directions available');
   assert.equal(await evaluate("document.querySelector('#globalSearchInput')!==null"),true,'The global search is a real input rather than decorative chrome');
   assert.equal(await evaluate("document.querySelectorAll('#pageLinkStatus .status-chip').length"),4,'The system strip keeps the four compact SIM, CREW, VOICE and VATSIM statuses');
   await evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{key:'k',ctrlKey:true,bubbles:true,cancelable:true}))");

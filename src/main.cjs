@@ -28,6 +28,7 @@ let mainWindow;
 let efbView;
 let startupSplash;
 let appUpdater;
+let windowResizeState = null;
 let vatsimCache = { expiresAt: 0, feed: null, transceivers: null };
 let vatsimAtisCache = { expiresAt: 0, stations: null, available: false };
 const airportCache = new Map();
@@ -414,7 +415,10 @@ function createWindow() {
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',
-    hasShadow: true,
+    hasShadow: false,
+    roundedCorners: false,
+    thickFrame: false,
+    backgroundMaterial: 'none',
     resizable: true,
     minimizable: true,
     maximizable: true,
@@ -431,8 +435,9 @@ function createWindow() {
       sandbox: true
     }
   });
-  mainWindow.on('maximize', () => mainWindow?.webContents.send('window-state-changed', { maximized: true }));
-  mainWindow.on('unmaximize', () => mainWindow?.webContents.send('window-state-changed', { maximized: false }));
+  mainWindow.on('maximize', () => { windowResizeState = null; mainWindow?.webContents.send('window-state-changed', { maximized: true }); });
+  mainWindow.on('unmaximize', () => { windowResizeState = null; mainWindow?.webContents.send('window-state-changed', { maximized: false }); });
+  mainWindow.on('closed', () => { windowResizeState = null; });
   const appUserAgent = mainWindow.webContents.getUserAgent();
   mainWindow.webContents.setUserAgent(appUserAgent + ' SharedCockpitFlightDesk/' + app.getVersion());
   // Keep the native title tied to the installed build when the HTML title loads.
@@ -461,6 +466,34 @@ ipcMain.handle('window-control', (event, action) => {
     default: throw new Error('Unsupported window control');
   }
   return { maximized: mainWindow.isMaximized() };
+});
+
+const resizeDirections = new Set(['north', 'south', 'east', 'west', 'north-east', 'north-west', 'south-east', 'south-west']);
+ipcMain.handle('window-resize-begin', (event, direction) => {
+  if (!isMainFrame(event)) throw new Error('Invalid window-resize sender');
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isMaximized() || !resizeDirections.has(direction)) return false;
+  const bounds = mainWindow.getBounds();
+  const cursor = screen.getCursorScreenPoint();
+  windowResizeState = { direction, bounds, cursor };
+  return true;
+});
+ipcMain.on('window-resize-update', event => {
+  if (!isMainFrame(event) || !windowResizeState || !mainWindow || mainWindow.isDestroyed() || mainWindow.isMaximized()) return;
+  const { direction, bounds, cursor: origin } = windowResizeState;
+  const cursor = screen.getCursorScreenPoint();
+  const deltaX = cursor.x - origin.x;
+  const deltaY = cursor.y - origin.y;
+  const [minimumWidth, minimumHeight] = mainWindow.getMinimumSize();
+  let { x, y, width, height } = bounds;
+  if (direction.includes('east')) width = Math.max(minimumWidth, bounds.width + deltaX);
+  if (direction.includes('west')) { width = Math.max(minimumWidth, bounds.width - deltaX); x = bounds.x + bounds.width - width; }
+  if (direction.includes('south')) height = Math.max(minimumHeight, bounds.height + deltaY);
+  if (direction.includes('north')) { height = Math.max(minimumHeight, bounds.height - deltaY); y = bounds.y + bounds.height - height; }
+  mainWindow.setBounds({ x, y, width, height }, false);
+});
+ipcMain.on('window-resize-end', event => {
+  if (!isMainFrame(event)) return;
+  windowResizeState = null;
 });
 
 ipcMain.handle('efb-update', (event,input) => {

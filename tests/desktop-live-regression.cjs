@@ -25,6 +25,7 @@ async function run(){
  await waitFor(()=>{win=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/flightdesk.html'));return win&&!win.webContents.isLoading()},'main renderer');
  const prefs=win.webContents.getLastWebPreferences();
  assert.equal(prefs.contextIsolation,true);assert.equal(prefs.sandbox,true);assert.equal(prefs.nodeIntegration,false);
+ assert.equal(win.isResizable(),true);assert.equal(win.hasShadow(),false);
  assert.equal(await evaluate("typeof require"),'undefined');
  const info=await evaluate('window.cockpitDesktop.getAppInfo()');
  report('PASS: Source app launches with the real context-isolated, sandboxed preload; renderer has no Node require. Build '+info.version+'.');
@@ -50,6 +51,7 @@ async function run(){
  await waitFor(()=>evaluate('airportRequests.size===0'),'weather requests settle');
  await evaluate("activatePage('overview');renderFlightProgress()");await delay(400);
  if(identity)assert.equal(await evaluate("document.querySelector('#boardRouteMap svg.route-map')!==null"),true,'Preview exists before opening Route Viewer');
+ await waitFor(()=>evaluate("document.querySelectorAll('.crew-notification').length===0"),'transient crew notices clear before visual capture');
  report('Weather/ATC availability: '+await evaluate("document.querySelector('#origName').textContent+' · '+document.querySelector('#origMetar').textContent+' · '+document.querySelector('#destMetar').textContent"));
  for(const [width,height]of [[1440,900],[1920,1080]]){
   win.setContentSize(width,height);
@@ -58,6 +60,17 @@ async function run(){
    assert.equal(await evaluate(`document.querySelector('#page-${page}').classList.contains('active')`),true);
    assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth'));
    fs.writeFileSync(path.join(out,`${page}-${width}.png`),(await win.webContents.capturePage()).toPNG());
+   if(page==='overview'){
+    const image=await win.webContents.capturePage();const imageSize=image.getSize(),bitmap=image.toBitmap();
+    const alphaAt=(x,y)=>bitmap[(y*imageSize.width+x)*4+3],middleX=Math.floor(imageSize.width/2),middleY=Math.floor(imageSize.height/2);
+    const alpha={corners:[alphaAt(0,0),alphaAt(imageSize.width-1,0),alphaAt(0,imageSize.height-1),alphaAt(imageSize.width-1,imageSize.height-1)],margins:[alphaAt(4,middleY),alphaAt(imageSize.width-5,middleY),alphaAt(middleX,4),alphaAt(middleX,imageSize.height-5)],shell:[alphaAt(14,middleY),alphaAt(middleX,14)]};
+    assert.ok(alpha.corners.every(value=>value===0),'All four window corners must be fully transparent');assert.ok(alpha.margins.every(value=>value===0),'Every outer inset must reveal the desktop with zero alpha');assert.ok(alpha.shell.every(value=>value>240),'The application surface remains fully opaque');
+    const frame=await evaluate("(()=>{const e=document.querySelector('.wrap'),s=getComputedStyle(e),b=getComputedStyle(document.body),h=getComputedStyle(document.documentElement),t=getComputedStyle(document.querySelector('.top'));return{transparentWindow:document.documentElement.dataset.customWindow,bodyBackground:b.backgroundColor,htmlBackground:h.backgroundColor,backdrop:getComputedStyle(document.body,'::before').display,wrapBorder:s.borderWidth,wrapOutlineStyle:s.outlineStyle,wrapOutlineWidth:s.outlineWidth,wrapRadius:s.borderRadius,wrapShadow:s.boxShadow,headerColumns:t.gridTemplateColumns,headerAreas:t.gridTemplateAreas}})()");
+    assert.equal(frame.bodyBackground,'rgba(0, 0, 0, 0)');assert.equal(frame.htmlBackground,'rgba(0, 0, 0, 0)');assert.equal(frame.wrapBorder,'0px');assert.equal(frame.wrapOutlineStyle,'none');assert.equal(frame.wrapOutlineWidth,'0px');assert.equal(frame.wrapShadow,'none');
+    const layout=await evaluate("(()=>Object.fromEntries(['.top','.page-context','#globalSearch','.header-tools','#pageLinkStatus','#sessionbar','.session-identity','.session-toolbar'].map(q=>{const e=document.querySelector(q),r=e?.getBoundingClientRect(),s=e&&getComputedStyle(e),p=e?.parentElement,ps=p&&getComputedStyle(p);return[q,e?{x:Math.round(r.x),y:Math.round(r.y),width:Math.round(r.width),height:Math.round(r.height),display:s.display,position:s.position,gridArea:s.gridArea,flex:s.flex,flexDirection:s.flexDirection,parent:p?.id||p?.className,parentDisplay:ps?.display,children:e.children?.length,scrollWidth:e.scrollWidth,clientWidth:e.clientWidth}:null]})))()");
+    const controls=await evaluate("(()=>[...document.querySelector('.session-toolbar').children].map(e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return{id:e.id||e.className,x:Math.round(r.x),y:Math.round(r.y),width:Math.round(r.width),height:Math.round(r.height),scrollWidth:e.scrollWidth,clientWidth:e.clientWidth,whiteSpace:s.whiteSpace,flex:s.flex}}))()");
+    report(`VISUAL ${width}: ${JSON.stringify({frame,layout,controls,alpha})}`);
+   }
   }
  }
  report('PASS: All 11 workspaces open in the secure source app at 1440×900 and 1920×1080; screenshots captured.');
@@ -84,9 +97,15 @@ async function run(){
  const unauthorized=new BrowserWindow({show:false,webPreferences:{preload:path.join(root,'src/preload.cjs'),sandbox:true,contextIsolation:true,nodeIntegration:false}});
  await unauthorized.loadURL('data:text/html,<h1>Unauthorized sender test</h1>');
  assert.match(await unauthorized.webContents.executeJavaScript("window.cockpitDesktop.windowControls.getState().then(()=>'',e=>e.message)"),/Invalid window-control sender/);
+ assert.match(await unauthorized.webContents.executeJavaScript("window.cockpitDesktop.windowControls.beginResize('east').then(()=>'',e=>e.message)"),/Invalid window-resize sender/);
  unauthorized.destroy();
+ assert.equal(await evaluate("window.cockpitDesktop.windowControls.beginResize('south-east')"),true,'The custom frameless resize path starts on a window edge');
+ await evaluate('window.cockpitDesktop.windowControls.endResize()');
  await evaluate('window.cockpitDesktop.windowControls.toggleMaximize()');await waitFor(()=>win.isMaximized(),'maximize');
+ assert.equal(await evaluate("window.cockpitDesktop.windowControls.beginResize('east')"),false,'Maximized windows do not start an edge resize');
  assert.equal(await evaluate('document.documentElement.dataset.windowMaximized'),'true');
+ assert.equal(await evaluate("getComputedStyle(document.querySelector('.wrap')).borderRadius"),'24px');
+ assert.equal(await evaluate("getComputedStyle(document.querySelector('.wrap')).borderTopWidth"),'0px');
  await evaluate('window.cockpitDesktop.windowControls.toggleMaximize()');await waitFor(()=>!win.isMaximized(),'restore');
  await evaluate('window.cockpitDesktop.windowControls.minimize()');await waitFor(()=>win.isMinimized(),'minimize');win.restore();
  report('PASS: Light Mode, maximize/restore/minimize and rejection of another renderer’s window-control IPC.');
